@@ -634,7 +634,16 @@ const STATE = {
   apiUrl: 'https://script.google.com/macros/s/AKfycbycVEjhaisuxRiCO08xdN6w0X92likEHitablkHZcRHAyQ0sV11fKGslnEwWW194U8d/exec',
   bcvRates: {},
   accounts: [],
-  kpis: [],
+  kpis: [
+    {id:'k1',name:'Composición de Cartera',              formula:'a / total_a × 100',       description:'Prima cobrada ramo / Prima cobrada total',          active:true},
+    {id:'k2',name:'Siniestralidad Pagada / Prima Cobrada',formula:'j / a × 100',             description:'Siniestros pagados / Prima cobrada',                active:true},
+    {id:'k3',name:'Siniestralidad Pagada / Prima Devengada',formula:'j / e × 100',           description:'Siniestros pagados / Prima devengada',              active:true},
+    {id:'k4',name:'Siniestralidad Incurrida / Prima Cobrada',formula:'n / a × 100',          description:'Siniestros incurridos / Prima cobrada',             active:true},
+    {id:'k5',name:'Comisiones Adq. / Prima Cobrada',     formula:'f / a × 100',              description:'Comisiones y gastos adq. / Prima cobrada',          active:true},
+    {id:'k6',name:'Gasto Adm. Directo / Prima Cobrada',  formula:'g / a × 100',              description:'Gastos directos adm. / Prima cobrada',              active:true},
+    {id:'k7',name:'Gasto Adm. Prorrateo / Prima Cobrada',formula:'h / a × 100',              description:'Gasto adm. prorrateo / Prima cobrada',              active:true},
+    {id:'k8',name:'Índice Combinado',                     formula:'o / a × 100',              description:'Resultado Técnico Bruto / Prima cobrada',           active:true},
+  ],
   months: [],
   currentFile: null,
   extractedData: null,
@@ -923,23 +932,49 @@ function loadMonthsList(){
 }
 
 function renderAccountsTable(){
-  var tbody=document.getElementById('accounts-tbody');
-  if(!tbody) return;
+  var container=document.getElementById('accounts-body');
+  if(!container) return;
   var all=BUILTIN_ACCOUNTS.concat(STATE.accounts||[]);
-  if(!all.length){ tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--td);padding:20px">No hay cuentas adicionales</td></tr>'; return; }
-  tbody.innerHTML=all.map(function(a){
-    return '<tr><td class="mono">'+(a.code||'')+'</td><td>'+(a.ramo||'')+'</td><td>'+(a.label||'')+'</td><td class="mono">'+(Array.isArray(a.cuentas)?a.cuentas.join(', '):a.cuentas||'')+'</td><td>'+(a.effective_from||'Enero')+'</td><td><span class="badge '+(a.active!==false?'g':'r')+'">'+(a.active!==false?'Activo':'Inactivo')+'</span></td></tr>';
+  if(!all.length){
+    container.innerHTML='<p style="text-align:center;color:var(--td);padding:20px">No hay cuentas configuradas</p>';
+    return;
+  }
+  var html='<div style="overflow-x:auto"><table class="tbl"><thead><tr>'
+    +'<th>Código</th><th>Ramo</th><th>Descripción</th><th>Cuentas</th><th>Desde</th><th>Estado</th>'
+    +'</tr></thead><tbody>';
+  html+=all.map(function(a){
+    return '<tr><td class="mono">'+(a.code||'')+'</td><td>'+(a.ramo||'')+'</td><td>'+(a.label||'')+'</td>'
+      +'<td class="mono" style="font-size:10px">'+(Array.isArray(a.cuentas)?a.cuentas.join('<br>'):a.cuentas||'')+'</td>'
+      +'<td>'+(a.effective_from||'Enero')+'</td>'
+      +'<td><span class="badge '+(a.active!==false?'g':'r')+'">'+(a.active!==false?'Activo':'Inactivo')+'</span></td></tr>';
   }).join('');
+  html+='</tbody></table></div>';
+  container.innerHTML=html;
 }
 
 function renderKpisTable(){
-  var tbody=document.getElementById('kpis-tbody');
-  if(!tbody) return;
+  var container=document.getElementById('kpis-body');
+  if(!container) return;
   var kpis=STATE.kpis||[];
-  if(!kpis.length){ tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--td);padding:20px">No hay KPIs configurados</td></tr>'; return; }
-  tbody.innerHTML=kpis.map(function(k){
-    return '<tr><td class="mono">'+(k.id||'')+'</td><td>'+(k.name||'')+'</td><td class="mono">'+(k.formula||'')+'</td><td>'+(k.description||'')+'</td><td><span class="badge '+(k.active?'g':'r')+'">'+(k.active?'Activo':'Inactivo')+'</span></td></tr>';
+  if(!kpis.length){
+    container.innerHTML='<p style="text-align:center;color:var(--td);padding:20px">No hay KPIs configurados</p>';
+    return;
+  }
+  var html='<div style="overflow-x:auto"><table class="tbl"><thead><tr>'
+    +'<th>#</th><th>Nombre del KPI</th><th>Fórmula</th><th>Descripción</th><th>Estado</th>'
+    +'</tr></thead><tbody>';
+  html+=kpis.filter(function(k){return k.active;}).map(function(k,i){
+    return '<tr>'
+      +'<td class="mono" style="color:var(--td)">'+(i+1)+'</td>'
+      +'<td style="font-weight:600">'+(k.name||'')+'</td>'
+      +'<td class="mono" style="color:var(--p);font-size:11px">'+(k.formula||'')+'</td>'
+      +'<td style="font-size:11px;color:var(--tm)">'+(k.description||'')+'</td>'
+      +'<td><span class="badge g">Activo</span></td>'
+      +'</tr>';
   }).join('');
+  html+='</tbody></table></div>';
+  html+='<p style="font-size:10px;color:var(--td);margin-top:12px;padding:0 4px">⚠️ Los KPIs se calculan sobre datos reales cargados desde el balance de comprobación. Sin datos cargados no se muestran cifras.</p>';
+  container.innerHTML=html;
 }
 
 function renderBcvTable(){
