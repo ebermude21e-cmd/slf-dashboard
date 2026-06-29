@@ -728,6 +728,18 @@ const BUILTIN_ACCOUNTS = [
 var AUTH_API = 'https://script.google.com/macros/s/AKfycbycVEjhaisuxRiCO08xdN6w0X92likEHitablkHZcRHAyQ0sV11fKGslnEwWW194U8d/exec';
 var SESSION_KEY = 'slf_auth_v2';
 
+
+function showTab(name, btn){
+  document.querySelectorAll('.pane').forEach(function(p){ p.classList.remove('on'); });
+  document.querySelectorAll('.nt').forEach(function(b){ b.classList.remove('on'); });
+  var pane = document.getElementById('pane-'+name);
+  if(pane) pane.classList.add('on');
+  if(btn) btn.classList.add('on');
+  if(name==='meses') loadMonthsList();
+  if(name==='cuentas') renderAccountsTable();
+  if(name==='kpis') renderKpisTable();
+}
+
 function showPanel(name){
   ['login','register','reset'].forEach(function(p){
     var el=document.getElementById('panel-'+p);
