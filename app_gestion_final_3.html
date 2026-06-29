@@ -788,19 +788,67 @@ function doLogin(){
   if(!email||!pass){ showErr('login-err','Completa todos los campos.'); return; }
   document.getElementById('login-btn').disabled=true;
   document.getElementById('login-btn').textContent='Verificando...';
-  var LOCAL_CREDS=[{email:'ebermude21e@gmail.com',pass:'LaFe2026',name:'Edwin'},
-                   {email:'admin@seguroslafe.com',pass:'SLF2026admin',name:'Admin'}];
-  var found=LOCAL_CREDS.find(function(c){return c.email===email&&c.pass===pass;});
-  if(found){
-    sessionStorage.setItem(SESSION_KEY,JSON.stringify({email:email,name:found.name,token:'local'}));
+
+  function loginOk(name, tok){
+    sessionStorage.setItem(SESSION_KEY,JSON.stringify({email:email,name:name,token:tok||'local'}));
     document.getElementById('slf-login').style.display='none';
     initApp();
-  } else {
-    showErr('login-err','Credenciales incorrectas.');
-    document.getElementById('login-pass').value='';
   }
-  document.getElementById('login-btn').disabled=false;
-  document.getElementById('login-btn').textContent='Ingresar →';
+  function loginFail(msg){
+    showErr('login-err', msg||'Credenciales incorrectas.');
+    document.getElementById('login-pass').value='';
+    document.getElementById('login-btn').disabled=false;
+    document.getElementById('login-btn').textContent='Ingresar →';
+  }
+
+  // Intentar primero via API JSONP
+  var cbName='gasCb_'+Date.now();
+  var script=document.createElement('script');
+  var done=false;
+  var params='action=login&email='+encodeURIComponent(email)+'&pass='+encodeURIComponent(pass)+'&callback='+cbName;
+
+  window[cbName]=function(r){
+    done=true; delete window[cbName];
+    try{document.body.removeChild(script);}catch(e){}
+    document.getElementById('login-btn').disabled=false;
+    document.getElementById('login-btn').textContent='Ingresar →';
+    if(r&&r.ok){
+      loginOk(r.name, r.token);
+    } else {
+      // Si la API responde con error, mostrar el error del servidor
+      loginFail((r&&r.error)||'Credenciales incorrectas.');
+    }
+  };
+  script.onerror=function(){
+    if(!done){
+      done=true; delete window[cbName];
+      try{document.body.removeChild(script);}catch(e){}
+      // Fallback: credenciales locales de emergencia
+      var LOCAL_CREDS=[
+        {email:'ebermude21e@gmail.com',pass:'LaFe2026',name:'Edwin'},
+        {email:'admin@seguroslafe.com',pass:'SLF2026admin',name:'Admin'}
+      ];
+      var found=LOCAL_CREDS.find(function(c){return c.email===email&&c.pass===pass;});
+      if(found){ loginOk(found.name,'local'); }
+      else { loginFail('Sin conexión al servidor. Solo acceso para administradores.'); }
+    }
+  };
+  setTimeout(function(){
+    if(!done){
+      done=true; delete window[cbName];
+      try{document.body.removeChild(script);}catch(e){}
+      var LOCAL_CREDS=[
+        {email:'ebermude21e@gmail.com',pass:'LaFe2026',name:'Edwin'},
+        {email:'admin@seguroslafe.com',pass:'SLF2026admin',name:'Admin'}
+      ];
+      var found=LOCAL_CREDS.find(function(c){return c.email===email&&c.pass===pass;});
+      if(found){ loginOk(found.name,'local'); }
+      else { loginFail('Tiempo de espera agotado. Verifica tu conexión.'); }
+    }
+  },10000);
+
+  script.src=AUTH_API+'?'+params;
+  document.body.appendChild(script);
 }
 
 function doRegister(){
