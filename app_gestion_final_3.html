@@ -826,7 +826,7 @@ async function doRegister(){
         +'<div style="font-size:32px;margin-bottom:12px">✅</div>'
         +'<div style="font-size:14px;font-weight:700;color:#0D7A4E;margin-bottom:8px">Solicitud enviada</div>'
         +'<div style="font-size:11px;color:#4A4260;margin-bottom:16px">El administrador revisará tu solicitud y recibirás un correo cuando tu cuenta esté activa.</div>'
-        +'<span style="font-size:10px;color:#8A7EAA;cursor:pointer;text-decoration:underline" onclick="showPanel(&quot;login&quot;)">← Volver al inicio</span>'
+        +'<span style="font-size:10px;color:#8A7EAA;cursor:pointer;text-decoration:underline" onclick="showPanel('login')">← Volver al inicio</span>'
         +'</div>';
     } else {
       showErr('reg-err', r.error||'Error al enviar solicitud.');
@@ -852,7 +852,7 @@ async function doReset(){
         +'<div style="font-size:32px;margin-bottom:12px">📧</div>'
         +'<div style="font-size:14px;font-weight:700;color:#0D7A4E;margin-bottom:8px">Correo enviado</div>'
         +'<div style="font-size:11px;color:#4A4260;margin-bottom:16px">Revisa tu bandeja de entrada en <strong>'+email+'</strong>. El enlace expira en 24 horas.</div>'
-        +'<span style="font-size:10px;color:#8A7EAA;cursor:pointer;text-decoration:underline" onclick="showPanel(&quot;login&quot;)">← Volver al inicio</span>'
+        +'<span style="font-size:10px;color:#8A7EAA;cursor:pointer;text-decoration:underline" onclick="showPanel('login')">← Volver al inicio</span>'
         +'</div>';
     } else {
       showErr('reset-err', r.error||'Correo no encontrado en el sistema.');
