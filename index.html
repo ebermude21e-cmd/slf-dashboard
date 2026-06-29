@@ -274,99 +274,85 @@ var KPIS={"Enero":{"vida":{"k1":4.36,"k2":8.46,"k3":8.63,"k4":-8.0,"k5":0.0,"k6"
 var _API_URL='https://script.google.com/macros/s/AKfycbzzkknV0d4-ztp9l-9tPlp22TcoUpXPVNmUTbg8AD1axClEHP-WXJqymlvQhGqtqpqO/exec';
 
 // ── Progress helper ────────────────────────────────────────────────────────
-function ldrSet(pct,msg){
-  var f=document.getElementById('ldr-fill');
-  var m=document.getElementById('ldr-msg');
-  if(f) f.style.width=pct+'%';
-  if(m) m.textContent=msg||'';
-}
-function ldrErr(msg){
-  var e=document.getElementById('ldr-err');
-  var m=document.getElementById('ldr-err-msg');
-  if(e) e.style.display='block';
-  if(m) m.textContent=msg||'Error al cargar datos.';
-  ldrSet(0,'');
-}
-function ldrDone(){
-  var el=document.getElementById('slf-loader');
-  if(el){el.classList.add('fade');setTimeout(function(){el.style.display='none';},600);}
-}
+function ldrSet(pct,msg){try{var f=document.getElementById('ldr-fill');var m=document.getElementById('ldr-msg');if(f)f.style.width=pct+'%';if(m)m.textContent=msg||'';}catch(e){}}
+function ldrErr(msg){try{var e=document.getElementById('ldr-err');var m=document.getElementById('ldr-err-msg');if(e)e.style.display='block';if(m)m.textContent=msg||'Error al cargar datos.';}catch(ex){}ldrSet(0,'');}
+function ldrDone(){try{var el=document.getElementById('slf-loader');if(el){el.classList.add('fade');setTimeout(function(){el.style.display='none';},600);}}catch(e){}}
 
 // ── Build DATA and ACUM from API response ──────────────────────────────────
 function buildFromApi(apiMonths){
   var RAMOS=['vida','fun','ap','rcv'];
   var mesesOrder=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  
-  // Sort months by order
+
+  // Sort months chronologically
   apiMonths.sort(function(a,b){
-    var ai=mesesOrder.indexOf(a.month.split(' ')[0]);
-    var bi=mesesOrder.indexOf(b.month.split(' ')[0]);
+    var ai=mesesOrder.indexOf((a.month||'').split(' ')[0]);
+    var bi=mesesOrder.indexOf((b.month||'').split(' ')[0]);
     return ai-bi;
   });
 
-  DATA={};
-  ACUM={};
-  BCV={};
+  DATA={}; ACUM={}; BCV={};
 
-  // Accumulator for ACUM
-  var acumTotals={a:0,e:0,h:0,i:0,j:0,n:0,o:0,saldo_gen:0};
-  var acumFin={eg02:0,eg04:0,eg06:0,eg07:0,eg09:0,ing01:0,ing03:0,total_eg:0,total_ing:0,saldo_fin:0};
-  var acumRamos={};
-  RAMOS.forEach(function(r){acumRamos[r]={};}); 
+  // Running cumulative totals for ACUM (field by field)
+  var cumTotals={a:0,e:0,h:0,i:0,j:0,n:0,o:0,saldo_gen:0};
+  var cumFin={eg02:0,eg04:0,eg06:0,eg07:0,eg09:0,ing01:0,ing03:0,total_eg:0,total_ing:0,saldo_fin:0};
+  var cumRamos={vida:{},fun:{},ap:{},rcv:{}};
 
   apiMonths.forEach(function(md){
-    var mesNombre=md.month.split(' ')[0];
-    var ramos=md.ramos||{};
-    var totals=md.totals||{};
-    var fin=md.fin||{};
-    var bcv=md.bcv||{};
-    var total_a=md.total_a||0;
+    var mesNombre=(md.month||'').split(' ')[0];
+    var ramos  = md.ramos  || {};
+    var totals = md.totals || {};
+    var fin    = md.fin    || {};
+    var bcv    = md.bcv    || {};
+    var total_a= md.total_a|| 0;
 
-    // Store monthly data
+    // Store monthly movement data
     DATA[mesNombre]={
-      vida: ramos.vida||{},
-      fun:  ramos.fun||{},
-      ap:   ramos.ap||{},
-      rcv:  ramos.rcv||{},
-      totals: totals,
-      fin: fin,
-      h: totals.h||0,
-      bcv: bcv,
-      total_a: total_a,
+      vida:ramos.vida||{}, fun:ramos.fun||{}, ap:ramos.ap||{}, rcv:ramos.rcv||{},
+      totals:totals, fin:fin, h:totals.h||0, bcv:bcv, total_a:total_a,
     };
-
-    // Store BCV
     BCV[mesNombre]=bcv;
 
-    // Accumulate for ACUM
-    Object.keys(acumTotals).forEach(function(k){
-      acumTotals[k]=(acumTotals[k]||0)+(totals[k]||0);
+    // Use acum_totals from Sheets if available (pre-computed correct values)
+    // Otherwise compute cumulatively
+    var acumT;
+    if(md.acum_totals && typeof md.acum_totals==='object'){
+      acumT = md.acum_totals;
+    } else {
+      // Accumulate totals
+      Object.keys(cumTotals).forEach(function(k){
+        cumTotals[k]=(cumTotals[k]||0)+(totals[k]||0);
+      });
+      acumT = JSON.parse(JSON.stringify(cumTotals));
+    }
+
+    // Accumulate fin
+    Object.keys(cumFin).forEach(function(k){
+      cumFin[k]=(cumFin[k]||0)+(fin[k]||0);
     });
-    Object.keys(acumFin).forEach(function(k){
-      acumFin[k]=(acumFin[k]||0)+(fin[k]||0);
-    });
+
+    // Accumulate ramos
     RAMOS.forEach(function(r){
       var rd=ramos[r]||{};
+      if(!cumRamos[r]) cumRamos[r]={};
       Object.keys(rd).forEach(function(k){
         if(typeof rd[k]==='number'){
-          if(!acumRamos[r][k]) acumRamos[r][k]=0;
-          acumRamos[r][k]+=rd[k];
+          cumRamos[r][k]=(cumRamos[r][k]||0)+rd[k];
         }
       });
     });
 
-    // Store ACUM snapshot at this month
+    // Store ACUM snapshot
     ACUM[mesNombre]={
-      vida: Object.assign({},acumRamos.vida),
-      fun:  Object.assign({},acumRamos.fun),
-      ap:   Object.assign({},acumRamos.ap),
-      rcv:  Object.assign({},acumRamos.rcv),
-      totals: Object.assign({},acumTotals),
-      fin: Object.assign({},acumFin),
+      vida:JSON.parse(JSON.stringify(cumRamos.vida||{})),
+      fun: JSON.parse(JSON.stringify(cumRamos.fun||{})),
+      ap:  JSON.parse(JSON.stringify(cumRamos.ap||{})),
+      rcv: JSON.parse(JSON.stringify(cumRamos.rcv||{})),
+      totals: acumT,
+      fin: JSON.parse(JSON.stringify(cumFin)),
     };
   });
 
-  // Recalculate KPIS from loaded data
+  // Recalculate KPIS
   var loadedMeses=Object.keys(DATA);
   KPIS={};
   loadedMeses.forEach(function(m){
@@ -377,14 +363,14 @@ function buildFromApi(apiMonths){
       var rd=dm[r]||{};
       var a=rd.a||0,e=rd.e||0,f=rd.f||0,g=rd.g||0,h=rd.h||0,j=rd.j||0,n=rd.n||0,o=rd.o||0;
       KPIS[m][r]={
-        k1: a?Math.round(a/total_a*10000)/100:0,
-        k2: a?Math.round(j/a*10000)/100:0,
-        k3: e?Math.round(j/e*10000)/100:0,
-        k4: a?Math.round(n/a*10000)/100:0,
-        k5: a?Math.round(f/a*10000)/100:0,
-        k6: a?Math.round(g/a*10000)/100:0,
-        k7: a?Math.round(h/a*10000)/100:0,
-        k8: a?Math.round(o/a*10000)/100:0,
+        k1:a?Math.round(a/total_a*10000)/100:0,
+        k2:a?Math.round(j/a*10000)/100:0,
+        k3:e?Math.round(j/e*10000)/100:0,
+        k4:a?Math.round(n/a*10000)/100:0,
+        k5:a?Math.round(f/a*10000)/100:0,
+        k6:a?Math.round(g/a*10000)/100:0,
+        k7:a?Math.round(h/a*10000)/100:0,
+        k8:a?Math.round(o/a*10000)/100:0,
       };
     });
   });
@@ -394,7 +380,7 @@ function buildFromApi(apiMonths){
 
 // ── Main init function ─────────────────────────────────────────────────────
 async function initDashboard(){
-  var ldrErrEl=document.getElementById('ldr-err'); if(ldrErrEl) ldrErrEl.style.display='none';
+  try{var ldrErrEl=document.getElementById('ldr-err'); if(ldrErrEl) ldrErrEl.style.display='none';}catch(e){}
   ldrSet(10,'Conectando con Google Sheets...');
   
   try{
