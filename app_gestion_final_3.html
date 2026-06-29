@@ -1361,15 +1361,16 @@ function addBcvRow(){
   var tbody=document.getElementById('bcv-tbody');
   var mes=prompt('Mes (ej: Enero 2026):','');
   if(!mes) return;
+  var m=mes.replace(/'/g,"\\'");
   var tr=document.createElement('tr');
   tr.innerHTML='<td>'+mes+'</td>'
-    +'<td class="r"><input type="number" step="0.01" style="width:80px;text-align:right" onchange="updateBcv(''+mes+'','ask',this.value)"></td>'
-    +'<td class="r"><input type="number" style="width:50px;text-align:right" onchange="updateBcv(''+mes+'','dias',this.value)"></td>'
-    +'<td class="r"><input type="number" step="0.01" style="width:80px;text-align:right" onchange="updateBcv(''+mes+'','min',this.value)"></td>'
-    +'<td class="r"><input type="number" step="0.01" style="width:80px;text-align:right" onchange="updateBcv(''+mes+'','max',this.value)"></td>'
-    +'<td class="r"><input type="number" step="0.01" style="width:80px;text-align:right" onchange="updateBcv(''+mes+'','usdt',this.value)"></td>'
-    +'<td class="r"><input type="number" step="0.01" style="width:70px;text-align:right" onchange="updateBcv(''+mes+'','express',this.value)"></td>'
-    +'<td class="r"><input type="number" step="0.01" style="width:60px;text-align:right" onchange="updateBcv(''+mes+'','spread',this.value)"></td>'
+    +'<td class="r"><input type="number" step="0.01" style="width:80px;text-align:right" onchange="updateBcv(&quot;'+m+'&quot;,&quot;ask&quot;,this.value)"></td>'
+    +'<td class="r"><input type="number" style="width:50px;text-align:right" onchange="updateBcv(&quot;'+m+'&quot;,&quot;dias&quot;,this.value)"></td>'
+    +'<td class="r"><input type="number" step="0.01" style="width:80px;text-align:right" onchange="updateBcv(&quot;'+m+'&quot;,&quot;min&quot;,this.value)"></td>'
+    +'<td class="r"><input type="number" step="0.01" style="width:80px;text-align:right" onchange="updateBcv(&quot;'+m+'&quot;,&quot;max&quot;,this.value)"></td>'
+    +'<td class="r"><input type="number" step="0.01" style="width:80px;text-align:right" onchange="updateBcv(&quot;'+m+'&quot;,&quot;usdt&quot;,this.value)"></td>'
+    +'<td class="r"><input type="number" step="0.01" style="width:70px;text-align:right" onchange="updateBcv(&quot;'+m+'&quot;,&quot;express&quot;,this.value)"></td>'
+    +'<td class="r"><input type="number" step="0.01" style="width:60px;text-align:right" onchange="updateBcv(&quot;'+m+'&quot;,&quot;spread&quot;,this.value)"></td>'
     +'<td><button class="btn btn-danger" style="font-size:9px;padding:2px 7px" onclick="this.closest('tr').remove()">✕</button></td>';
   tbody.appendChild(tr);
 }
