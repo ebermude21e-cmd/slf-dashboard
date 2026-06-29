@@ -886,11 +886,21 @@ function initApp(){
     }
   }
   loadConfig();
-  checkApiStatus();
+  // Cargar datos persistidos en localStorage
+  try{ var sm=localStorage.getItem('slf_months'); if(sm) STATE.months=JSON.parse(sm); }catch(e){}
+  try{ var sk=localStorage.getItem('slf_kpis'); if(sk){ var kp=JSON.parse(sk); if(kp&&kp.length) STATE.kpis=kp; } }catch(e){}
+  try{ var sa=localStorage.getItem('slf_accounts'); if(sa){ var ac=JSON.parse(sa); if(ac&&ac.length) STATE.accounts=ac; } }catch(e){}
+  // Renderizar con datos locales primero
   renderAccountsTable();
   renderKpisTable();
   loadMonthsList();
   renderBcvTable();
+  // Sincronizar con API
+  checkApiStatus();
+}
+
+function persistMonths(){
+  try{ localStorage.setItem('slf_months', JSON.stringify(STATE.months)); }catch(e){}
 }
 
 window.addEventListener('load', function(){
@@ -1297,6 +1307,7 @@ function confirmUpload(){
   var record={month:d.month, year:d.year, loaded_at:new Date().toISOString(), ramos:d.ramos, total_a:d.total_a};
   var idx=STATE.months.findIndex(function(m){return m.month===d.month;});
   if(idx>=0) STATE.months[idx]=record; else STATE.months.push(record);
+  persistMonths();
   
   // Try to save to GAS
   try{
