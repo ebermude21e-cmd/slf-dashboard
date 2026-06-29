@@ -950,11 +950,96 @@ function loadMonthsList(){
   grid.innerHTML='';
   MESES.forEach(function(mes){
     var loaded=!!loadedMap[mes];
+    var md=loadedMap[mes];
     var card=document.createElement('div');
     card.className='month-card '+(loaded?'loaded':'empty');
-    card.innerHTML='<div class="mc-name">'+mes+'</div><div class="mc-status">'+(loaded?'✅ Cargado':'Sin datos')+'</div>';
+    var totalA=loaded&&md.ramos?(
+      (md.ramos.vida?md.ramos.vida.a||0:0)+
+      (md.ramos.fun?md.ramos.fun.a||0:0)+
+      (md.ramos.ap?md.ramos.ap.a||0:0)+
+      (md.ramos.rcv?md.ramos.rcv.a||0:0)
+    ):0;
+    var saldo=loaded&&md.totals?md.totals.saldo_gen||0:0;
+    var sPos=saldo>=0;
+    card.innerHTML='<div class="mc-name">'+mes+'</div>'
+      +'<div class="mc-status">'+(loaded?'✅ Cargado':'Sin datos')+'</div>'
+      +(loaded?'<div style="font-size:9px;color:var(--td);margin-top:3px">Prima: Bs.'+totalA.toLocaleString('es-VE',{maximumFractionDigits:0})+'</div>'
+        +'<div style="font-size:9px;font-weight:700;margin-top:1px;color:'+(sPos?'var(--g)':'var(--r)')+'">Saldo: '+(sPos?'Bs. ':'(Bs. ')+Math.abs(saldo).toLocaleString('es-VE',{maximumFractionDigits:0})+(sPos?'':')')+'</div>':'');
+    if(loaded) card.style.cursor='pointer';
+    if(loaded) card.onclick=(function(m,d){return function(){showMonthDetail(m,d);};})(mes,md);
     grid.appendChild(card);
   });
+}
+
+function showMonthDetail(mes, md){
+  if(!md) return;
+  var AC=md.bcv?md.bcv.avg||1:1;
+  var t=md.totals||{};
+  var f=md.fin||{};
+  var r=md.ramos||{};
+  var saldo=t.saldo_gen||0;
+  var sPos=saldo>=0;
+  function fmt(v){
+    var abs=Math.abs(v);
+    var s=abs.toLocaleString('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2});
+    return v<0?'(Bs. '+s+')':'Bs. '+s;
+  }
+  var RLBL={vida:'Vida',fun:'Funerario',ap:'Acc. Personales',rcv:'RC Vehículos'};
+  var RCLR={vida:'#4B2D8F',fun:'#0D7A4E',ap:'#B07A00',rcv:'#8B1A1A'};
+  var ramoCards=['vida','fun','ap','rcv'].map(function(ramo){
+    var rd=r[ramo]||{};
+    var o=rd.o||0;
+    return '<div style="background:'+RCLR[ramo]+'15;border:1px solid '+RCLR[ramo]+'40;border-radius:8px;padding:10px">'
+      +'<div style="font-size:9px;font-weight:700;color:'+RCLR[ramo]+';text-transform:uppercase;margin-bottom:4px">'+RLBL[ramo]+'</div>'
+      +'<div style="font-size:12px;font-weight:700;color:'+(o>=0?'var(--g)':'var(--r)')+'">'+fmt(o)+'</div>'
+      +'<div style="font-size:9px;color:var(--td);margin-top:2px">Prima: Bs. '+(rd.a||0).toLocaleString('es-VE',{maximumFractionDigits:0})+'</div>'
+      +'</div>';
+  }).join('');
+  var rows=[
+    ['Prima Cobrada (a)',t.a||0,false],
+    ['Prima Devengada (e)',t.e||0,false],
+    ['Siniestros Incurridos (n)',t.n||0,true],
+    ['Gasto Adm. Prorrateo (h)',t.h||0,true],
+    ['Total Com. y Gastos (i)',t.i||0,true],
+  ];
+  var tbody=rows.map(function(row,i){
+    var v=row[1];
+    var neg=row[2];
+    return '<tr style="background:'+(i%2===0?'var(--s2)':'var(--s)')+'">'
+      +'<td style="padding:5px 10px">'+row[0]+'</td>'
+      +'<td style="padding:5px 10px;text-align:right;color:'+(neg?'var(--r)':'var(--tx)')+'">'+fmt(v)+'</td></tr>';
+  }).join('');
+  var html='<div style="padding:16px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
+    +'<h3 style="font-size:15px;font-weight:700;color:var(--ink2)">'+mes+' 2026</h3>'
+    +'<button onclick="document.getElementById('month-detail-modal').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--td)">✕</button>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+ramoCards+'</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px"><tbody>'+tbody+'</tbody></table>'
+    +'<div style="background:var(--ink2);border-radius:8px;padding:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+    +'<span style="color:#fff;font-weight:700">Resultado Técnico (o)</span>'
+    +'<span style="font-weight:700;color:'+(t.o>=0?'#8AEFB8':'#FF9999')+'">'+fmt(t.o||0)+'</span>'
+    +'</div>'
+    +'<div style="background:var(--s2);border-radius:8px;padding:10px;display:flex;justify-content:space-between;margin-bottom:8px">'
+    +'<span style="color:var(--tm)">Saldo Financiero</span>'
+    +'<span style="color:'+(f.saldo_fin>=0?'var(--g)':'var(--r)')+'">'+fmt(f.saldo_fin||0)+'</span>'
+    +'</div>'
+    +'<div style="background:'+(sPos?'var(--g)':'var(--r)')+';border-radius:8px;padding:12px;display:flex;justify-content:space-between;align-items:center">'
+    +'<span style="color:#fff;font-weight:700;font-size:13px">SALDO GENERAL</span>'
+    +'<span style="color:#fff;font-weight:700;font-size:14px">'+fmt(saldo)+'</span>'
+    +'</div>'
+    +'<div style="font-size:9px;color:var(--td);margin-top:8px">BCV Promedio: Bs.'+(AC.toFixed?AC.toFixed(4):AC)+' · '+mes+' 2026</div>'
+    +'</div>';
+  var modal=document.getElementById('month-detail-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='month-detail-modal';
+    modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+    modal.onclick=function(e){if(e.target===modal)modal.style.display='none';};
+    document.body.appendChild(modal);
+  }
+  modal.style.display='flex';
+  modal.innerHTML='<div style="background:#fff;border-radius:12px;max-width:560px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">'+html+'</div>';
 }
 
 function renderAccountsTable(){
