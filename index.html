@@ -378,53 +378,97 @@ function buildFromApi(apiMonths){
   return loadedMeses;
 }
 
+// ── JSONP helper ───────────────────────────────────────────────────────────
+function gasGet(params, onSuccess, onError){
+  var cbName='gasCb_'+Date.now();
+  var url=_API_URL+'?'+Object.keys(params).map(function(k){
+    return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);
+  }).join('&')+'&callback='+cbName;
+  var done=false;
+  var script=document.createElement('script');
+  window[cbName]=function(data){
+    done=true; delete window[cbName];
+    try{document.body.removeChild(script);}catch(e){}
+    onSuccess(data);
+  };
+  script.onerror=function(){
+    if(!done){done=true;delete window[cbName];try{document.body.removeChild(script);}catch(e){}onError(new Error('Script error'));}
+  };
+  setTimeout(function(){
+    if(!done){done=true;delete window[cbName];try{document.body.removeChild(script);}catch(e){}onError(new Error('Timeout'));}
+  },10000);
+  script.src=url;
+  document.body.appendChild(script);
+}
+
 // ── Main init function ─────────────────────────────────────────────────────
-async function initDashboard(){
-  try{var ldrErrEl=document.getElementById('ldr-err'); if(ldrErrEl) ldrErrEl.style.display='none';}catch(e){}
+function initDashboard(){
+  try{var ldrErrEl=document.getElementById('ldr-err');if(ldrErrEl)ldrErrEl.style.display='none';}catch(e){}
   ldrSet(10,'Conectando con Google Sheets...');
-  
-  try{
-    ldrSet(30,'Obteniendo datos...');
-    var resp=await fetch(_API_URL+'?action=all');
-    if(!resp.ok) throw new Error('HTTP '+resp.status);
-    
-    ldrSet(60,'Procesando datos...');
-    var json=await resp.json();
-    
-    if(!json.ok && json.ok!==undefined) throw new Error(json.error||'Error del servidor');
-    
-    var months=json.months||json.data||[];
-    if(!months.length) throw new Error('No hay datos disponibles en Google Sheets');
-    
+
+  var mesesOrder=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  // Intentar caché local primero
+  var cached=null;
+  try{var ls=localStorage.getItem('slf_dashboard_months');if(ls)cached=JSON.parse(ls);}catch(e){}
+
+  function finalize(months, fromCache){
+    if(!months||!months.length){ usarDatosEstaticos(); return; }
     ldrSet(80,'Construyendo dashboard...');
     var loadedMeses=buildFromApi(months);
-    
     ldrSet(95,'Renderizando...');
-    
-    // Update PAIRS based on loaded months
-    var mesesOrder=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
     loadedMeses.sort(function(a,b){return mesesOrder.indexOf(a)-mesesOrder.indexOf(b);});
-    
     PAIRS=[];
-    for(var i=loadedMeses.length-1;i>=1;i--){
-      PAIRS.push({cur:loadedMeses[i],prev:loadedMeses[i-1]});
-    }
-    if(!PAIRS.length && loadedMeses.length===1){
-      PAIRS=[{cur:loadedMeses[0],prev:loadedMeses[0]}];
-    }
+    for(var i=loadedMeses.length-1;i>=1;i--){ PAIRS.push({cur:loadedMeses[i],prev:loadedMeses[i-1]}); }
+    if(!PAIRS.length&&loadedMeses.length===1){ PAIRS=[{cur:loadedMeses[0],prev:loadedMeses[0]}]; }
     MESES=loadedMeses;
-    
     setTimeout(function(){
-      ldrSet(100,'¡Listo!');
-      buildNav();
-      if(PAIRS.length) chips(PAIRS[0]);
-      renderCmp();
-      ldrDone();
+      ldrSet(100,'Listo!'+(fromCache?' (caché local)':''));
+      buildNav(); if(PAIRS.length)chips(PAIRS[0]); renderCmp(); ldrDone();
     },200);
-    
-  } catch(err){
-    ldrErr('Error al cargar: '+err.message+'. Verifica tu conexión a internet.');
   }
+
+  function usarDatosEstaticos(){
+    // Usar los datos BCV, DATA, ACUM, KPIS ya embebidos en el archivo
+    ldrSet(90,'Cargando datos del sistema...');
+    PAIRS=[
+      {cur:'Mayo',prev:'Abril'},
+      {cur:'Abril',prev:'Marzo'},
+      {cur:'Marzo',prev:'Febrero'},
+      {cur:'Febrero',prev:'Enero'}
+    ];
+    MESES=['Enero','Febrero','Marzo','Abril','Mayo'];
+    setTimeout(function(){
+      ldrSet(100,'Listo!');
+      buildNav(); if(PAIRS.length)chips(PAIRS[0]); renderCmp(); ldrDone();
+    },200);
+  }
+
+  // Si hay caché: renderizar inmediatamente y actualizar en background
+  if(cached&&cached.length){
+    ldrSet(50,'Cargando datos locales...');
+    finalize(cached, true);
+    gasGet({action:'all'}, function(json){
+      var m=json.data||json.months||[];
+      if(m.length) try{localStorage.setItem('slf_dashboard_months',JSON.stringify(m));}catch(e){}
+    }, function(){});
+    return;
+  }
+
+  // Sin caché: intentar API via JSONP
+  ldrSet(30,'Obteniendo datos...');
+  gasGet({action:'all'},
+    function(json){
+      var months=json.data||json.months||[];
+      if(months.length) try{localStorage.setItem('slf_dashboard_months',JSON.stringify(months));}catch(e){}
+      ldrSet(60,'Procesando...');
+      finalize(months, false);
+    },
+    function(err){
+      // API no disponible: usar datos estáticos embebidos
+      usarDatosEstaticos();
+    }
+  );
 }
 var PAIRS=[];var MESES=['Enero','Febrero','Marzo','Abril','Mayo'];
 var RAMOS=['vida','fun','ap','rcv'];
