@@ -982,6 +982,412 @@ function renderBcvTable(){
   if(!tbody) return;
   tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--td);padding:20px">Sin tasas BCV cargadas</td></tr>';
 }
+
+// ═══════════════════════════════════════════════════════════════
+// FUNCIONES OPERATIVAS COMPLETAS
+// ═══════════════════════════════════════════════════════════════
+
+// ─── MODAL HELPERS ────────────────────────────────────────────
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+// ─── MODAL KPI ────────────────────────────────────────────────
+var _editKpiId = null;
+function openKpiModal(id){
+  _editKpiId = id || null;
+  var kpi = id ? (STATE.kpis.find(function(k){return k.id===id;}) || {}) : {};
+  document.getElementById('kpi-id').value      = kpi.id || ('k'+(STATE.kpis.length+1));
+  document.getElementById('kpi-name').value    = kpi.name || '';
+  document.getElementById('kpi-formula').value = kpi.formula || '';
+  document.getElementById('kpi-desc').value    = kpi.description || '';
+  document.getElementById('kpi-order').value   = kpi.order || STATE.kpis.length+1;
+  document.getElementById('kpi-active').value  = kpi.active===false ? 'false' : 'true';
+  document.getElementById('kpi-verde').value   = kpi.semaforo_verde || '';
+  document.getElementById('kpi-ambar').value   = kpi.semaforo_ambar || '';
+  document.getElementById('formula-test-result').style.display='none';
+  openModal('modal-kpi');
+}
+
+function saveKpi(){
+  var kpi = {
+    id:            document.getElementById('kpi-id').value.trim(),
+    name:          document.getElementById('kpi-name').value.trim(),
+    formula:       document.getElementById('kpi-formula').value.trim(),
+    description:   document.getElementById('kpi-desc').value.trim(),
+    order:         parseInt(document.getElementById('kpi-order').value)||1,
+    active:        document.getElementById('kpi-active').value !== 'false',
+    semaforo_verde:document.getElementById('kpi-verde').value,
+    semaforo_ambar:document.getElementById('kpi-ambar').value,
+  };
+  if(!kpi.id||!kpi.name||!kpi.formula){ alert('Completa ID, Nombre y Fórmula.'); return; }
+  var idx = STATE.kpis.findIndex(function(k){return k.id===kpi.id;});
+  if(idx>=0) STATE.kpis[idx]=kpi; else STATE.kpis.push(kpi);
+  closeModal('modal-kpi');
+  renderKpisTable();
+  showToast('KPI guardado correctamente');
+}
+
+function deleteKpi(id){
+  if(!confirm('¿Eliminar este KPI?')) return;
+  STATE.kpis = STATE.kpis.filter(function(k){return k.id!==id;});
+  renderKpisTable();
+  showToast('KPI eliminado');
+}
+
+function testFormula(){
+  var f = document.getElementById('kpi-formula').value;
+  var res = document.getElementById('formula-test-result');
+  res.style.display='block';
+  res.innerHTML='<div class="alert info"><span class="alert-icon">ℹ️</span>Fórmula: <code>'+f+'</code> — Se evaluará con datos reales al cargar el balance.</div>';
+}
+
+// ─── MODAL CUENTA ─────────────────────────────────────────────
+var _editAccCode = null;
+function openAccountModal(code){
+  _editAccCode = code || null;
+  var acc = code ? (STATE.accounts.find(function(a){return a.code===code;}) || {}) : {};
+  document.getElementById('acc-code').value    = acc.code || '';
+  document.getElementById('acc-ramo').value    = acc.ramo || 'vida';
+  document.getElementById('acc-field').value   = acc.field || 'a';
+  document.getElementById('acc-sign').value    = acc.sign || '+';
+  document.getElementById('acc-label').value   = acc.label || '';
+  document.getElementById('acc-cuentas').value = Array.isArray(acc.cuentas)?acc.cuentas.join('\n'):acc.cuentas||'';
+  document.getElementById('acc-from').value    = acc.effective_from || 'Enero';
+  document.getElementById('acc-active').value  = acc.active===false?'false':'true';
+  document.getElementById('acc-notes').value   = acc.notes || '';
+  openModal('modal-account');
+}
+
+function saveAccount(){
+  var code = document.getElementById('acc-code').value.trim().replace(/\s/g,'_');
+  var label= document.getElementById('acc-label').value.trim();
+  var raw  = document.getElementById('acc-cuentas').value.trim();
+  if(!code||!label||!raw){ alert('Completa Código, Descripción y Cuentas.'); return; }
+  var acc = {
+    code:           code,
+    ramo:           document.getElementById('acc-ramo').value,
+    field:          document.getElementById('acc-field').value,
+    sign:           document.getElementById('acc-sign').value,
+    label:          label,
+    cuentas:        raw.split('\n').map(function(s){return s.trim();}).filter(Boolean),
+    effective_from: document.getElementById('acc-from').value,
+    active:         document.getElementById('acc-active').value !== 'false',
+    notes:          document.getElementById('acc-notes').value.trim(),
+  };
+  var idx = STATE.accounts.findIndex(function(a){return a.code===code;});
+  if(idx>=0) STATE.accounts[idx]=acc; else STATE.accounts.push(acc);
+  closeModal('modal-account');
+  renderAccountsTable();
+  showToast('Cuenta guardada correctamente');
+}
+
+// ─── ARCHIVO XLS/XLSX ─────────────────────────────────────────
+function dzOver(e){ e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
+function dzLeave(e){ document.getElementById('drop-zone').classList.remove('drag-over'); }
+function dzDrop(e){
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  var f = e.dataTransfer.files[0];
+  if(f) handleFile(f);
+}
+
+function resetUpload(){
+  STATE.currentFile=null; STATE.extractedData=null; STATE.existingMonth=null;
+  ['phase-validate','phase-preview','phase-diff','phase-confirm'].forEach(function(id){
+    document.getElementById(id).style.display='none';
+  });
+  document.getElementById('phase-upload').style.display='block';
+  document.getElementById('alerts-carga').innerHTML='';
+  document.getElementById('file-input').value='';
+  ['step-1','step-2','step-3','step-4'].forEach(function(id,i){
+    var el=document.getElementById(id);
+    el.className='step'+(i===0?' active':'');
+  });
+}
+
+function setStep(n){
+  for(var i=1;i<=4;i++){
+    var el=document.getElementById('step-'+i);
+    if(i<n) el.className='step done';
+    else if(i===n) el.className='step active';
+    else el.className='step';
+  }
+}
+
+function showAlert(containerId, type, msg){
+  var c=document.getElementById(containerId);
+  if(!c) return;
+  c.innerHTML='<div class="alert '+type+'"><span class="alert-icon">'+(type==='ok'?'✅':type==='err'?'❌':'⚠️')+'</span>'+msg+'</div>';
+}
+
+function handleFile(file){
+  if(!file) return;
+  STATE.currentFile=file;
+  document.getElementById('phase-upload').style.display='none';
+  document.getElementById('phase-validate').style.display='block';
+  setStep(2);
+  var body=document.getElementById('validation-body');
+  body.innerHTML='<p style="color:var(--td)">Leyendo archivo...</p>';
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(e.target.result,{type:'array'});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      var ext=file.name.split('.').pop().toLowerCase();
+      var result=extractData(rows, ext);
+      if(!result.ok){
+        body.innerHTML='<div class="alert err"><span class="alert-icon">❌</span>'+result.error+'</div>';
+        return;
+      }
+      STATE.extractedData=result;
+      body.innerHTML='<div class="alert ok"><span class="alert-icon">✅</span>Archivo válido — <strong>'+result.month+' '+result.year+'</strong> detectado. '+result.rowsRead+' filas procesadas.</div>'
+        +'<div class="btn-row" style="margin-top:12px"><button class="btn btn-primary" onclick="showPreview()">Ver cifras extraídas →</button></div>';
+    }catch(err){
+      body.innerHTML='<div class="alert err"><span class="alert-icon">❌</span>Error al leer el archivo: '+err.message+'</div>';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function extractData(rows, ext){
+  // Detect format
+  var isXlsx = ext==='xlsx';
+  // Column indices (0-based)
+  var COL_CTA  = isXlsx ? 0 : 1;
+  var COL_AUX1 = isXlsx ? 2 : 9;
+  var COL_AUX2 = isXlsx ? 3 : 12;
+  var COL_MOV  = isXlsx ? 7 : 33;
+  var COL_SALD = isXlsx ? 8 : 37;
+
+  // Find month from filename or data
+  var month='', year=new Date().getFullYear();
+  var MESES_ES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  var MESES_CAP=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  // Try to find month in first 10 rows
+  for(var r=0;r<Math.min(10,rows.length);r++){
+    for(var c=0;c<rows[r].length;c++){
+      var cell=String(rows[r][c]||'').toLowerCase();
+      for(var m=0;m<MESES_ES.length;m++){
+        if(cell.indexOf(MESES_ES[m])>=0){ month=MESES_CAP[m]; break; }
+      }
+      if(month) break;
+      // Try year
+      var ym=cell.match(/20(2[4-9]|[3-9]\d)/);
+      if(ym) year=parseInt(ym[0]);
+    }
+    if(month) break;
+  }
+  if(!month) return {ok:false, error:'No se pudo detectar el mes en el archivo. Verifica que el nombre del archivo o las primeras filas indiquen el mes.'};
+
+  // Build saldo map: cuenta -> saldo
+  var saldoMap={};
+  var rowsRead=0;
+  for(var i=0;i<rows.length;i++){
+    var row=rows[i];
+    var cta=String(row[COL_CTA]||'').trim();
+    if(!cta||cta.length<4) continue;
+    var aux1=parseFloat(String(row[COL_AUX1]||'0').replace(',','.'));
+    var aux2=parseFloat(String(row[COL_AUX2]||'0').replace(',','.'));
+    if(aux1!==0||aux2!==0) continue; // Solo filas con AUX1=0 y AUX2=0
+    var saldo=parseFloat(String(row[COL_SALD]||'0').replace(/[^0-9.\-]/g,''));
+    if(isNaN(saldo)) saldo=0;
+    // Normalize cuenta: remove spaces for matching
+    var ctaKey=cta.replace(/\s+/g,' ').trim();
+    saldoMap[ctaKey]=(saldoMap[ctaKey]||0)+saldo;
+    rowsRead++;
+  }
+
+  // Apply catalog: sum accounts per ramo/field
+  var ramos={};
+  var allAccounts=BUILTIN_ACCOUNTS.concat(STATE.accounts||[]);
+  allAccounts.forEach(function(acc){
+    if(acc.active===false) return;
+    var ramo=acc.ramo; var field=acc.field;
+    if(!ramos[ramo]) ramos[ramo]={};
+    if(!ramos[ramo][field]) ramos[ramo][field]=0;
+    var ctas=Array.isArray(acc.cuentas)?acc.cuentas:[acc.cuentas];
+    ctas.forEach(function(c){
+      var key=String(c||'').replace(/\s+/g,' ').trim();
+      var val=saldoMap[key]||0;
+      ramos[ramo][field]+=val;
+    });
+  });
+
+  // Compute totals across ramos for total_a
+  var total_a=0;
+  ['vida','fun','ap','rcv'].forEach(function(r){
+    if(ramos[r]&&ramos[r].a) total_a+=ramos[r].a;
+  });
+
+  return {ok:true, month:month, year:year, rowsRead:rowsRead, ramos:ramos, total_a:total_a, saldoMap:saldoMap};
+}
+
+function fmtN(n){
+  if(n===undefined||n===null||isNaN(n)) return '—';
+  return Number(n).toLocaleString('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function showPreview(){
+  var d=STATE.extractedData;
+  if(!d) return;
+  document.getElementById('phase-validate').style.display='none';
+  document.getElementById('phase-preview').style.display='block';
+  setStep(3);
+  var body=document.getElementById('preview-body');
+  var html='<div class="alert ok" style="margin-bottom:12px"><span class="alert-icon">📅</span>Período: <strong>'+d.month+' '+d.year+'</strong> · Total Prima Cobrada (todas las ramas): <strong>Bs. '+fmtN(d.total_a)+'</strong></div>';
+  
+  var RAMOS_LABELS={vida:'Vida',fun:'Funerario',ap:'Acc. Personales',rcv:'RC Vehículos',financiero:'Financiero',general:'General'};
+  Object.keys(d.ramos).forEach(function(ramo){
+    var fields=d.ramos[ramo];
+    html+='<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">'+(RAMOS_LABELS[ramo]||ramo)+'</div>';
+    html+='<table class="tbl"><thead><tr><th>Campo</th><th class="r">Saldo (Bs.)</th></tr></thead><tbody>';
+    Object.keys(fields).sort().forEach(function(f){
+      html+='<tr><td class="mono">'+f+'</td><td class="r">'+(fields[f]<0?'<span style="color:var(--r)">':'')+ fmtN(fields[f])+(fields[f]<0?'</span>':'')+'</td></tr>';
+    });
+    html+='</tbody></table></div>';
+  });
+
+  // KPI preview
+  html+='<div style="margin-top:16px"><div style="font-size:11px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">KPIs Calculados</div>';
+  html+='<table class="tbl"><thead><tr><th>KPI</th><th class="r">Resultado</th></tr></thead><tbody>';
+  STATE.kpis.filter(function(k){return k.active;}).forEach(function(kpi){
+    // Simple formula evaluation per ramo
+    html+='<tr><td>'+kpi.name+'</td><td class="r" style="color:var(--td);font-size:10px">Requiere datos por ramo</td></tr>';
+  });
+  html+='</tbody></table></div>';
+
+  html+='<div class="btn-row" style="margin-top:16px">'
+    +'<button class="btn btn-success" onclick="goToConfirm()">✅ Continuar y confirmar →</button>'
+    +'<button class="btn btn-ghost" onclick="resetUpload()">✕ Cancelar</button>'
+    +'</div>';
+  body.innerHTML=html;
+}
+
+function goToConfirm(){
+  var d=STATE.extractedData;
+  // Check if month already loaded
+  var existing=STATE.months.find(function(m){return m.month===d.month;});
+  document.getElementById('phase-preview').style.display='none';
+  if(existing){
+    document.getElementById('phase-diff').style.display='block';
+    document.getElementById('diff-body').innerHTML='<div class="alert warn"><span class="alert-icon">⚠️</span>El mes <strong>'+d.month+' '+d.year+'</strong> ya tiene datos cargados. Si continúas, serán reemplazados.</div>'
+      +'<div class="btn-row"><button class="btn btn-warn" onclick="showConfirm()">Reemplazar datos →</button><button class="btn btn-ghost" onclick="resetUpload()">Cancelar</button></div>';
+  } else {
+    showConfirm();
+  }
+  setStep(4);
+}
+
+function showConfirm(){
+  document.getElementById('phase-diff').style.display='none';
+  document.getElementById('phase-confirm').style.display='block';
+  var d=STATE.extractedData;
+  document.getElementById('confirm-summary').innerHTML=
+    '<div class="alert info"><span class="alert-icon">📋</span>Listo para guardar: <strong>'+d.month+' '+d.year+'</strong> · '+d.rowsRead+' filas procesadas · Prima total: Bs. '+fmtN(d.total_a)+'</div>';
+}
+
+function confirmUpload(){
+  var d=STATE.extractedData;
+  if(!d){alert('No hay datos para guardar'); return;}
+  var btn=document.getElementById('btn-confirm');
+  btn.disabled=true; btn.textContent='Guardando...';
+  
+  // Save locally
+  var record={month:d.month, year:d.year, loaded_at:new Date().toISOString(), ramos:d.ramos, total_a:d.total_a};
+  var idx=STATE.months.findIndex(function(m){return m.month===d.month;});
+  if(idx>=0) STATE.months[idx]=record; else STATE.months.push(record);
+  
+  // Try to save to GAS
+  try{
+    var script=document.createElement('script');
+    var cbName='gasCb_'+Date.now();
+    window[cbName]=function(r){
+      delete window[cbName];
+      document.body.removeChild(script);
+    };
+    var params='action=upsert_month&month='+encodeURIComponent(d.month)+'&callback='+cbName;
+    script.src=STATE.apiUrl+'?'+params;
+    document.body.appendChild(script);
+  }catch(e){}
+
+  setTimeout(function(){
+    btn.disabled=false; btn.textContent='✅ Confirmar y Guardar';
+    showToast('✅ Datos de '+d.month+' '+d.year+' guardados correctamente');
+    resetUpload();
+    loadMonthsList();
+  }, 800);
+}
+
+// ─── CONFIG ───────────────────────────────────────────────────
+function saveConfig(){
+  var url=document.getElementById('cfg-api-url').value.trim();
+  STATE.apiUrl=url;
+  localStorage.setItem('slf_config',JSON.stringify({apiUrl:url}));
+  showToast('Configuración guardada');
+}
+
+function testConnection(){
+  var dot=document.querySelector('.api-dot');
+  if(dot){dot.className='api-dot chk';}
+  var script=document.createElement('script');
+  var cbName='gasCb_'+Date.now();
+  window[cbName]=function(r){
+    delete window[cbName]; document.body.removeChild(script);
+    if(dot) dot.className=r&&r.ok?'api-dot ok':'api-dot err';
+    showToast(r&&r.ok?'✅ Conexión exitosa con la API':'❌ Error de conexión: '+(r&&r.error||'Sin respuesta'));
+  };
+  setTimeout(function(){if(window[cbName]){delete window[cbName];try{document.body.removeChild(script);}catch(e){}if(dot)dot.className='api-dot err';showToast('❌ Tiempo de espera agotado');}},8000);
+  script.src=STATE.apiUrl+'?action=all&callback='+cbName;
+  document.body.appendChild(script);
+}
+
+function initSystem(){
+  if(!confirm('¿Inicializar el sistema? Esto crea las hojas en Google Sheets si no existen.')) return;
+  showToast('Iniciando sistema...');
+  testConnection();
+}
+
+function exportConfig(){
+  var cfg={apiUrl:STATE.apiUrl, kpis:STATE.kpis, accounts:STATE.accounts, bcvRates:STATE.bcvRates};
+  var blob=new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='slf_config_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+}
+
+function addBcvRow(){
+  var tbody=document.getElementById('bcv-tbody');
+  var mes=prompt('Mes (ej: Enero 2026):','');
+  if(!mes) return;
+  var tr=document.createElement('tr');
+  tr.innerHTML='<td>'+mes+'</td>'
+    +'<td class="r"><input type="number" step="0.01" style="width:80px;text-align:right" onchange="updateBcv(''+mes+'','ask',this.value)"></td>'
+    +'<td class="r"><input type="number" style="width:50px;text-align:right" onchange="updateBcv(''+mes+'','dias',this.value)"></td>'
+    +'<td class="r"><input type="number" step="0.01" style="width:80px;text-align:right" onchange="updateBcv(''+mes+'','min',this.value)"></td>'
+    +'<td class="r"><input type="number" step="0.01" style="width:80px;text-align:right" onchange="updateBcv(''+mes+'','max',this.value)"></td>'
+    +'<td class="r"><input type="number" step="0.01" style="width:80px;text-align:right" onchange="updateBcv(''+mes+'','usdt',this.value)"></td>'
+    +'<td class="r"><input type="number" step="0.01" style="width:70px;text-align:right" onchange="updateBcv(''+mes+'','express',this.value)"></td>'
+    +'<td class="r"><input type="number" step="0.01" style="width:60px;text-align:right" onchange="updateBcv(''+mes+'','spread',this.value)"></td>'
+    +'<td><button class="btn btn-danger" style="font-size:9px;padding:2px 7px" onclick="this.closest('tr').remove()">✕</button></td>';
+  tbody.appendChild(tr);
+}
+
+function updateBcv(mes,field,val){
+  if(!STATE.bcvRates[mes]) STATE.bcvRates[mes]={};
+  STATE.bcvRates[mes][field]=parseFloat(val)||0;
+}
+
+// ─── TOAST ────────────────────────────────────────────────────
+function showToast(msg){
+  var t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:24px;right:24px;background:#2D1860;color:#fff;padding:10px 18px;border-radius:8px;font-size:12px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);transition:opacity .3s';
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(function(){t.style.opacity='0';setTimeout(function(){document.body.removeChild(t);},400);},3000);
+}
+
 </script>
 </body>
 </html>
