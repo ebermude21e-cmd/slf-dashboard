@@ -803,25 +803,29 @@ function doLogin(){
   document.getElementById('login-btn').textContent='Ingresar →';
 }
 
-async function doRegister(){
+function doRegister(){
   var name  = document.getElementById('reg-name').value.trim();
   var email = document.getElementById('reg-email').value.trim().toLowerCase();
   var pass  = document.getElementById('reg-pass').value;
   var pass2 = document.getElementById('reg-pass2').value;
-  
+
   if(!name||!email||!pass||!pass2){ showErr('reg-err','Completa todos los campos.'); return; }
   if(pass.length<8){ showErr('reg-err','La contraseña debe tener al menos 8 caracteres.'); return; }
   if(pass!==pass2){ showErr('reg-err','Las contraseñas no coinciden.'); return; }
   if(!email.includes('@')){ showErr('reg-err','Ingresa un correo válido.'); return; }
-  
-  try{
-    var resp=await fetch(AUTH_API,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'register',name:name,email:email,pass:pass})
-    });
-    var r=await resp.json();
-    if(r.ok){
+
+  showErr('reg-err','Enviando solicitud...');
+
+  // Intentar via GAS JSONP
+  var cbName='gasCb_'+Date.now();
+  var script=document.createElement('script');
+  var done=false;
+  var params='action=register&name='+encodeURIComponent(name)+'&email='+encodeURIComponent(email)+'&pass='+encodeURIComponent(pass)+'&callback='+cbName;
+
+  window[cbName]=function(r){
+    done=true; delete window[cbName];
+    try{document.body.removeChild(script);}catch(e){}
+    if(r&&r.ok){
       showErr('reg-err','');
       document.getElementById('panel-register').innerHTML='<div style="text-align:center;padding:20px">'
         +'<div style="font-size:32px;margin-bottom:12px">✅</div>'
@@ -830,25 +834,36 @@ async function doRegister(){
         +'<span style="font-size:10px;color:#8A7EAA;cursor:pointer;text-decoration:underline" onclick="showPanel(&quot;login&quot;)">← Volver al inicio</span>'
         +'</div>';
     } else {
-      showErr('reg-err', r.error||'Error al enviar solicitud.');
+      showErr('reg-err', (r&&r.error)||'Error al enviar solicitud.');
     }
-  } catch(e){
-    showErr('reg-err','Error de conexión. Intenta nuevamente.');
-  }
+  };
+  script.onerror=function(){
+    if(!done){done=true;delete window[cbName];try{document.body.removeChild(script);}catch(e){}
+    showErr('reg-err','No se pudo conectar con el servidor. Contacta al administrador.');}
+  };
+  setTimeout(function(){
+    if(!done){done=true;delete window[cbName];try{document.body.removeChild(script);}catch(e){}
+    showErr('reg-err','Tiempo de espera agotado. Contacta al administrador.');}
+  },10000);
+  script.src=AUTH_API+'?'+params;
+  document.body.appendChild(script);
 }
 
-async function doReset(){
+function doReset(){
   var email=document.getElementById('reset-email').value.trim().toLowerCase();
   if(!email||!email.includes('@')){ showErr('reset-err','Ingresa un correo válido.'); return; }
-  
-  try{
-    var resp=await fetch(AUTH_API,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'reset_password',email:email})
-    });
-    var r=await resp.json();
-    if(r.ok){
+
+  showErr('reset-err','Procesando...');
+
+  var cbName='gasCb_'+Date.now();
+  var script=document.createElement('script');
+  var done=false;
+  var params='action=reset_password&email='+encodeURIComponent(email)+'&callback='+cbName;
+
+  window[cbName]=function(r){
+    done=true; delete window[cbName];
+    try{document.body.removeChild(script);}catch(e){}
+    if(r&&r.ok){
       document.getElementById('panel-reset').innerHTML='<div style="text-align:center;padding:20px">'
         +'<div style="font-size:32px;margin-bottom:12px">📧</div>'
         +'<div style="font-size:14px;font-weight:700;color:#0D7A4E;margin-bottom:8px">Correo enviado</div>'
@@ -856,11 +871,19 @@ async function doReset(){
         +'<span style="font-size:10px;color:#8A7EAA;cursor:pointer;text-decoration:underline" onclick="showPanel(&quot;login&quot;)">← Volver al inicio</span>'
         +'</div>';
     } else {
-      showErr('reset-err', r.error||'Correo no encontrado en el sistema.');
+      showErr('reset-err', (r&&r.error)||'Correo no encontrado en el sistema.');
     }
-  } catch(e){
-    showErr('reset-err','Error de conexión. Intenta nuevamente.');
-  }
+  };
+  script.onerror=function(){
+    if(!done){done=true;delete window[cbName];try{document.body.removeChild(script);}catch(e){}
+    showErr('reset-err','No se pudo conectar con el servidor.');}
+  };
+  setTimeout(function(){
+    if(!done){done=true;delete window[cbName];try{document.body.removeChild(script);}catch(e){}
+    showErr('reset-err','Tiempo de espera agotado.');}
+  },10000);
+  script.src=AUTH_API+'?'+params;
+  document.body.appendChild(script);
 }
 
 function initApp(){
@@ -1163,7 +1186,7 @@ function openAccountModal(code){
   document.getElementById('acc-sign').value    = acc.sign || '+';
   document.getElementById('acc-label').value   = acc.label || '';
   document.getElementById('acc-cuentas').value = Array.isArray(acc.cuentas)?acc.cuentas.join('\n'):acc.cuentas||'';
-  document.getElementById('acc-from').value    = acc.effective_from || 'Enero';
+  document.getElementById('acc-effective').value    = acc.effective_from || 'Enero';
   document.getElementById('acc-active').value  = acc.active===false?'false':'true';
   document.getElementById('acc-notes').value   = acc.notes || '';
   openModal('modal-account');
@@ -1181,7 +1204,7 @@ function saveAccount(){
     sign:           document.getElementById('acc-sign').value,
     label:          label,
     cuentas:        raw.split('\n').map(function(s){return s.trim();}).filter(Boolean),
-    effective_from: document.getElementById('acc-from').value,
+    effective_from: document.getElementById('acc-effective').value,
     active:         document.getElementById('acc-active').value !== 'false',
     notes:          document.getElementById('acc-notes').value.trim(),
   };
