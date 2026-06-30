@@ -404,18 +404,35 @@ table.diff td.new{background:#DCFCE7;color:var(--g);font-weight:700}
 
       <div class="api-config" style="margin-top:10px">
         <label>Tasas BCV — Express Cambiario</label>
+        <div style="background:var(--pb);border-radius:8px;padding:12px 14px;margin-bottom:10px">
+          <div style="font-size:9px;font-weight:700;color:var(--p);text-transform:uppercase;margin-bottom:6px">📥 Cargar archivo de tasas BCV (.xls)</div>
+          <p style="font-size:9px;color:var(--td);margin-bottom:8px">
+            Sube el archivo del BCV con una hoja por fecha (formato DDMMAAAA). El sistema detecta la tasa "USD — Bs./M.E. Venta (ASK)"
+            de cada día y calcula automáticamente el promedio, mínimo, máximo y días hábiles por mes.
+          </p>
+          <input type="file" id="bcv-file-input" accept=".xls,.xlsx" style="display:none" onchange="handleBcvFile(event)">
+          <button class="btn btn-primary" style="font-size:10px" onclick="document.getElementById('bcv-file-input').click()">📂 Seleccionar archivo BCV</button>
+          <div id="bcv-upload-status" style="margin-top:8px"></div>
+        </div>
         <div style="overflow-x:auto">
           <table class="tbl" id="bcv-table">
             <thead><tr>
               <th>Mes</th><th class="r">BCV Promedio ASK</th><th class="r">Días Hábiles</th>
               <th class="r">BCV Mín</th><th class="r">BCV Máx</th>
-              <th class="r">USDT Bs.</th><th class="r">Express ×</th><th class="r">Spread %</th>
+              <th class="r">USDT Bs. (manual)</th><th class="r">Express ×</th><th class="r">Spread %</th>
               <th>Acción</th>
             </tr></thead>
             <tbody id="bcv-tbody"></tbody>
           </table>
         </div>
-        <div class="btn-row"><button class="btn btn-ghost" onclick="addBcvRow()">+ Agregar mes</button></div>
+        <div class="btn-row" style="margin-top:8px">
+          <button class="btn btn-ghost" onclick="addBcvRow()">+ Agregar mes manual</button>
+          <button class="btn btn-success" onclick="guardarTasasBcv()">💾 Guardar tasas</button>
+        </div>
+        <p style="font-size:9px;color:var(--td);margin-top:6px">
+          ℹ️ El campo <strong>USDT Bs.</strong> se ingresa manualmente consultando MonitorDolar (no viene del archivo del BCV).
+          El <strong>Express ×</strong> y <strong>Spread %</strong> se calculan automáticamente al guardar.
+        </p>
       </div>
 
       <div class="btn-row">
@@ -1075,6 +1092,19 @@ function initApp(){
   }catch(e){}
   try{ var sk=localStorage.getItem('slf_kpis'); if(sk){ var kp=JSON.parse(sk); if(kp&&kp.length) STATE.kpis=kp; } }catch(e){}
   try{ var sa=localStorage.getItem('slf_accounts'); if(sa){ var ac=JSON.parse(sa); if(ac&&ac.length) STATE.accounts=ac; } }catch(e){}
+  // Precargar tasas BCV: primero desde localStorage (ediciones del usuario),
+  // y para los meses que no estén ahí, usar el bcv embebido en cada mes cargado.
+  try{
+    var sb=localStorage.getItem('slf_bcv_rates');
+    if(sb){ var br=JSON.parse(sb); if(br) STATE.bcvRates=br; }
+  }catch(e){}
+  (STATE.months||[]).forEach(function(m){
+    var nombreMes=(m.month||'').split(' ')[0];
+    if(!STATE.bcvRates[nombreMes] && m.bcv){
+      STATE.bcvRates[nombreMes]=JSON.parse(JSON.stringify(m.bcv));
+    }
+  });
+  try{ localStorage.setItem('slf_bcv_rates', JSON.stringify(STATE.bcvRates)); }catch(e){}
   // Renderizar con datos locales primero
   renderAccountsTable();
   renderKpisTable();
@@ -1301,7 +1331,125 @@ function renderKpisTable(){
 function renderBcvTable(){
   var tbody=document.getElementById('bcv-tbody');
   if(!tbody) return;
-  tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--td);padding:20px">Sin tasas BCV cargadas</td></tr>';
+  var rates = STATE.bcvRates || {};
+  var meses = Object.keys(rates);
+  var ORDEN=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  meses.sort(function(a,b){ return ORDEN.indexOf(a)-ORDEN.indexOf(b); });
+  if(!meses.length){
+    tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--td);padding:20px">Sin tasas BCV cargadas. Sube el archivo del BCV o agrega un mes manualmente.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = meses.map(function(mes){
+    var r = rates[mes];
+    var usdt = r.usdt || 0;
+    var express = (usdt && r.avg) ? (usdt/r.avg) : 0;
+    var spread = (express) ? ((express-1)*100) : 0;
+    return '<tr>'
+      +'<td style="font-weight:600">'+mes+'</td>'
+      +'<td class="r">'+(r.avg?r.avg.toFixed(4):'—')+'</td>'
+      +'<td class="r">'+(r.dias||'—')+'</td>'
+      +'<td class="r">'+(r.min?r.min.toFixed(2):'—')+'</td>'
+      +'<td class="r">'+(r.max?r.max.toFixed(2):'—')+'</td>'
+      +'<td class="r"><input type="number" step="0.01" value="'+(usdt||'')+'" style="width:80px;text-align:right" onchange="updateBcv(&quot;'+mes+'&quot;,&quot;usdt&quot;,this.value)"></td>'
+      +'<td class="r">'+(express?express.toFixed(4)+'x':'—')+'</td>'
+      +'<td class="r">'+(spread?spread.toFixed(1)+'%':'—')+'</td>'
+      +'<td><button class="btn btn-danger" style="font-size:9px;padding:3px 8px" onclick="eliminarBcvMes(&quot;'+mes+'&quot;)">✕</button></td>'
+      +'</tr>';
+  }).join('');
+}
+
+// ── Carga de archivo de tasas BCV ────────────────────────────────────
+// Formato: un archivo .xls con una hoja por fecha (nombre DDMMAAAA).
+// En cada hoja se busca la fila de la moneda "USD" y se toma la columna
+// 4 posiciones a la derecha (Bs./M.E. Venta ASK) como tasa oficial del día.
+function handleBcvFile(event){
+  var file = event.target.files[0];
+  if(!file) return;
+  var statusEl = document.getElementById('bcv-upload-status');
+  statusEl.innerHTML = '<p style="font-size:10px;color:var(--td)">Leyendo archivo...</p>';
+
+  var reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      var wb = XLSX.read(e.target.result, {type:'array'});
+      var ORDEN=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+      var porMes = {}; // 'MM' -> [{dia, tasa}]
+      var hojasLeidas = 0, hojasConTasa = 0;
+
+      wb.SheetNames.forEach(function(sheetName){
+        // Nombre de hoja esperado: DDMMAAAA (8 dígitos)
+        var m = sheetName.match(/^(\d{2})(\d{2})(\d{4})$/);
+        if(!m) return;
+        hojasLeidas++;
+        var dia=parseInt(m[1],10), mes=m[2], anio=m[3];
+        var ws = wb.Sheets[sheetName];
+        var rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        var tasa=null;
+        for(var i=0;i<rows.length;i++){
+          for(var c=0;c<rows[i].length-4;c++){
+            if(String(rows[i][c]||'').trim()==='USD'){
+              var v = rows[i][c+4];
+              tasa = parseFloat(v);
+              break;
+            }
+          }
+          if(tasa!==null && !isNaN(tasa)) break;
+        }
+        if(tasa!==null && !isNaN(tasa)){
+          hojasConTasa++;
+          if(!porMes[mes]) porMes[mes]=[];
+          porMes[mes].push({dia:dia, tasa:tasa, anio:anio});
+        }
+      });
+
+      if(hojasConTasa===0){
+        statusEl.innerHTML='<div class="alert err"><span class="alert-icon">❌</span>No se encontró ninguna tasa USD en el archivo. Verifica el formato (hojas con nombre DDMMAAAA, fila "USD" con columna Venta ASK).</div>';
+        return;
+      }
+
+      // Calcular promedio/min/max/días por mes y aplicar a STATE.bcvRates
+      var MESES_NUM = {'01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo','06':'Junio','07':'Julio','08':'Agosto','09':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre'};
+      var resumen=[];
+      Object.keys(porMes).forEach(function(mm){
+        var datos = porMes[mm];
+        var tasas = datos.map(function(d){return d.tasa;});
+        var avg = tasas.reduce(function(s,v){return s+v;},0)/tasas.length;
+        var min = Math.min.apply(null,tasas);
+        var max = Math.max.apply(null,tasas);
+        var nombreMes = MESES_NUM[mm];
+        if(!nombreMes) return;
+        if(!STATE.bcvRates[nombreMes]) STATE.bcvRates[nombreMes]={};
+        STATE.bcvRates[nombreMes].avg = Math.round(avg*10000)/10000;
+        STATE.bcvRates[nombreMes].min = Math.round(min*100)/100;
+        STATE.bcvRates[nombreMes].max = Math.round(max*100)/100;
+        STATE.bcvRates[nombreMes].dias = datos.length;
+        resumen.push(nombreMes+': '+datos.length+' días, promedio Bs.'+(Math.round(avg*100)/100));
+      });
+
+      try{ localStorage.setItem('slf_bcv_rates', JSON.stringify(STATE.bcvRates)); }catch(ex){}
+
+      statusEl.innerHTML='<div class="alert ok"><span class="alert-icon">✅</span>'+hojasConTasa+' fecha(s) procesadas de '+hojasLeidas+' hojas. Meses actualizados: '+resumen.join(' · ')+'</div>';
+      renderBcvTable();
+      showToast('✅ Tasas BCV actualizadas desde el archivo');
+    }catch(err){
+      statusEl.innerHTML='<div class="alert err"><span class="alert-icon">❌</span>Error al leer el archivo: '+err.message+'</div>';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  event.target.value='';
+}
+
+function eliminarBcvMes(mes){
+  if(!confirm('¿Eliminar la tasa BCV de '+mes+'?')) return;
+  delete STATE.bcvRates[mes];
+  try{ localStorage.setItem('slf_bcv_rates', JSON.stringify(STATE.bcvRates)); }catch(e){}
+  renderBcvTable();
+}
+
+function guardarTasasBcv(){
+  try{ localStorage.setItem('slf_bcv_rates', JSON.stringify(STATE.bcvRates)); }catch(e){}
+  showToast('✅ Tasas BCV guardadas correctamente');
+  renderBcvTable();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2077,21 +2225,13 @@ function exportConfig(){
 }
 
 function addBcvRow(){
-  var tbody=document.getElementById('bcv-tbody');
-  var mes=prompt('Mes (ej: Enero 2026):','');
+  var mes=prompt('Nombre del mes (ej: Junio):','');
   if(!mes) return;
-  var m=mes.replace(/'/g,"\\'");
-  var tr=document.createElement('tr');
-  tr.innerHTML='<td>'+mes+'</td>'
-    +'<td class="r"><input type="number" step="0.01" style="width:80px;text-align:right" onchange="updateBcv(&quot;'+m+'&quot;,&quot;ask&quot;,this.value)"></td>'
-    +'<td class="r"><input type="number" style="width:50px;text-align:right" onchange="updateBcv(&quot;'+m+'&quot;,&quot;dias&quot;,this.value)"></td>'
-    +'<td class="r"><input type="number" step="0.01" style="width:80px;text-align:right" onchange="updateBcv(&quot;'+m+'&quot;,&quot;min&quot;,this.value)"></td>'
-    +'<td class="r"><input type="number" step="0.01" style="width:80px;text-align:right" onchange="updateBcv(&quot;'+m+'&quot;,&quot;max&quot;,this.value)"></td>'
-    +'<td class="r"><input type="number" step="0.01" style="width:80px;text-align:right" onchange="updateBcv(&quot;'+m+'&quot;,&quot;usdt&quot;,this.value)"></td>'
-    +'<td class="r"><input type="number" step="0.01" style="width:70px;text-align:right" onchange="updateBcv(&quot;'+m+'&quot;,&quot;express&quot;,this.value)"></td>'
-    +'<td class="r"><input type="number" step="0.01" style="width:60px;text-align:right" onchange="updateBcv(&quot;'+m+'&quot;,&quot;spread&quot;,this.value)"></td>'
-    +'<td><button class="btn btn-danger" style="font-size:9px;padding:2px 7px" onclick="this.closest(&quot;tr&quot;).remove()">✕</button></td>';
-  tbody.appendChild(tr);
+  mes = mes.trim();
+  if(!STATE.bcvRates[mes]) STATE.bcvRates[mes]={avg:0,min:0,max:0,dias:0,usdt:0};
+  try{ localStorage.setItem('slf_bcv_rates', JSON.stringify(STATE.bcvRates)); }catch(e){}
+  renderBcvTable();
+  showToast('Mes "'+mes+'" agregado — completa sus tasas en la tabla o sube el archivo del BCV');
 }
 
 function insertVar(v){
@@ -2105,6 +2245,8 @@ function insertVar(v){
 function updateBcv(mes,field,val){
   if(!STATE.bcvRates[mes]) STATE.bcvRates[mes]={};
   STATE.bcvRates[mes][field]=parseFloat(val)||0;
+  try{ localStorage.setItem('slf_bcv_rates', JSON.stringify(STATE.bcvRates)); }catch(e){}
+  renderBcvTable();
 }
 
 // ─── TOAST ────────────────────────────────────────────────────
