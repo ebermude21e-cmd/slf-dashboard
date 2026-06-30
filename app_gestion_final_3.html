@@ -1324,7 +1324,7 @@ function handleFile(file){
       var ws=wb.Sheets[wb.SheetNames[0]];
       var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
       var ext=file.name.split('.').pop().toLowerCase();
-      var result=extractData(rows, ext);
+      var result=extractData(rows, ext, file.name);
       if(!result.ok){
         body.innerHTML='<div class="alert err"><span class="alert-icon">❌</span>'+result.error+'</div>';
         return;
@@ -1339,7 +1339,7 @@ function handleFile(file){
   reader.readAsArrayBuffer(file);
 }
 
-function extractData(rows, ext){
+function extractData(rows, ext, fileName){
   // Detect format
   var isXlsx = ext==='xlsx';
   // Column indices (0-based)
@@ -1349,25 +1349,60 @@ function extractData(rows, ext){
   var COL_MOV  = isXlsx ? 7 : 33;
   var COL_SALD = isXlsx ? 8 : 37;
 
-  // Find month from filename or data
+  // Find month from "INFORME GENERAL N/AAAA", filename, or data
   var month='', year=new Date().getFullYear();
   var MESES_ES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   var MESES_CAP=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  // Try to find month in first 10 rows
-  for(var r=0;r<Math.min(10,rows.length);r++){
-    for(var c=0;c<rows[r].length;c++){
-      var cell=String(rows[r][c]||'').toLowerCase();
-      for(var m=0;m<MESES_ES.length;m++){
-        if(cell.indexOf(MESES_ES[m])>=0){ month=MESES_CAP[m]; break; }
+
+  // 1) PRIORIDAD MÁXIMA: patrón "INFORME GENERAL" seguido de "M/AAAA" (ej: "6/2026")
+  //    Es el dato oficial emitido por el sistema contable, más confiable que el nombre del archivo.
+  for(var ri=0; ri<Math.min(15,rows.length) && !month; ri++){
+    var rowVals=rows[ri]||[];
+    var hasInforme=false;
+    for(var ci=0; ci<rowVals.length; ci++){
+      var cellTxt=String(rowVals[ci]||'').toUpperCase();
+      if(cellTxt.indexOf('INFORME GENERAL')>=0){ hasInforme=true; }
+      if(hasInforme){
+        var myMatch=String(rowVals[ci]||'').match(/^\s*(\d{1,2})\s*\/\s*(20\d{2})\s*$/);
+        if(myMatch){
+          var mNum=parseInt(myMatch[1],10);
+          if(mNum>=1 && mNum<=12){
+            month=MESES_CAP[mNum-1];
+            year=parseInt(myMatch[2],10);
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  // 2) Si no se encontró por "INFORME GENERAL", intentar en el NOMBRE DEL ARCHIVO
+  if(!month && fileName){
+    var fnLower=fileName.toLowerCase();
+    for(var m0=0;m0<MESES_ES.length;m0++){
+      if(fnLower.indexOf(MESES_ES[m0])>=0){ month=MESES_CAP[m0]; break; }
+    }
+    var ymFile=fnLower.match(/20(2[4-9]|[3-9]\d)/);
+    if(ymFile) year=parseInt(ymFile[0]);
+  }
+
+  // 3) Último recurso: buscar nombre de mes en texto dentro de las primeras 10 filas
+  if(!month){
+    for(var r=0;r<Math.min(10,rows.length);r++){
+      for(var c=0;c<rows[r].length;c++){
+        var cell=String(rows[r][c]||'').toLowerCase();
+        for(var m=0;m<MESES_ES.length;m++){
+          if(cell.indexOf(MESES_ES[m])>=0){ month=MESES_CAP[m]; break; }
+        }
+        if(month) break;
+        var ym=cell.match(/20(2[4-9]|[3-9]\d)/);
+        if(ym) year=parseInt(ym[0]);
       }
       if(month) break;
-      // Try year
-      var ym=cell.match(/20(2[4-9]|[3-9]\d)/);
-      if(ym) year=parseInt(ym[0]);
     }
-    if(month) break;
   }
-  if(!month) return {ok:false, error:'No se pudo detectar el mes en el archivo. Verifica que el nombre del archivo o las primeras filas indiquen el mes.'};
+
+  if(!month) return {ok:false, error:'No se pudo detectar el mes. Verifica que el archivo tenga "INFORME GENERAL M/AAAA", que el nombre del archivo (ej. "Junio.xls") o las primeras filas indiquen el mes.'};
 
   // Build saldo map: cuenta -> saldo
   var saldoMap={};
