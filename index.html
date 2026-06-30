@@ -485,8 +485,12 @@ function initDashboard(){
 
   function renderizar(msg){
     setTimeout(function(){
-      ldrSet(100,msg);
-      buildNav(); if(PAIRS.length)chips(PAIRS[0]); renderCmp(); ldrDone();
+      try{
+        ldrSet(100,msg);
+        buildNav(); if(PAIRS.length)chips(PAIRS[0]); renderCmp(); ldrDone();
+      }catch(err){
+        ldrErr('Error al construir el dashboard: '+err.message);
+      }
     },200);
   }
 
@@ -521,9 +525,23 @@ function initDashboard(){
       mesesReales.forEach(function(md){
         var mesNombre=(md.month||'').split(' ')[0];
         var ramos=md.ramos||{}, totals=md.totals||{}, fin=md.fin||{};
+        var bcvMes = md.bcv || {};
         DATA_real[mesNombre]={
           vida:ramos.vida||{}, fun:ramos.fun||{}, ap:ramos.ap||{}, rcv:ramos.rcv||{},
-          totals:totals, fin:fin, h:totals.h||0, bcv:md.bcv||{}, total_a:md.total_a||0
+          totals:totals, fin:fin, h:totals.h||0, bcv:bcvMes, total_a:md.total_a||0
+        };
+        // CRÍTICO: poblar también la variable global BCV — renderCmp(), renderAcum(),
+        // renderCam() y chips() la leen directamente (BCV[mes].avg, .usdt, etc).
+        // Sin esto, cualquier mes nuevo (Junio, Julio...) rompe el render porque
+        // BCV[mesNuevo] queda undefined.
+        BCV[mesNombre] = {
+          avg: bcvMes.avg || 0,
+          dias: bcvMes.dias || 0,
+          min: bcvMes.min || 0,
+          max: bcvMes.max || 0,
+          usdt: bcvMes.usdt || 0,
+          express: (bcvMes.usdt && bcvMes.avg) ? (bcvMes.usdt/bcvMes.avg) : (bcvMes.express || 0),
+          spread: (bcvMes.usdt && bcvMes.avg) ? ((bcvMes.usdt/bcvMes.avg - 1)*100) : (bcvMes.spread || 0)
         };
 
         if(ACUM_CERTIFICADO[mesNombre]){
