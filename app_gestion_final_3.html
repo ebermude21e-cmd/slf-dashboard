@@ -158,7 +158,8 @@ table.diff td.new{background:#DCFCE7;color:var(--g);font-weight:700}
 .tag.plus{background:#DCFCE7;color:var(--g)}.tag.minus{background:var(--rb);color:var(--r)}
 .chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .chip{padding:2px 8px;border-radius:20px;font-size:9px;background:var(--pb);color:var(--p);border:1px solid var(--px)}
-#pane-dashboard.on{padding:0!important}
+#pane-dashboard{display:none!important}
+#pane-dashboard.on{padding:0!important;display:flex!important}
 
 /* ── LOGIN SCREEN ── */
 #slf-login{position:fixed;inset:0;background:linear-gradient(135deg,#0F0A1E,#2D1860,#4B2D8F);z-index:9999;display:flex;align-items:center;justify-content:center}
@@ -246,7 +247,7 @@ table.diff td.new{background:#DCFCE7;color:var(--g);font-weight:700}
   <button class="nt" onclick="showTab('cuentas',this)">🔢 Cuentas Contables</button>
   <button class="nt" onclick="showTab('kpis',this)">📊 Configurar KPIs</button>
   <button class="nt" onclick="showTab('config',this)">⚙️ Configuración</button>
-  <button class="nt" onclick="showTab('ajustes',this)" style="color:#E5C229">✏️ Ajustes Estratégicos</button>
+  <button class="nt" onclick="showTab('ajustes',this)" style="color:#E5C229">✏️ Dashboard Ajustado</button>
   <button class="nt" onclick="showTab('dashboard',this)" style="margin-left:auto;background:rgba(229,194,41,.15);color:#E5C229;border-left:1px solid rgba(255,255,255,.08)">📊 Ver Dashboard</button>
 </div>
 
@@ -429,7 +430,7 @@ table.diff td.new{background:#DCFCE7;color:var(--g);font-weight:700}
 <!-- ══ TAB: AJUSTES ESTRATÉGICOS ══ -->
 <div class="pane" id="pane-ajustes">
   <div class="card">
-    <div class="card-hdr"><h3>✏️ Ajustes Estratégicos de Cifras</h3></div>
+    <div class="card-hdr"><h3>✏️ Dashboard Ajustado — Sustitución de Cifras</h3></div>
     <div class="card-body">
       <div class="alert info" style="margin-bottom:14px">
         <span class="alert-icon">ℹ️</span>
@@ -499,11 +500,11 @@ table.diff td.new{background:#DCFCE7;color:var(--g);font-weight:700}
 </div>
 
 <!-- ══ TAB: DASHBOARD ══ -->
-<div class="pane" id="pane-dashboard" style="padding:0;height:calc(100vh - 110px);display:flex;flex-direction:column">
+<div class="pane" id="pane-dashboard" style="padding:0;height:calc(100vh - 110px);flex-direction:column">
   <div style="flex-shrink:0;background:var(--ink2);padding:8px 16px;display:flex;align-items:center;gap:10px">
     <span style="font-size:9px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.07em">Vista del dashboard:</span>
     <div class="sw" style="display:flex;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:5px;overflow:hidden">
-      <button id="btn-vista-ajustado" class="on" onclick="cambiarVistaDashboard('ajustado')" style="padding:4px 12px;border:none;background:rgba(255,255,255,.17);color:#fff;font-size:9px;font-weight:700;cursor:pointer">📊 Ajustado (lo que ven accionistas)</button>
+      <button id="btn-vista-ajustado" class="on" onclick="cambiarVistaDashboard('ajustado')" style="padding:4px 12px;border:none;background:rgba(255,255,255,.17);color:#fff;font-size:9px;font-weight:700;cursor:pointer">📊 Dashboard Ajustado (lo que ven accionistas)</button>
       <button id="btn-vista-real" onclick="cambiarVistaDashboard('real')" style="padding:4px 12px;border:none;background:transparent;color:rgba(255,255,255,.6);font-size:9px;font-weight:700;cursor:pointer">🔒 Real (solo administración)</button>
     </div>
   </div>
@@ -1133,6 +1134,8 @@ function loadMonthsList(){
     ):0;
     var saldo=loaded&&md.totals?md.totals.saldo_gen||0:0;
     var sPos=saldo>=0;
+    var bcvAvg=loaded&&md.bcv&&md.bcv.avg?md.bcv.avg:1;
+    function usd(v){ return (v/bcvAvg).toLocaleString('es-VE',{maximumFractionDigits:0}); }
     // Acumulados exactos Ene-May 2026 (Excel - Hoja Acumulado)
     var ACUM_MAP={'Enero':10850225.31,'Febrero':-48211947.05,'Marzo':27793183.75,'Abril':42876909.74,'Mayo':69856436.05};
     var acum=ACUM_MAP[mes];
@@ -1140,9 +1143,11 @@ function loadMonthsList(){
     var aPos=hasAcum&&acum>=0;
     card.innerHTML='<div class="mc-name">'+mes+'</div>'
       +'<div class="mc-status">'+(loaded?'✅ Cargado':'Sin datos')+'</div>'
-      +(loaded?'<div style="font-size:9px;color:var(--td);margin-top:3px">Prima mensual: Bs.'+totalA.toLocaleString('es-VE',{maximumFractionDigits:0})+'</div>'
+      +(loaded?'<div style="font-size:9px;color:var(--td);margin-top:3px">Prima mensual: Bs.'+totalA.toLocaleString('es-VE',{maximumFractionDigits:0})+' · USD '+usd(totalA)+'</div>'
         +'<div style="font-size:9px;font-weight:700;margin-top:1px;color:'+(sPos?'var(--g)':'var(--r)')+'">Mensual: '+(sPos?'Bs. ':'(Bs. ')+Math.abs(saldo).toLocaleString('es-VE',{maximumFractionDigits:0})+(sPos?'':')')+'</div>'
-        +(hasAcum?'<div style="font-size:9px;font-weight:700;margin-top:3px;padding-top:3px;border-top:1px solid #E4DCF5;color:'+(aPos?'var(--g)':'var(--r)')+'">Acum. Ene–'+mes+': '+(aPos?'Bs. ':'(Bs. ')+Math.abs(acum).toLocaleString('es-VE',{maximumFractionDigits:0})+(aPos?'':')')+'</div>':'')
+        +'<div style="font-size:9px;color:var(--td);margin-top:0">USD '+(sPos?'':'(')+usd(Math.abs(saldo))+(sPos?'':')')+'</div>'
+        +(hasAcum?'<div style="font-size:9px;font-weight:700;margin-top:3px;padding-top:3px;border-top:1px solid #E4DCF5;color:'+(aPos?'var(--g)':'var(--r)')+'">Acum. Ene–'+mes+': '+(aPos?'Bs. ':'(Bs. ')+Math.abs(acum).toLocaleString('es-VE',{maximumFractionDigits:0})+(aPos?'':')')+'</div>'
+          +'<div style="font-size:9px;color:var(--td);margin-top:0">USD '+(aPos?'':'(')+usd(Math.abs(acum))+(aPos?'':')')+'</div>':'')
         :'');
     if(loaded) card.style.cursor='pointer';
     if(loaded) card.onclick=(function(m,d){return function(){showMonthDetail(m,d);};})(mes,md);
@@ -1163,6 +1168,12 @@ function showMonthDetail(mes, md){
     var s=abs.toLocaleString('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2});
     return v<0?'(Bs. '+s+')':'Bs. '+s;
   }
+  function fmtUsd(v){
+    var u=v/AC;
+    var abs=Math.abs(u);
+    var s=abs.toLocaleString('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2});
+    return u<0?'(USD '+s+')':'USD '+s;
+  }
   var RLBL={vida:'Vida',fun:'Funerario',ap:'Acc. Personales',rcv:'RC Vehículos'};
   var RCLR={vida:'#4B2D8F',fun:'#0D7A4E',ap:'#B07A00',rcv:'#8B1A1A'};
   var ramoCards=['vida','fun','ap','rcv'].map(function(ramo){
@@ -1171,22 +1182,24 @@ function showMonthDetail(mes, md){
     return '<div style="background:'+RCLR[ramo]+'15;border:1px solid '+RCLR[ramo]+'40;border-radius:8px;padding:10px">'
       +'<div style="font-size:9px;font-weight:700;color:'+RCLR[ramo]+';text-transform:uppercase;margin-bottom:4px">'+RLBL[ramo]+'</div>'
       +'<div style="font-size:12px;font-weight:700;color:'+(o>=0?'var(--g)':'var(--r)')+'">'+fmt(o)+'</div>'
+      +'<div style="font-size:9px;color:var(--td);font-weight:600">'+fmtUsd(o)+'</div>'
       +'<div style="font-size:9px;color:var(--td);margin-top:2px">Prima: Bs. '+(rd.a||0).toLocaleString('es-VE',{maximumFractionDigits:0})+'</div>'
       +'</div>';
   }).join('');
   var rows=[
-    ['Prima Cobrada (a)',t.a||0,false],
-    ['Prima Devengada (e)',t.e||0,false],
-    ['Siniestros Incurridos (n)',t.n||0,true],
-    ['Gasto Adm. Prorrateo (h)',t.h||0,true],
-    ['Total Com. y Gastos (i)',t.i||0,true],
+    ['Prima Cobrada',t.a||0,false],
+    ['Prima Devengada',t.e||0,false],
+    ['Siniestros Incurridos',t.n||0,true],
+    ['Gasto Adm. Prorrateo',t.h||0,true],
+    ['Total Comisiones y Gastos',t.i||0,true],
   ];
   var tbody=rows.map(function(row,i){
     var v=row[1];
     var neg=row[2];
     return '<tr style="background:'+(i%2===0?'var(--s2)':'var(--s)')+'">'
       +'<td style="padding:5px 10px">'+row[0]+'</td>'
-      +'<td style="padding:5px 10px;text-align:right;color:'+(neg?'var(--r)':'var(--tx)')+'">'+fmt(v)+'</td></tr>';
+      +'<td style="padding:5px 10px;text-align:right;color:'+(neg?'var(--r)':'var(--tx)')+'">'+fmt(v)+'</td>'
+      +'<td style="padding:5px 10px;text-align:right;font-size:10px;color:var(--td)">'+fmtUsd(v)+'</td></tr>';
   }).join('');
 
   // Sección informativa de cuentas con sobregiro/reversión detectadas en este mes
@@ -1210,18 +1223,20 @@ function showMonthDetail(mes, md){
     +'<button onclick="document.getElementById(&quot;month-detail-modal&quot;).style.display=&quot;none&quot;" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--td)">✕</button>'
     +'</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+ramoCards+'</div>'
-    +'<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px"><tbody>'+tbody+'</tbody></table>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px">'
+    +'<thead><tr style="background:var(--pb)"><th style="text-align:left;padding:5px 10px;font-size:9px;color:var(--td)">Concepto</th><th style="text-align:right;padding:5px 10px;font-size:9px;color:var(--td)">Bs.</th><th style="text-align:right;padding:5px 10px;font-size:9px;color:var(--td)">USD</th></tr></thead>'
+    +'<tbody>'+tbody+'</tbody></table>'
     +'<div style="background:var(--ink2);border-radius:8px;padding:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
-    +'<span style="color:#fff;font-weight:700">Resultado Técnico (o)</span>'
-    +'<span style="font-weight:700;color:'+(t.o>=0?'#8AEFB8':'#FF9999')+'">'+fmt(t.o||0)+'</span>'
+    +'<span style="color:#fff;font-weight:700">Resultado Técnico</span>'
+    +'<div style="text-align:right"><div style="font-weight:700;color:'+(t.o>=0?'#8AEFB8':'#FF9999')+'">'+fmt(t.o||0)+'</div><div style="font-size:9px;color:rgba(255,255,255,.6)">'+fmtUsd(t.o||0)+'</div></div>'
     +'</div>'
     +'<div style="background:var(--s2);border-radius:8px;padding:10px;display:flex;justify-content:space-between;margin-bottom:8px">'
     +'<span style="color:var(--tm)">Saldo Financiero</span>'
-    +'<span style="color:'+(f.saldo_fin>=0?'var(--g)':'var(--r)')+'">'+fmt(f.saldo_fin||0)+'</span>'
+    +'<div style="text-align:right"><div style="color:'+(f.saldo_fin>=0?'var(--g)':'var(--r)')+'">'+fmt(f.saldo_fin||0)+'</div><div style="font-size:9px;color:var(--td)">'+fmtUsd(f.saldo_fin||0)+'</div></div>'
     +'</div>'
     +'<div style="background:'+(sPos?'var(--g)':'var(--r)')+';border-radius:8px;padding:12px;display:flex;justify-content:space-between;align-items:center">'
     +'<span style="color:#fff;font-weight:700;font-size:13px">SALDO GENERAL</span>'
-    +'<span style="color:#fff;font-weight:700;font-size:14px">'+fmt(saldo)+'</span>'
+    +'<div style="text-align:right"><div style="color:#fff;font-weight:700;font-size:14px">'+fmt(saldo)+'</div><div style="font-size:10px;color:rgba(255,255,255,.85)">'+fmtUsd(saldo)+'</div></div>'
     +'</div>'
     +'<div style="font-size:9px;color:var(--td);margin-top:8px">BCV Promedio: Bs.'+(AC.toFixed?AC.toFixed(4):AC)+' · '+mes+' 2026</div>'
     +sobregirosSection
@@ -1268,13 +1283,12 @@ function renderKpisTable(){
     return;
   }
   var html='<div style="overflow-x:auto"><table class="tbl"><thead><tr>'
-    +'<th>#</th><th>Nombre del KPI</th><th>Fórmula</th><th>Descripción</th><th>Estado</th>'
+    +'<th>#</th><th>Nombre del KPI</th><th>Descripción</th><th>Estado</th>'
     +'</tr></thead><tbody>';
   html+=kpis.filter(function(k){return k.active;}).map(function(k,i){
     return '<tr>'
       +'<td class="mono" style="color:var(--td)">'+(i+1)+'</td>'
       +'<td style="font-weight:600">'+(k.name||'')+'</td>'
-      +'<td class="mono" style="color:var(--p);font-size:11px">'+(k.formula||'')+'</td>'
       +'<td style="font-size:11px;color:var(--tm)">'+(k.description||'')+'</td>'
       +'<td><span class="badge g">Activo</span></td>'
       +'</tr>';
@@ -1875,6 +1889,26 @@ var CAMPOS_POR_RAMO = {
   fin:['eg02','eg04','eg06','eg07','eg09','eg_adm_2pct','total_eg','ing01','ing03','total_ing','saldo_fin']
 };
 
+// Etiquetas legibles para cada campo — se usan solo para mostrar al usuario,
+// el código interno (a, b, c...) se mantiene igual para no afectar los cálculos.
+var ETIQUETA_CAMPO = {
+  a:'Prima Cobrada', b:'Devoluciones de Primas', c:'Reserva de Prima Año Actual',
+  cIV:'Reserva Complementaria Año Actual', d:'Reserva de Prima Año Anterior',
+  dVI:'Reserva Complementaria Año Anterior', e:'Prima Devengada',
+  f:'Comisiones y Gastos de Adquisición', g:'Gastos Directos de Administración',
+  h:'Gasto Adm. Prorrateado', i:'Total Comisiones y Gastos',
+  j:'Siniestros Pagados', k:'Siniestros Pendientes Año Actual',
+  l:'IBNR Año Actual', ll:'Siniestros Pendientes Año Anterior',
+  m:'IBNR Año Anterior', n:'Siniestros Incurridos', o:'Resultado Técnico Bruto',
+  saldo_gen:'Saldo General',
+  eg02:'Egresos Financieros', eg04:'Fluctuación Cambiaria (Egreso)',
+  eg06:'Depreciación', eg07:'Reserva de Provisión', eg09:'Otros Egresos',
+  eg_adm_2pct:'Gasto Adm. (2% Financiero)', total_eg:'Total Egresos Financieros',
+  ing01:'Producto de Inversión', ing03:'Fluctuación Cambiaria (Ingreso)',
+  total_ing:'Total Ingresos Financieros', saldo_fin:'Saldo Financiero'
+};
+function etiquetaCampo(c){ return ETIQUETA_CAMPO[c] || c; }
+
 function getAjustes(){
   try{ return JSON.parse(localStorage.getItem('slf_ajustes')||'{}'); }
   catch(e){ return {}; }
@@ -1898,7 +1932,7 @@ function cargarValorReal(){
   var campos = CAMPOS_POR_RAMO[ramo] || [];
   var campoActual = selCampo.value;
   selCampo.innerHTML = '<option value="">Selecciona un campo...</option>'
-    + campos.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+    + campos.map(function(c){ return '<option value="'+c+'">'+etiquetaCampo(c)+'</option>'; }).join('');
   if(campos.indexOf(campoActual)>=0) selCampo.value = campoActual;
 
   var campo = selCampo.value;
@@ -1976,7 +2010,7 @@ function renderAjustesTabla(){
     return '<tr>'
       +'<td>'+a.mes+'</td>'
       +'<td>'+a.ramo+'</td>'
-      +'<td class="mono">'+a.campo+'</td>'
+      +'<td>'+etiquetaCampo(a.campo)+'</td>'
       +'<td class="r">'+fmtN(a.valorReal)+'</td>'
       +'<td class="r" style="color:var(--p);font-weight:700">'+fmtN(a.valorSustituto)+'</td>'
       +'<td style="font-size:9px;color:var(--td)">'+(a.motivo||'—')+'</td>'
