@@ -398,6 +398,35 @@ function gasGet(params, onSuccess, onError){
   script.src=url; document.body.appendChild(script);
 }
 
+// Recalcula la variable global KPIS a partir de DATA (que puede contener ajustes
+// estratégicos aplicados). Usa la misma fórmula validada que buildFromApi, así los
+// KPIs SIEMPRE reflejan la información mostrada en el dashboard (real o ajustada).
+function recalcularKPIS(){
+  var RAMOS_K=['vida','fun','ap','rcv'];
+  var meses=Object.keys(DATA);
+  var nuevo={};
+  meses.forEach(function(m){
+    nuevo[m]={};
+    var dm=DATA[m];
+    var total_a=dm.total_a||1;
+    RAMOS_K.forEach(function(r){
+      var rd=dm[r]||{};
+      var a=rd.a||0,e=rd.e||0,f=rd.f||0,g=rd.g||0,h=rd.h||0,j=rd.j||0,n=rd.n||0,o=rd.o||0;
+      nuevo[m][r]={
+        k1:a?Math.round(a/total_a*10000)/100:0,
+        k2:a?Math.round(j/a*10000)/100:0,
+        k3:e?Math.round(j/e*10000)/100:0,
+        k4:a?Math.round(n/a*10000)/100:0,
+        k5:a?Math.round(f/a*10000)/100:0,
+        k6:a?Math.round(g/a*10000)/100:0,
+        k7:a?Math.round(h/a*10000)/100:0,
+        k8:a?Math.round(o/a*10000)/100:0,
+      };
+    });
+  });
+  KPIS=nuevo;
+}
+
 function initDashboard(){
   try{var ldrErrEl=document.getElementById('ldr-err');if(ldrErrEl)ldrErrEl.style.display='none';}catch(e){}
   ldrSet(10,'Iniciando...');
@@ -443,6 +472,7 @@ function initDashboard(){
   function aplicarData(src){
     DATA = src.data; ACUM = src.acum;
     aplicarAjustesEstrategicos();
+    recalcularKPIS();
     PAIRS=[];
     var ms=Object.keys(DATA).sort(function(a,b){return mesesOrder.indexOf(a)-mesesOrder.indexOf(b);});
     for(var i=ms.length-1;i>=1;i--) PAIRS.push({cur:ms[i],prev:ms[i-1]});
@@ -812,6 +842,7 @@ function renderKpi(){
   document.getElementById('p-kpi').classList.add('on');
 
   // MESES usa la variable global dinámica (ya definida con los meses cargados)
+  var ultimoMesKpi=MESES[MESES.length-1];
   var RAMOS=['vida','fun','ap','rcv'];
   var RLBL={vida:'Vida',fun:'Funerario',ap:'Acc. Personales',rcv:'RC Vehículos'};
   var RCOLORS=RAMOS.map(function(r){return RCLR[r];});
@@ -861,8 +892,8 @@ function renderKpi(){
 
   var pane=document.getElementById('p-kpi');
   var html_out='<div class="page">'
-    +'<div class="ph"><div><h2>Panel de KPIs · Enero–Mayo 2026</h2>'
-    +'<p>8 indicadores · 4 ramos · Snapshot Mayo + tendencia mensual · Semáforo: ≤25% verde · 25–40% ámbar · >40% rojo · K8 y K1 no aplican semáforo estándar</p></div></div>';
+    +'<div class="ph"><div><h2>Panel de KPIs · '+MESES[0]+'–'+ultimoMesKpi+' 2026</h2>'
+    +'<p>8 indicadores · 4 ramos · Snapshot '+ultimoMesKpi+' + tendencia mensual · Semáforo: ≤25% verde · 25–40% ámbar · >40% rojo · K8 y K1 no aplican semáforo estándar</p></div></div>';
 
   for(var ki=0;ki<KDEFS.length;ki++){
     var kd=KDEFS[ki];
@@ -871,14 +902,14 @@ function renderKpi(){
     // Gauge cards — Mayo snapshot
     html_out+='<div class="gauge-grid">';
     for(var ri=0;ri<RAMOS.length;ri++){
-      var r=RAMOS[ri], v=KPIS['Mayo'][r][kd.id];
+      var r=RAMOS[ri], v=KPIS[ultimoMesKpi][r][kd.id];
       // k6: if v===0 → neutral display
       var gcls = (kd.id==='k6' && v===0) ? 'g-neu' : gaugeCls(v, kd.neutral, kd.inv, kd.id);
       var displayVal = v===0 && kd.id==='k6' ? '—' : (kd.id==='k8' && Math.abs(v)>200 ? (v<0?'('+Math.abs(v).toFixed(1)+'%)':v.toFixed(1)+'%') : (v<0?'('+Math.abs(v).toFixed(2)+'%)':v.toFixed(2)+'%'));
       html_out+='<div class="gauge-card '+gcls+'">'
         +'<div class="gc-ramo">'+RLBL[r]+'</div>'
         +'<div class="gc-val">'+displayVal+'</div>'
-        +'<div class="gc-lbl">Mayo 2026</div>'
+        +'<div class="gc-lbl">'+ultimoMesKpi+' 2026</div>'
         +gaugeNote(v, kd.id, r)
         +'</div>';
     }
@@ -916,7 +947,7 @@ function renderKpi(){
   }
 
   // Semáforo matrix — short names in header
-  html_out+='<div class="km-wrap"><div class="cam-tbl-lbl">Matriz Semáforo — Snapshot Mayo 2026</div><table class="km-tbl"><thead><tr>'
+  html_out+='<div class="km-wrap"><div class="cam-tbl-lbl">Matriz Semáforo — Snapshot '+ultimoMesKpi+' 2026</div><table class="km-tbl"><thead><tr>'
     +'<th style="text-align:left;padding-left:12px">Ramo</th>';
   for(var ki=0;ki<KDEFS.length;ki++){
     html_out+='<th title="'+KDEFS[ki].desc+'" style="text-align:center;white-space:nowrap;font-size:7px">'+KDEFS[ki].short+'</th>';
@@ -926,7 +957,7 @@ function renderKpi(){
     var r=RAMOS[ri];
     html_out+='<tr><td><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+RCOLORS[ri]+';margin-right:6px;vertical-align:middle"></span>'+RLBL[r]+'</td>';
     for(var ki=0;ki<KDEFS.length;ki++){
-      var kd=KDEFS[ki], v=KPIS['Mayo'][r][kd.id];
+      var kd=KDEFS[ki], v=KPIS[ultimoMesKpi][r][kd.id];
       var sc = (kd.id==='k6'&&v===0)?'sm-n':semCls(v, kd.neutral, kd.inv, kd.id);
       var dispV = v===0&&kd.id==='k6'?'—':
                   (kd.id==='k8'&&Math.abs(v)>200?(v<0?'('+Math.abs(v).toFixed(1)+'%)':v.toFixed(1)+'%'):
