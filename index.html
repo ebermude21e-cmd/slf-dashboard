@@ -427,6 +427,9 @@ function recalcularKPIS(){
   KPIS=nuevo;
 }
 
+// Acumulado oficial certificado Enero–Mayo 2026 (validado contra balance del gerente de contabilidad)
+var ACUM_CERTIFICADO = {"Enero":{"vida":{"a":5526708.47,"b":0.0,"c":499338.93,"cIV":0,"d":391399.49,"dVI":0,"e":5418769.03,"f":218.41,"g":138427.53,"h":2116332.81,"h_pct":1.67,"i":2254978.75,"j":467820.0,"k":356562.06,"l":0.0,"ll":1069280.82,"m":197068.46,"n":-441967.22,"o":3605757.5},"fun":{"a":114239109.6,"b":71051.34,"c":47442402.2,"cIV":0,"d":9189685.13,"dVI":0,"e":75915341.19,"f":3539546.66,"g":0,"h":43745382.39,"h_pct":34.5,"i":47284929.05,"j":45455245.26,"k":7856824.09,"l":1842581.58,"ll":22445534.84,"m":4136712.08,"n":28572404.01,"o":58008.13},"ap":{"a":5578628.89,"b":0,"c":2000399.32,"cIV":0,"d":1794806.6,"dVI":0,"e":5373036.17,"f":2694234.93,"g":7060.92,"h":2136214.6,"h_pct":1.68,"i":4837510.45,"j":0,"k":0,"l":0,"ll":0,"m":0,"n":0,"o":535525.72},"rcv":{"a":1469145.53,"b":14447.37,"c":7534169.42,"cIV":4445159.96,"d":7142366.1,"dVI":4213996.0,"e":831730.88,"f":0.0,"g":0,"h":562577.33,"h_pct":0.44,"i":562577.33,"j":0,"k":0,"l":0,"ll":0,"m":0,"n":0,"o":269153.55},"totals":{"a":126813592.49,"e":87538877.27,"h":48560507.12,"i":54939995.57,"n":28130436.79,"o":4468444.91,"saldo_gen":10850225.31},"fin":{"eg02":1979592.55,"eg04":2719341.57,"eg06":189724.02,"eg07":405511.96,"eg09":138374.29,"ing01":1734931.64,"ing03":10079393.15,"total_eg":5432544.39,"total_ing":11814324.79,"saldo_fin":6381780.4}},"Febrero":{"vida":{"a":11907969.76,"b":33788.59,"c":1063606.52,"cIV":0,"d":391399.49,"dVI":0,"e":11201974.14,"f":2426.42,"g":295050.98,"h":4629936.63,"h_pct":4.86,"i":4927414.03,"j":1461505.0,"k":878047.68,"l":86462.31,"ll":1069280.82,"m":197068.46,"n":1159665.71,"o":5114894.4},"fun":{"a":177663179.88,"b":94878.9,"c":84975570.11,"cIV":0,"d":9189685.13,"dVI":0,"e":101782416.0,"f":6062277.82,"g":12608.77,"h":68728372.11,"h_pct":66.19,"i":74803258.7,"j":66484100.32,"k":27771360.72,"l":5144411.76,"ll":22445534.84,"m":4136712.08,"n":72817625.88,"o":-45838468.58},"ap":{"a":11628037.67,"b":0,"c":2330243.77,"cIV":0,"d":1794806.6,"dVI":0,"e":11092600.5,"f":4663605.82,"g":8877.86,"h":4519100.41,"h_pct":4.7,"i":9191584.09,"j":0,"k":0,"l":0,"ll":0,"m":0,"n":0,"o":1901016.41},"rcv":{"a":4452739.5,"b":14447.37,"c":20037327.75,"cIV":4445159.96,"d":7142366.1,"dVI":4213996.0,"e":-8687833.48,"f":0.0,"g":0,"h":1737826.68,"h_pct":1.93,"i":1737826.68,"j":0,"k":0,"l":0,"ll":0,"m":0,"n":0,"o":-10425660.16},"totals":{"a":205651926.81,"e":115613093.48,"h":79615235.82,"i":90660083.49,"n":73977291.59,"o":-49024281.6,"saldo_gen":-48211947.05},"fin":{"eg02":4340299.48,"eg04":2719341.57,"eg06":608221.01,"eg07":6286743.85,"eg09":1298295.28,"ing01":4840296.93,"ing03":11224938.81,"total_eg":15252901.19,"total_ing":16065235.74,"saldo_fin":812334.55}},"Marzo":{"vida":{"a":20098110.85,"b":33788.59,"c":1664891.59,"cIV":0,"d":391399.49,"dVI":0,"e":18790830.16,"f":2712.76,"g":501588.41,"h":8753555.23,"h_pct":8.58,"i":9257856.4,"j":2118295.0,"k":878047.68,"l":88949.05,"ll":1069280.82,"m":197068.46,"n":1818942.45,"o":7714031.31},"fun":{"a":266676377.02,"b":106752.47,"c":157110331.65,"cIV":0,"d":9189685.13,"dVI":0,"e":118648978.03,"f":8617886.56,"g":24828.17,"h":113545240.47,"h_pct":106.59,"i":122187955.2,"j":94802164.75,"k":41523971.29,"l":8964051.63,"ll":22445534.84,"m":4136712.08,"n":118707940.75,"o":-122246917.92},"ap":{"a":20832839.32,"b":0,"c":3407347.71,"cIV":0,"d":1794806.6,"dVI":0,"e":19220298.21,"f":6309061.62,"g":8877.86,"h":9153586.05,"h_pct":8.88,"i":15471525.53,"j":0,"k":0,"l":0,"ll":0,"m":0,"n":0,"o":3748772.68},"rcv":{"a":8989103.24,"b":14447.37,"c":27820284.39,"cIV":7230078.95,"d":7142366.1,"dVI":4213996.0,"e":-14719345.37,"f":231569.47,"g":0,"h":4021820.77,"h_pct":3.99,"i":4253390.24,"j":0,"k":0,"l":0,"ll":0,"m":0,"n":0,"o":-18972735.61},"totals":{"a":316596430.43,"e":299623497.23,"h":135474202.51,"i":151170727.36,"n":100531425.24,"o":47921344.63,"saldo_gen":27793183.75},"fin":{"eg02":6901098.17,"eg04":8924025.18,"eg06":1004764.58,"eg07":19685177.93,"eg09":2428568.28,"ing01":6089078.87,"ing03":12726394.39,"total_eg":38943634.14,"total_ing":18815473.26,"saldo_fin":-20128160.88}},"Abril":{"vida":{"a":28449688.52,"b":33788.59,"c":2562601.15,"cIV":0,"d":391399.49,"dVI":0,"e":26244698.27,"f":2981.16,"g":711668.5,"h":11456783.96,"h_pct":9.99,"i":12171433.62,"j":3201925.0,"k":2267964.61,"l":161895.1,"ll":1069280.82,"m":197068.46,"n":4365435.43,"o":9707829.22},"fun":{"a":437653650.43,"b":136915.4,"c":214368380.16,"cIV":0,"d":9189685.13,"dVI":0,"e":232338040.0,"f":13635226.37,"g":34161.5,"h":168886960.95,"h_pct":135.38,"i":182556348.82,"j":133998554.81,"k":44569785.49,"l":9565869.05,"ll":22445534.84,"m":4136712.08,"n":161551962.43,"o":-111770271.25},"ap":{"a":29722666.95,"b":0,"c":3489434.93,"cIV":0,"d":1794806.6,"dVI":0,"e":28028038.62,"f":16067406.53,"g":8877.86,"h":12031034.88,"h_pct":10.38,"i":28107319.27,"j":0,"k":0,"l":0,"ll":0,"m":0,"n":0,"o":-79280.65},"rcv":{"a":12981404.14,"b":14447.37,"c":29978396.03,"cIV":8503364.82,"d":7142366.1,"dVI":4213996.0,"e":-14158441.98,"f":344013.48,"g":0,"h":5314043.98,"h_pct":4.66,"i":5658057.46,"j":0,"k":0,"l":0,"ll":0,"m":0,"n":0,"o":-19816499.44},"totals":{"a":508807410.04,"e":431930490.23,"h":197688823.76,"i":228493159.16,"n":141407909.9,"o":62029421.17,"saldo_gen":42876909.74},"fin":{"eg02":10108864.9,"eg04":4128634.04,"eg06":1461911.01,"eg07":21899935.64,"eg09":4784375.26,"ing01":10176949.41,"ing03":13054260.01,"total_eg":42383720.85,"total_ing":23231209.42,"saldo_fin":-19152511.43}},"Mayo":{"vida":{"a":36942075.02,"b":33788.59,"c":2582012.97,"cIV":0,"d":391399.49,"dVI":0,"e":34717672.95,"f":3264.09,"g":931415.76,"h":16273906.35,"h_pct":14.34,"i":17208586.2,"j":5018805.0,"k":3055711.75,"l":255709.33,"ll":1069280.82,"m":197068.46,"n":7063876.8,"o":10445209.95},"fun":{"a":525856824.2,"b":178244.76,"c":243409611.82,"cIV":0,"d":9189685.13,"dVI":0,"e":291458652.75,"f":15972890.25,"g":36180.0,"h":218918301.76,"h_pct":180.59,"i":234927372.01,"j":170304072.14,"k":46423046.6,"l":9898313.78,"ll":22445534.84,"m":4136712.08,"n":200043185.6,"o":-143511904.86},"ap":{"a":39669852.47,"b":3190.09,"c":3768646.34,"cIV":0,"d":1794806.6,"dVI":0,"e":37692822.64,"f":17767586.91,"g":8877.86,"h":17673360.52,"h_pct":15.48,"i":35449825.29,"j":500460.0,"k":0,"l":0,"ll":0,"m":0,"n":500460.0,"o":1742537.35},"rcv":{"a":17007405.72,"b":14447.37,"c":31574561.37,"cIV":9445102.37,"d":7142366.1,"dVI":4213996.0,"e":-12670343.29,"f":434806.43,"g":0,"h":7597706.22,"h_pct":6.72,"i":8032512.65,"j":0,"k":0,"l":0,"ll":0,"m":0,"n":0,"o":-20702855.94},"totals":{"a":619476157.41,"e":568410160.61,"h":260463274.84,"i":295618296.14,"n":180103888.54,"o":92687975.93,"saldo_gen":69856436.05},"fin":{"eg02":13328368.19,"eg04":5925403.07,"eg06":1867006.14,"eg07":26708346.06,"eg09":3568804.54,"ing01":13965849.19,"ing03":14600538.93,"total_eg":51397928.0,"total_ing":28566388.12,"saldo_fin":-22831539.88}}};
+
 function initDashboard(){
   try{var ldrErrEl=document.getElementById('ldr-err');if(ldrErrEl)ldrErrEl.style.display='none';}catch(e){}
   ldrSet(10,'Iniciando...');
@@ -487,24 +490,108 @@ function initDashboard(){
     },200);
   }
 
-  // Usar datos estáticos exactos de inmediato
-  ldrSet(50,'Cargando datos...');
-  aplicarData(DATA_ESTATICA);
-  renderizar('Datos Enero–Mayo 2026');
+  // ── PRIORIDAD 1: leer los meses REALES cargados en la app de administración
+  // (localStorage 'slf_months', mismo origen GitHub Pages). Esto incluye
+  // cualquier mes nuevo (Junio, Julio...) que el administrador haya cargado,
+  // sin depender de que la API de Google responda ni de que el código del
+  // dashboard haya sido republicado con datos embebidos nuevos.
+  function intentarDatosReales(){
+    try{
+      var raw = localStorage.getItem('slf_months');
+      if(!raw) return false;
+      var mesesReales = JSON.parse(raw);
+      if(!mesesReales || !mesesReales.length) return false;
 
-  // Intentar actualizar desde API en background via JSONP
-  gasGet({action:'all'}, function(json){
-    var months=json.data||json.months||[];
-    if(months&&months.length){
-      try{localStorage.setItem('slf_dashboard_months',JSON.stringify(months));}catch(e){}
-      var loadedMeses=buildFromApi(months);
-      loadedMeses.sort(function(a,b){return mesesOrder.indexOf(a)-mesesOrder.indexOf(b);});
-      PAIRS=[];
-      for(var i=loadedMeses.length-1;i>=1;i--) PAIRS.push({cur:loadedMeses[i],prev:loadedMeses[i-1]});
-      if(!PAIRS.length&&loadedMeses.length===1) PAIRS=[{cur:loadedMeses[0],prev:loadedMeses[0]}];
-      MESES=loadedMeses;
-    }
-  }, function(){/* silencioso */});
+      mesesReales.sort(function(a,b){
+        var ai=mesesOrder.indexOf((a.month||'').split(' ')[0]);
+        var bi=mesesOrder.indexOf((b.month||'').split(' ')[0]);
+        return ai-bi;
+      });
+
+      var DATA_real={}, ACUM_real={};
+      // Base certificada: usar el ACUM oficial validado para los meses que ya
+      // lo tienen (Enero–Mayo). Para meses nuevos, encadenar el acumulado desde
+      // el último mes certificado usando la MISMA fórmula validada:
+      //   o_acum = e_acum - i_acum - n_acum ; saldo_gen_acum = o_acum + fin_acum
+      var cumE=0,cumI=0,cumN=0,cumA=0;
+      var cumFin={eg02:0,eg04:0,eg06:0,eg07:0,eg09:0,eg_adm_2pct:0,ing01:0,ing03:0,total_eg:0,total_ing:0,saldo_fin:0};
+      var cumRamos={vida:{},fun:{},ap:{},rcv:{}};
+      var ultimoCertificado=null;
+
+      mesesReales.forEach(function(md){
+        var mesNombre=(md.month||'').split(' ')[0];
+        var ramos=md.ramos||{}, totals=md.totals||{}, fin=md.fin||{};
+        DATA_real[mesNombre]={
+          vida:ramos.vida||{}, fun:ramos.fun||{}, ap:ramos.ap||{}, rcv:ramos.rcv||{},
+          totals:totals, fin:fin, h:totals.h||0, bcv:md.bcv||{}, total_a:md.total_a||0
+        };
+
+        if(ACUM_CERTIFICADO[mesNombre]){
+          // Mes ya certificado (Enero–Mayo): usar el acumulado oficial validado tal cual
+          ACUM_real[mesNombre]=ACUM_CERTIFICADO[mesNombre];
+          ultimoCertificado=mesNombre;
+          // Sincronizar acumuladores internos con el valor certificado, para que
+          // el siguiente mes nuevo encadene correctamente desde aquí
+          cumE=ACUM_CERTIFICADO[mesNombre].totals.e;
+          cumI=ACUM_CERTIFICADO[mesNombre].totals.i;
+          cumN=ACUM_CERTIFICADO[mesNombre].totals.n;
+          cumA=ACUM_CERTIFICADO[mesNombre].totals.a;
+          cumFin=JSON.parse(JSON.stringify(ACUM_CERTIFICADO[mesNombre].fin));
+          ['vida','fun','ap','rcv'].forEach(function(r){
+            cumRamos[r]=JSON.parse(JSON.stringify(ACUM_CERTIFICADO[mesNombre][r]||{}));
+          });
+        } else {
+          // Mes nuevo (Junio en adelante): encadenar acumulado con la fórmula oficial
+          cumE+=totals.e||0; cumI+=totals.i||0; cumN+=totals.n||0; cumA+=totals.a||0;
+          Object.keys(cumFin).forEach(function(k){ cumFin[k]=(cumFin[k]||0)+(fin[k]||0); });
+          ['vida','fun','ap','rcv'].forEach(function(r){
+            var rd=ramos[r]||{};
+            Object.keys(rd).forEach(function(k){
+              if(typeof rd[k]==='number') cumRamos[r][k]=(cumRamos[r][k]||0)+rd[k];
+            });
+          });
+          var o_acum = cumE - cumI - cumN;
+          var saldo_gen_acum = o_acum + cumFin.saldo_fin;
+          ACUM_real[mesNombre]={
+            vida:JSON.parse(JSON.stringify(cumRamos.vida)),
+            fun:JSON.parse(JSON.stringify(cumRamos.fun)),
+            ap:JSON.parse(JSON.stringify(cumRamos.ap)),
+            rcv:JSON.parse(JSON.stringify(cumRamos.rcv)),
+            totals:{a:cumA,e:cumE,h:0,i:cumI,n:cumN,o:o_acum,saldo_gen:saldo_gen_acum},
+            fin:JSON.parse(JSON.stringify(cumFin))
+          };
+        }
+      });
+
+      aplicarData({data:DATA_real, acum:ACUM_real});
+      return true;
+    }catch(ex){ return false; }
+  }
+
+  // ── PRIORIDAD 2: datos estáticos embebidos (Enero–Mayo certificados) ──
+  ldrSet(50,'Cargando datos...');
+  var usoDatosReales = intentarDatosReales();
+  if(!usoDatosReales){
+    aplicarData(DATA_ESTATICA);
+  }
+  renderizar(usoDatosReales ? 'Datos actualizados' : 'Datos Enero–Mayo 2026');
+
+  // ── PRIORIDAD 3: intentar actualizar desde la API de Google (background) ──
+  // Solo se usa si no había datos reales en localStorage.
+  if(!usoDatosReales){
+    gasGet({action:'all'}, function(json){
+      var months=json.data||json.months||[];
+      if(months&&months.length){
+        try{localStorage.setItem('slf_dashboard_months',JSON.stringify(months));}catch(e){}
+        var loadedMeses=buildFromApi(months);
+        loadedMeses.sort(function(a,b){return mesesOrder.indexOf(a)-mesesOrder.indexOf(b);});
+        PAIRS=[];
+        for(var i=loadedMeses.length-1;i>=1;i--) PAIRS.push({cur:loadedMeses[i],prev:loadedMeses[i-1]});
+        if(!PAIRS.length&&loadedMeses.length===1) PAIRS=[{cur:loadedMeses[0],prev:loadedMeses[0]}];
+        MESES=loadedMeses;
+      }
+    }, function(){/* silencioso */});
+  }
 }
 var PAIRS=[];var MESES=['Enero','Febrero','Marzo','Abril','Mayo'];
 var RAMOS=['vida','fun','ap','rcv'];
