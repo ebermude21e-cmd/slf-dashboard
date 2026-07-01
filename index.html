@@ -658,15 +658,23 @@ function swA(){aView='acum';buildNav();document.getElementById('chips').innerHTM
 function swK(){aView='kpi';buildNav();document.getElementById('chips').innerHTML='';renderKpi();}
 
 function chips(pr){
-  var AC=BCV[pr.cur].avg,AP=BCV[pr.prev].avg;
-  var da=AC-AP,dv=(AC-AP)/AP*100,cls=da>0?'up':'dn';
-  var UC=BCV[pr.cur].usdt,UP=BCV[pr.prev].usdt;
-  var du=UC-UP,duv=UP?(du/UP*100):0,uCls=du>0?'up':'dn';
+  var AC=BCV[pr.cur].avg, AP=BCV[pr.prev].avg;
+  var da=AC-AP, dv=AP?(AC-AP)/AP*100:0, bcvCls=da>0?'up':'dn';
+  var UC=BCV[pr.cur].usdt, UP=BCV[pr.prev].usdt;
+  var du=UC-UP, duv=UP?(du/UP)*100:0;
+  // USDT subir = más cara la divisa = negativo (dn); bajar = positivo (up)
+  var uCls=du>0?'dn':'up';
+  var sameMes=pr.cur===pr.prev;
   document.getElementById('chips').innerHTML=
-    '<div class="hc"><div class="hc-l">'+pr.cur+' BCV</div><div class="hc-v">Bs.'+AC.toFixed(2)+'</div><div class="hc-s">'+BCV[pr.cur].dias+'d · '+BCV[pr.cur].min+'–'+BCV[pr.cur].max+'</div></div>'
-    +'<div class="hc"><div class="hc-l">'+pr.prev+' BCV</div><div class="hc-v">Bs.'+AP.toFixed(2)+'</div><div class="hc-s">'+BCV[pr.prev].dias+'d · '+BCV[pr.prev].min+'–'+BCV[pr.prev].max+'</div></div>'
-    +'<div class="hc '+cls+'"><div class="hc-l">Var. BCV</div><div class="hc-v">'+(da>=0?'▲':'▼')+' '+Math.abs(dv).toFixed(2)+'%</div><div class="hc-s">'+(da>=0?'+':'')+da.toFixed(2)+' Bs.</div></div>'
-    +'<div class="hc '+uCls+'"><div class="hc-l">USDT '+pr.cur+'</div><div class="hc-v">Bs.'+UC.toFixed(2)+'</div><div class="hc-s">'+(du>=0?'▲ +':'▼ ')+Math.abs(duv).toFixed(2)+'% vs '+pr.prev+'</div></div>'
+    // BCV mes actual (neutro)
+    '<div class="hc"><div class="hc-l">BCV Promedio — '+pr.cur+'</div><div class="hc-v">Bs.'+AC.toFixed(2)+'</div><div class="hc-s">'+BCV[pr.cur].dias+'d hábiles · '+BCV[pr.cur].min+'–'+BCV[pr.cur].max+'</div></div>'
+    // BCV mes anterior (neutro, solo si distinto)
+    +(sameMes?'':'<div class="hc"><div class="hc-l">BCV Promedio — '+pr.prev+'</div><div class="hc-v">Bs.'+AP.toFixed(2)+'</div><div class="hc-s">'+BCV[pr.prev].dias+'d hábiles · '+BCV[pr.prev].min+'–'+BCV[pr.prev].max+'</div></div>')
+    // Variación BCV (up=verde si subió; dn=rojo si bajó — aquí depreciación=up)
+    +(sameMes?'':'<div class="hc '+bcvCls+'"><div class="hc-l">Variación BCV Acumulada</div><div class="hc-v">'+(da>=0?'▲ +':'▼ ')+Math.abs(dv).toFixed(2)+'%</div><div class="hc-s">'+(da>=0?'+':'')+da.toFixed(2)+' Bs./USD</div></div>')
+    // USDT mes actual (dn si sube respecto anterior = más cara)
+    +'<div class="hc '+uCls+'"><div class="hc-l">USDT Binance P2P — '+pr.cur+'</div><div class="hc-v">Bs.'+UC.toFixed(2)+'</div><div class="hc-s">'+(sameMes?'Express ×'+BCV[pr.cur].express.toFixed(2):(du>=0?'▲ +':'▼ ')+Math.abs(duv).toFixed(2)+'% vs '+pr.prev)+'</div></div>'
+    // Express (ámbar)
     +'<div class="hc exp"><div class="hc-l">Express '+pr.cur+'</div><div class="hc-v">'+parseFloat(BCV[pr.cur].spread).toFixed(2)+'%</div><div class="hc-s">brecha vs BCV oficial</div></div>';
 }
 
