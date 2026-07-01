@@ -1365,11 +1365,22 @@ function loadMonthsList(){
     var sPos=saldo>=0;
     var bcvAvg=loaded&&md.bcv&&md.bcv.avg?md.bcv.avg:1;
     function usd(v){ return (v/bcvAvg).toLocaleString('es-VE',{maximumFractionDigits:0}); }
-    // Acumulados exactos Ene-Jun 2026 (Excel - Hoja Acumulado)
-    var ACUM_MAP={'Enero':10850225.31,'Febrero':-48211947.05,'Marzo':27793183.75,'Abril':42876909.74,'Mayo':69856436.05,'Junio':87032238};
-    var acum=ACUM_MAP[mes];
-    var hasAcum=acum!==undefined;
-    var aPos=hasAcum&&acum>=0;
+    // Acumulado USD = Σ(saldo_mes_Bs / BCV_mes) — Opción A: suma de conversiones mensuales
+    var ORDEN_M=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    var idxActual=ORDEN_M.indexOf(mes);
+    var acumUSD=0; var hayAcum=false;
+    if(loaded && idxActual>=0){
+      (STATE.months||[]).forEach(function(md2){
+        var n2=(md2.month||'').split(' ')[0];
+        var idx2=ORDEN_M.indexOf(n2);
+        if(idx2>=0 && idx2<=idxActual && md2.totals){
+          var s2=md2.totals.saldo_gen||0;
+          var b2=md2.bcv&&md2.bcv.avg&&md2.bcv.avg>1?md2.bcv.avg:0;
+          if(b2>0){ acumUSD+=s2/b2; hayAcum=true; }
+        }
+      });
+    }
+    var aPos=acumUSD>=0;
     // Mostrar USD solo si hay tasa BCV cargada (mayor a 1 = no es el valor por defecto)
     var bcvCargado=loaded&&md.bcv&&md.bcv.avg&&md.bcv.avg>1;
     card.innerHTML='<div class="mc-name">'+mes+'</div>'
@@ -1377,9 +1388,8 @@ function loadMonthsList(){
       +(loaded?'<div style="font-size:9px;color:var(--td);margin-top:3px">Prima mensual: Bs.'+totalA.toLocaleString('es-VE',{maximumFractionDigits:0})+(bcvCargado?' · USD '+usd(totalA):'')+'</div>'
         +'<div style="font-size:9px;font-weight:700;margin-top:1px;color:'+(sPos?'var(--g)':'var(--r)')+'">Mensual: '+(sPos?'Bs. ':'(Bs. ')+Math.abs(saldo).toLocaleString('es-VE',{maximumFractionDigits:0})+(sPos?'':')')+'</div>'
         +(bcvCargado?'<div style="font-size:9px;color:var(--td);margin-top:0">USD '+(sPos?'':'(')+usd(Math.abs(saldo))+(sPos?'':')')+'</div>':'<div style="font-size:9px;color:var(--td);margin-top:0">USD — (carga tasa BCV)</div>')
-        +(hasAcum?'<div style="font-size:9px;font-weight:700;margin-top:3px;padding-top:3px;border-top:1px solid #E4DCF5;color:'+(aPos?'var(--g)':'var(--r)')+'">Acum. Ene–'+mes+': '+(aPos?'Bs. ':'(Bs. ')+Math.abs(acum).toLocaleString('es-VE',{maximumFractionDigits:0})+(aPos?'':')')+'</div>'
-          +(bcvCargado?'<div style="font-size:9px;color:var(--td);margin-top:0">USD '+(aPos?'':'(')+usd(Math.abs(acum))+(aPos?'':')')+'</div>':'<div style="font-size:9px;color:var(--td);margin-top:0">USD — (carga tasa BCV)</div>'):'')
-        :'');
+        +(hayAcum?'<div style="font-size:9px;font-weight:700;margin-top:3px;padding-top:3px;border-top:1px solid #E4DCF5;color:'+(aPos?'var(--g)':'var(--r)')+'">Acum. Ene–'+mes+': USD '+(aPos?'':'(')+Math.round(Math.abs(acumUSD)).toLocaleString('es-VE')+(aPos?'':')')+'</div>':'')
+        :''  );
     if(loaded) card.style.cursor='pointer';
     if(loaded) card.onclick=(function(m,d){return function(){showMonthDetail(m,d);};})(mes,md);
     grid.appendChild(card);
@@ -1598,8 +1608,61 @@ function renderTasasConsulta(){
       +'</tr>';
   }).join('');
 
+  // ── Construir gráficos SVG nativos ──────────────────────────────
+  function buildChart(datos, color, label, prefix){
+    if(!datos.length) return '';
+    var vals = datos.map(function(d){return d.v;});
+    var minV = Math.min.apply(null,vals);
+    var maxV = Math.max.apply(null,vals);
+    var rango = maxV - minV || 1;
+    var W=560, H=120, PAD=8, BOTTOM=24;
+    var stepX = (W-PAD*2) / (datos.length-1||1);
+    // Puntos de la línea
+    var pts = datos.map(function(d,i){
+      var x = PAD + i*stepX;
+      var y = PAD + (1-(d.v-minV)/rango)*(H-PAD*2-BOTTOM);
+      return {x:x, y:y, m:d.m, v:d.v};
+    });
+    var pathD = pts.map(function(p,i){return (i===0?'M':'L')+p.x.toFixed(1)+' '+p.y.toFixed(1);}).join(' ');
+    var areaD = pathD+' L'+pts[pts.length-1].x.toFixed(1)+' '+(H-BOTTOM)+' L'+pts[0].x.toFixed(1)+' '+(H-BOTTOM)+' Z';
+    // Líneas de referencia
+    var refLines = [0,0.5,1].map(function(t){
+      var yy = PAD + (1-t)*(H-PAD*2-BOTTOM);
+      var vv = minV + t*rango;
+      return '<line x1="'+PAD+'" y1="'+yy.toFixed(1)+'" x2="'+(W-PAD)+'" y2="'+yy.toFixed(1)+'" stroke="rgba(0,0,0,.07)" stroke-width="1"/>'
+        +'<text x="'+(W-PAD+2)+'" y="'+(yy+4).toFixed(1)+'" font-size="8" fill="#888">'+prefix+(vv>=1000?vv.toFixed(0):vv.toFixed(2))+'</text>';
+    }).join('');
+    // Etiquetas X
+    var labX = pts.map(function(p){
+      return '<text x="'+p.x.toFixed(1)+'" y="'+(H-BOTTOM+14)+'" text-anchor="middle" font-size="8" fill="#666">'+p.m.slice(0,3)+'</text>';
+    }).join('');
+    // Círculos y tooltips
+    var circles = pts.map(function(p){
+      return '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3" fill="'+color+'" stroke="#fff" stroke-width="1.5">'
+        +'<title>'+p.m+': '+prefix+p.v.toFixed(2)+'</title></circle>';
+    }).join('');
+    return '<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:'+H+'px;overflow:visible">'
+      +'<defs><linearGradient id="g'+label.replace(/\s/,'')+'" x1="0" y1="0" x2="0" y2="1">'
+        +'<stop offset="0%" stop-color="'+color+'" stop-opacity=".25"/>'
+        +'<stop offset="100%" stop-color="'+color+'" stop-opacity=".02"/>'
+      +'</linearGradient></defs>'
+      +refLines
+      +'<path d="'+areaD+'" fill="url(#g'+label.replace(/\s/,'')+')" />'
+      +'<path d="'+pathD+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linejoin="round"/>'
+      +labX+circles
+      +'</svg>';
+  }
+
+  var datosBCV  = meses.map(function(m){ return {m:m, v:rates[m].avg||0}; }).filter(function(d){return d.v>0;});
+  var datosUSDT = meses.map(function(m){ return {m:m, v:rates[m].usdt||0}; }).filter(function(d){return d.v>0;});
+
+  var graficoBCV  = datosBCV.length >=2 ? buildChart(datosBCV,  '#4B2D8F', 'BCV',  'Bs. ') : '';
+  var graficoUSDT = datosUSDT.length>=2 ? buildChart(datosUSDT, '#0D7A4E', 'USDT', 'Bs. ') : '';
+
   body.innerHTML =
-    '<div style="margin-bottom:24px">'
+    (graficoBCV?'<div class="card" style="margin-bottom:16px"><div class="card-hdr"><h3 style="font-size:13px">📈 Evolución BCV Promedio ASK (Bs.)</h3></div><div class="card-body" style="padding:12px 16px">'+graficoBCV+'</div></div>':'')
+    +(graficoUSDT?'<div class="card" style="margin-bottom:16px"><div class="card-hdr"><h3 style="font-size:13px">₿ Evolución USDT Binance P2P (Bs.)</h3></div><div class="card-body" style="padding:12px 16px">'+graficoUSDT+'</div></div>':'')
+    +'<div style="margin-bottom:24px">'
       +'<h2 style="font-size:18px;font-weight:800;color:var(--ink2);margin-bottom:4px">📈 Tasa BCV Promedio</h2>'
       +'<p style="font-size:10px;color:var(--td);margin-bottom:12px">Tipo de cambio oficial — Venta (ASK), promedio de días hábiles por mes. Rango histórico: Bs. '+bcvMin.toFixed(2)+' – Bs. '+bcvMax.toFixed(2)+'</p>'
       +'<div style="display:flex;gap:10px;flex-wrap:wrap">'+bcvCards+'</div>'
