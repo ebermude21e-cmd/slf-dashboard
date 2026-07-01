@@ -1978,13 +1978,14 @@ function resetUpload(){
   document.getElementById('file-input').value='';
   ['step-1','step-2','step-3','step-4'].forEach(function(id,i){
     var el=document.getElementById(id);
-    el.className='step'+(i===0?' active':'');
+    if(el) el.className='step'+(i===0?' active':'');
   });
 }
 
 function setStep(n){
   for(var i=1;i<=4;i++){
     var el=document.getElementById('step-'+i);
+    if(!el) continue;
     if(i<n) el.className='step done';
     else if(i===n) el.className='step active';
     else el.className='step';
@@ -2344,9 +2345,15 @@ function goToConfirm(){
   var existing=STATE.months.find(function(m){return m.month===d.month;});
   document.getElementById('phase-preview').style.display='none';
   if(existing){
-    document.getElementById('phase-diff').style.display='block';
-    document.getElementById('diff-body').innerHTML='<div class="alert warn"><span class="alert-icon">⚠️</span>El mes <strong>'+d.month+' '+d.year+'</strong> ya tiene datos cargados. Si continúas, serán reemplazados.</div>'
-      +'<div class="btn-row"><button class="btn btn-warn" onclick="showConfirm()">Reemplazar datos →</button><button class="btn btn-ghost" onclick="resetUpload()">Cancelar</button></div>';
+    // Mes ya existe: ir directo a confirmar con aviso de reemplazo (sin pantalla diff)
+    document.getElementById('phase-confirm').style.display='block';
+    document.getElementById('confirm-summary').innerHTML=
+      '<div class="alert warn"><span class="alert-icon">⚠️</span>'
+      +'El mes <strong>'+d.month+' '+d.year+'</strong> ya tiene datos cargados — serán reemplazados con el nuevo archivo.'
+      +'</div>'
+      +'<div class="alert info" style="margin-top:8px"><span class="alert-icon">📋</span>'
+      +'Nuevo archivo: '+d.rowsRead+' filas procesadas · Prima total: Bs. '+fmtN(d.total_a)
+      +'</div>';
   } else {
     showConfirm();
   }
@@ -2414,11 +2421,17 @@ function confirmUpload(){
     btn.disabled=false; btn.textContent='✅ Confirmar y Guardar';
     var msg='✅ Datos de '+d.month+' '+d.year+' guardados correctamente';
     if(d.sobregiros && d.sobregiros.length){
-      msg+=' ('+d.sobregiros.length+' cuenta(s) con sobregiro detectadas — revisa la pestaña Meses Cargados)';
+      msg+=' ('+d.sobregiros.length+' cuenta(s) con sobregiro detectadas)';
     }
     showToast(msg);
     resetUpload();
-    loadMonthsList();
+    // Actualizar todas las vistas con los nuevos datos
+    loadMonthsList();           // tarjetas de meses
+    renderKpisTable();          // panel KPIs
+    actualizarInfoUltimoMes();  // info en pane-carga
+    // Recargar iframe del dashboard si está visible
+    var frame=document.getElementById('dashboard-frame');
+    if(frame && frame.src){ frame.src=frame.src; }
   }, 800);
 }
 
