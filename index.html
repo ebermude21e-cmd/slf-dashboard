@@ -828,52 +828,59 @@ function renderCmp(){
     '<div class="ph"><div><h2>'+pr.cur+' vs '+pr.prev+' 2026</h2>'
     +'<p>Movimiento mensual · Variación absoluta y % · Gasto adm. prorrateo por prima cobrada · Saldo = Σ Ingresos − Σ Egresos validado (Δ=0)</p></div></div>'
     // ── BLOQUE RESUMEN: Prima · Siniestros · Resultado ──────────────
-    +'<div style="background:var(--pb);border:1px solid var(--br);border-radius:10px;padding:14px 18px;margin-bottom:14px">'
-    +'<div style="font-size:8px;font-weight:700;color:var(--td);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">📋 Resumen Comparativo · '+pr.cur+' vs '+pr.prev+'</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">'
-    // Prima Cobrada
     +(function(){
-      var vc=TC.a,vp=TP.a,dabs=vc-vp,dpct=vp?dabs/Math.abs(vp)*100:0,pos=dabs>=0;
-      return '<div style="background:var(--s);border-radius:8px;padding:10px 12px">'
-        +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Prima Cobrada</div>'
-        +'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">'
-        +'<span style="font-size:11px;font-weight:700;color:var(--ink2)">'+pr.cur+': <span class="bc">'+N(vc)+'</span></span>'
-        +'<span style="font-size:10px;color:var(--td)">'+pr.prev+': <span class="bc">'+N(vp)+'</span></span>'
-        +'</div>'
-        +'<div style="display:flex;gap:8px;margin-top:4px">'
-        +'<span style="font-size:10px;font-weight:700;color:'+(pos?'var(--g)':'var(--r)')+'">Δ '+(pos?'+':'')+N(dabs)+'</span>'
-        +'<span style="font-size:10px;font-weight:700;color:'+(pos?'var(--g)':'var(--r)')+'">('+(pos?'+':'')+dpct.toFixed(1)+'%)</span>'
+      var sameMes = pr.cur===pr.prev;
+      function tarjeta(lbl, vc, vp, invertir, rcolor){
+        var vcU=AC?vc/AC:0, vpU=AP?vp/AP:0;
+        var dabs=vc-vp, dpct=vp?dabs/Math.abs(vp)*100:0;
+        var varPos = invertir ? dabs<=0 : dabs>=0;
+        var rpos=vc>=0, rprevpos=vp>=0;
+        var fmtU=function(v,tasa,pos){
+          if(!tasa) return '—';
+          var u=Math.round(Math.abs(v/tasa));
+          return (pos?'':'(')+'USD '+u.toLocaleString('es-VE')+(pos?'':')');
+        };
+        return '<div style="background:var(--s);border-radius:8px;padding:12px 14px">'
+          // Etiqueta
+          +'<div style="font-size:7.5px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">'+lbl+'</div>'
+          // Fila horizontal: mes actual | divisor | mes anterior
+          +'<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:start;margin-bottom:8px">'
+          // Mes actual (izquierda)
+          +'<div>'
+          +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">'+pr.cur+'</div>'
+          +'<div style="font-size:16px;font-weight:800;color:'+(rcolor?(rpos?'var(--g)':'var(--r)'):'var(--ink2)')+'">'+fmtU(vc,AC,rpos||!rcolor)+'</div>'
+          +'<div style="font-size:8.5px;color:var(--td);margin-top:2px">Bs. '+N(vc)+'</div>'
+          +'</div>'
+          // Divisor vertical central
+          +'<div style="width:1px;background:var(--br);margin:0 12px;align-self:stretch"></div>'
+          // Mes anterior (derecha)
+          +(sameMes
+            ?'<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:9px;color:var(--td);font-style:italic;text-align:center">Solo un mes<br>cargado</span></div>'
+            :'<div>'
+            +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">'+pr.prev+'</div>'
+            +'<div style="font-size:14px;font-weight:700;color:var(--tm)">'+fmtU(vp,AP,rprevpos||!rcolor)+'</div>'
+            +'<div style="font-size:8.5px;color:var(--td);margin-top:2px">Bs. '+N(vp)+'</div>'
+            +'</div>'
+          )
+          +'</div>'
+          // Variación abajo (solo si meses distintos)
+          +(sameMes?''
+            :'<div style="border-top:1px solid var(--br);padding-top:6px;display:flex;align-items:center;gap:8px">'
+            +'<span style="font-size:12px;font-weight:800;color:'+(varPos?'var(--g)':'var(--r)')+'">'+
+              (dpct>=0?'▲':'▼')+' '+Math.abs(dpct).toFixed(1)+'%</span>'
+            +'<span style="font-size:9px;color:var(--td);font-weight:600">'+(dabs>=0?'+':'')+N(dabs)+' Bs.</span>'
+            +'</div>'
+          )
+          +'</div>';
+      }
+      return '<div style="background:var(--pb);border:1px solid var(--br);border-radius:10px;padding:14px 18px;margin-bottom:14px">'
+        +'<div style="font-size:8px;font-weight:700;color:var(--td);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">📋 Resumen Comparativo · '+pr.cur+(sameMes?'':' vs '+pr.prev)+'</div>'
+        +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">'
+        +tarjeta('Prima Cobrada',        TC.a, TP.a, false, false)
+        +tarjeta('Siniestros Incurridos', TC.n, TP.n, true,  false)
+        +tarjeta('Resultado Técnico',     TC.o, TP.o, false, true)
         +'</div></div>';
     })()
-    // Siniestros Incurridos
-    +(function(){
-      var vc=TC.n,vp=TP.n,dabs=vc-vp,dpct=vp?dabs/Math.abs(vp)*100:0,pos=dabs<=0;
-      return '<div style="background:var(--s);border-radius:8px;padding:10px 12px">'
-        +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Siniestros Incurridos</div>'
-        +'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">'
-        +'<span style="font-size:11px;font-weight:700;color:var(--ink2)">'+pr.cur+': <span class="bc">'+N(vc)+'</span></span>'
-        +'<span style="font-size:10px;color:var(--td)">'+pr.prev+': <span class="bc">'+N(vp)+'</span></span>'
-        +'</div>'
-        +'<div style="display:flex;gap:8px;margin-top:4px">'
-        +'<span style="font-size:10px;font-weight:700;color:'+(pos?'var(--g)':'var(--r)')+'">Δ '+(dabs>=0?'+':'')+N(dabs)+'</span>'
-        +'<span style="font-size:10px;font-weight:700;color:'+(pos?'var(--g)':'var(--r)')+'">('+(dabs>=0?'+':'')+dpct.toFixed(1)+'%)</span>'
-        +'</div></div>';
-    })()
-    // Resultado Técnico
-    +(function(){
-      var vc=TC.o,vp=TP.o,dabs=vc-vp,dpct=vp?dabs/Math.abs(vp)*100:0,pos=dabs>=0,rpos=vc>=0;
-      return '<div style="background:var(--s);border-radius:8px;padding:10px 12px">'
-        +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Resultado Técnico</div>'
-        +'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">'
-        +'<span style="font-size:11px;font-weight:700;color:'+(rpos?'var(--g)':'var(--r)')+'">'+pr.cur+': <span class="bc">'+N(vc)+'</span></span>'
-        +'<span style="font-size:10px;color:var(--td)">'+pr.prev+': <span class="bc">'+N(vp)+'</span></span>'
-        +'</div>'
-        +'<div style="display:flex;gap:8px;margin-top:4px">'
-        +'<span style="font-size:10px;font-weight:700;color:'+(pos?'var(--g)':'var(--r)')+'">Δ '+(dabs>=0?'+':'')+N(dabs)+'</span>'
-        +'<span style="font-size:10px;font-weight:700;color:'+(pos?'var(--g)':'var(--r)')+'">('+(dabs>=0?'+':'')+dpct.toFixed(1)+'%)</span>'
-        +'</div></div>';
-    })()
-    +'</div></div>'
     // ── Resto original ────────────────────────────────────────────────
     +'<div class="ks" style="grid-template-columns:repeat(7,minmax(0,1fr))">'
     +kc('Prima Cobrada',TC.a,TP.a,AC,AP,'a')
