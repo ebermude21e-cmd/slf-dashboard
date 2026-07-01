@@ -1629,6 +1629,12 @@ function renderKpisView(){
   // ── Calcular K1-K8 por ramo ──────────────────────────────────────────────
   function calcKpi(rd, total_a){
     var a=rd.a||0, e=rd.e||0, f=rd.f||0, g=rd.g||0, h=rd.h||0, j=rd.j||0, n=rd.n||0, o=rd.o||0;
+    // k7: % del gasto adm prorrateable que absorbe el ramo (= h_pct guardado en processXls)
+    //     h_pct = prima_ramo/prima_total × 100, que es el mismo % con que se prorratea el 98%
+    // k8: Índice Combinado = (Prima Cobrada − Resultado Técnico) / Prima Cobrada × 100
+    //     Mide qué proporción de la prima se consumió en siniestros + gastos
+    var k7val = (rd.h_pct !== undefined && rd.h_pct !== null) ? Math.round(rd.h_pct*100)/100 : (a ? Math.round(h/a*10000)/100 : 0);
+    var k8val = a ? Math.round((a-o)/a*10000)/100 : 0;
     return {
       k1: total_a ? Math.round(a/total_a*10000)/100 : 0,
       k2: a       ? Math.round(j/a*10000)/100       : 0,
@@ -1636,8 +1642,8 @@ function renderKpisView(){
       k4: a       ? Math.round(n/a*10000)/100       : 0,
       k5: a       ? Math.round(f/a*10000)/100       : 0,
       k6: a       ? Math.round(g/a*10000)/100       : 0,
-      k7: a       ? Math.round(h/a*10000)/100       : 0,
-      k8: a       ? Math.round(o/a*10000)/100       : 0
+      k7: k7val,
+      k8: k8val
     };
   }
 
@@ -1713,10 +1719,12 @@ function renderKpisView(){
       +'<div style="background:var(--s2);border-radius:8px;padding:8px 12px">'
       +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:3px">Res. Técnico</div>'
       +'<div style="font-size:12px;font-weight:700;color:var(--ink2)">Bs. '+Math.round(t.o||0).toLocaleString('es-VE')+'</div>'
+      +(bcvAvg?'<div style="font-size:9px;color:var(--td);margin-top:2px">USD '+Math.round(Math.abs(t.o||0)/bcvAvg).toLocaleString('es-VE')+'</div>':'')
       +'</div>'
       +'<div style="background:var(--s2);border-radius:8px;padding:8px 12px">'
       +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:3px">Saldo Financiero</div>'
       +'<div style="font-size:12px;font-weight:700;color:var(--ink2)">Bs. '+Math.round(fin.saldo_fin||0).toLocaleString('es-VE')+'</div>'
+      +(bcvAvg?'<div style="font-size:9px;color:var(--td);margin-top:2px">USD '+Math.round(Math.abs(fin.saldo_fin||0)/bcvAvg).toLocaleString('es-VE')+'</div>':'')
       +'</div>'
       +'</div>'
       +'</div>'
@@ -1743,8 +1751,8 @@ function renderKpisView(){
     {id:'k4',lbl:'Sin. Incurrida / Prima Cobrada',    short:'K4',desc:'Siniestros incurridos / Prima cobrada × 100',neutral:false,inv:true, isK8:false},
     {id:'k5',lbl:'Comisiones Adq. / Prima Cobrada',   short:'K5',desc:'Comisiones adq. / Prima cobrada × 100',    neutral:false,inv:true, isK8:false},
     {id:'k6',lbl:'Gasto Adm. Directo / Prima',        short:'K6',desc:'Gastos directos adm. / Prima cobrada × 100',neutral:false,inv:true, isK8:false},
-    {id:'k7',lbl:'Gasto Adm. Prorrateo / Prima',      short:'K7',desc:'Gasto adm. prorrateo / Prima cobrada × 100',neutral:true, inv:true, isK8:false},
-    {id:'k8',lbl:'Índice Combinado',                   short:'K8',desc:'Resultado Técnico / Prima cobrada × 100',  neutral:false,inv:false,isK8:true}
+    {id:'k7',lbl:'Gasto Adm. Prorrateo / Prima',      short:'K7',desc:'% del gasto adm. 98% que absorbe el ramo (= prima ramo / prima total)',neutral:true, inv:true, isK8:false},
+    {id:'k8',lbl:'Índice Combinado',                   short:'K8',desc:'(Prima Cobrada − Resultado Técnico) / Prima Cobrada × 100 — menor es mejor',neutral:false,inv:true, isK8:true}
   ];
 
   KDEFS.forEach(function(kd){
