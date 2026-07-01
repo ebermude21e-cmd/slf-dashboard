@@ -1629,19 +1629,20 @@ function renderKpisView(){
   // ── Calcular K1-K8 por ramo ──────────────────────────────────────────────
   function calcKpi(rd, total_a){
     var a=rd.a||0, e=rd.e||0, f=rd.f||0, g=rd.g||0, h=rd.h||0, j=rd.j||0, n=rd.n||0, o=rd.o||0;
-    // k7: % del gasto adm prorrateable que absorbe el ramo (= h_pct guardado en processXls)
-    //     h_pct = prima_ramo/prima_total × 100, que es el mismo % con que se prorratea el 98%
-    // k8: Índice Combinado = (Prima Cobrada − Resultado Técnico) / Prima Cobrada × 100
-    //     Mide qué proporción de la prima se consumió en siniestros + gastos
+    // k2,k4,k5,k6: denominador = prima cobrada TOTAL empresa (total_a)
+    //   → muestra la contribución del ramo como % del ingreso total de la empresa
+    // k3: denominador = prima devengada del ramo (e_ramo) — índice técnico del ramo
+    // k7: h_pct = % del gasto adm. que absorbe el ramo (= a_ramo/total_a × 100)
+    // k8: (a_ramo − o_ramo) / a_ramo — % de la prima del ramo consumido en costos
     var k7val = (rd.h_pct !== undefined && rd.h_pct !== null) ? Math.round(rd.h_pct*100)/100 : (a ? Math.round(h/a*10000)/100 : 0);
     var k8val = a ? Math.round((a-o)/a*10000)/100 : 0;
     return {
-      k1: total_a ? Math.round(a/total_a*10000)/100 : 0,
-      k2: a       ? Math.round(j/a*10000)/100       : 0,
-      k3: e       ? Math.round(j/e*10000)/100       : 0,
-      k4: a       ? Math.round(n/a*10000)/100       : 0,
-      k5: a       ? Math.round(f/a*10000)/100       : 0,
-      k6: a       ? Math.round(g/a*10000)/100       : 0,
+      k1: total_a ? Math.round(a/total_a*10000)/100           : 0,
+      k2: total_a ? Math.round(j/total_a*10000)/100           : 0,
+      k3: e       ? Math.round(j/e*10000)/100                 : 0,
+      k4: total_a ? Math.round(n/total_a*10000)/100           : 0,
+      k5: total_a ? Math.round(f/total_a*10000)/100           : 0,
+      k6: total_a ? Math.round(g/total_a*10000)/100           : 0,
       k7: k7val,
       k8: k8val
     };
@@ -1752,14 +1753,14 @@ function renderKpisView(){
   // K1-K8 — Gráficos de barras horizontales por ramo con sparkline tendencia
   // ══════════════════════════════════════════════════════════════════════════
   var KDEFS=[
-    {id:'k1',lbl:'Composición de Cartera',           short:'K1',desc:'Prima ramo / Prima total × 100',            neutral:true, inv:false,isK8:false},
-    {id:'k2',lbl:'Siniestralidad / Prima Cobrada',    short:'K2',desc:'Siniestros pagados / Prima cobrada × 100',  neutral:false,inv:true, isK8:false},
-    {id:'k3',lbl:'Siniestralidad / Prima Devengada',  short:'K3',desc:'Siniestros pagados / Prima devengada × 100',neutral:false,inv:true, isK8:false},
-    {id:'k4',lbl:'Sin. Incurrida / Prima Cobrada',    short:'K4',desc:'Siniestros incurridos / Prima cobrada × 100',neutral:false,inv:true, isK8:false},
-    {id:'k5',lbl:'Comisiones Adq. / Prima Cobrada',   short:'K5',desc:'Comisiones adq. / Prima cobrada × 100',    neutral:false,inv:true, isK8:false},
-    {id:'k6',lbl:'Gasto Adm. Directo / Prima',        short:'K6',desc:'Gastos directos adm. / Prima cobrada × 100',neutral:false,inv:true, isK8:false},
-    {id:'k7',lbl:'Gasto Adm. Prorrateo / Prima',      short:'K7',desc:'% del gasto adm. 98% que absorbe el ramo (= prima ramo / prima total)',neutral:true, inv:true, isK8:false},
-    {id:'k8',lbl:'Índice Combinado',                   short:'K8',desc:'(Prima Cobrada − Resultado Técnico) / Prima Cobrada × 100 — menor es mejor',neutral:false,inv:true, isK8:true}
+    {id:'k1',lbl:'Composición de Cartera',           short:'K1',desc:'Prima ramo / Prima total × 100',                           neutral:true, inv:false,isK8:false},
+    {id:'k2',lbl:'Siniestralidad / Prima Total',     short:'K2',desc:'Siniestros pagados ramo / Prima cobrada total × 100',       neutral:false,inv:true, isK8:false},
+    {id:'k3',lbl:'Siniestralidad / Prima Devengada', short:'K3',desc:'Siniestros pagados ramo / Prima devengada ramo × 100',      neutral:false,inv:true, isK8:false},
+    {id:'k4',lbl:'Sin. Incurrida / Prima Total',     short:'K4',desc:'Siniestros incurridos ramo / Prima cobrada total × 100',    neutral:false,inv:true, isK8:false},
+    {id:'k5',lbl:'Comisiones Adq. / Prima Total',    short:'K5',desc:'Comisiones adq. ramo / Prima cobrada total × 100',         neutral:false,inv:true, isK8:false},
+    {id:'k6',lbl:'Gasto Adm. Directo / Prima Total', short:'K6',desc:'Gastos directos adm. ramo / Prima cobrada total × 100',    neutral:false,inv:true, isK8:false},
+    {id:'k7',lbl:'Gasto Adm. Prorrateo / Prima',     short:'K7',desc:'% del gasto adm. 98% que absorbe el ramo',                 neutral:true, inv:true, isK8:false},
+    {id:'k8',lbl:'Índice Combinado',                  short:'K8',desc:'(Prima ramo − Resultado Técnico ramo) / Prima ramo × 100', neutral:false,inv:true, isK8:true}
   ];
 
   KDEFS.forEach(function(kd){
