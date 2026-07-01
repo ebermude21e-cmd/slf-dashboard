@@ -1567,14 +1567,26 @@ function renderKpisTable(){
   if(kpiGGE) html+=kpiGGE;
   if(kpis.length){
     html+='<div style="overflow-x:auto"><table class="tbl"><thead><tr>'
-      +'<th>#</th><th>Nombre del KPI</th><th>Descripción</th><th>Estado</th>'
+      +'<th>#</th><th>Nombre del KPI</th><th>Descripción</th><th style="text-align:center">Estado</th><th style="text-align:center">Acciones</th>'
       +'</tr></thead><tbody>';
-    html+=kpis.filter(function(k){return k.active;}).map(function(k,i){
-      return '<tr>'
+    html+=kpis.map(function(k,i){
+      var activo = k.active !== false;
+      return '<tr style="opacity:'+(activo?1:0.55)+'">'
         +'<td class="mono" style="color:var(--td)">'+(i+1)+'</td>'
         +'<td style="font-weight:600">'+(k.name||'')+'</td>'
         +'<td style="font-size:11px;color:var(--tm)">'+(k.description||'')+'</td>'
-        +'<td><span class="badge g">Activo</span></td>'
+        +'<td style="text-align:center">'
+          +'<button onclick="toggleKpiActivo(\''+k.id+'\')" title="Click para '+(activo?'desactivar':'activar')+'" '
+          +'style="background:none;border:none;cursor:pointer;padding:0">'
+          +'<span class="badge '+(activo?'g':'')+(activo?'':' inactive')+'" '
+          +'style="'+(activo?'':'background:var(--td);color:#fff;')+'">'
+          +(activo?'✅ Activo':'⬜ Inactivo')+'</span>'
+          +'</button>'
+        +'</td>'
+        +'<td style="text-align:center;white-space:nowrap">'
+          +'<button class="btn btn-ghost" style="font-size:10px;padding:3px 8px;margin-right:4px" onclick="openKpiModal(\''+k.id+'\')">✏️ Editar</button>'
+          +'<button class="btn btn-danger" style="font-size:10px;padding:3px 8px" onclick="deleteKpi(\''+k.id+'\')">🗑️</button>'
+        +'</td>'
         +'</tr>';
     }).join('');
     html+='</tbody></table></div>';
@@ -2012,8 +2024,18 @@ function saveKpi(){
 function deleteKpi(id){
   if(!confirm('¿Eliminar este KPI?')) return;
   STATE.kpis = STATE.kpis.filter(function(k){return k.id!==id;});
+  try{localStorage.setItem('slf_kpis',JSON.stringify(STATE.kpis));}catch(e){}
   renderKpisTable();
   showToast('KPI eliminado');
+}
+
+function toggleKpiActivo(id){
+  var kpi = STATE.kpis.find(function(k){return k.id===id;});
+  if(!kpi) return;
+  kpi.active = kpi.active===false ? true : false;
+  try{localStorage.setItem('slf_kpis',JSON.stringify(STATE.kpis));}catch(e){}
+  renderKpisTable();
+  showToast(kpi.active ? '✅ KPI activado' : '⬜ KPI desactivado');
 }
 
 function testFormula(){
