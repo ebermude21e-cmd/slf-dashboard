@@ -1264,17 +1264,12 @@ function initApp(){
     }
   }
   loadConfig();
-  // Sistema parte desde cero — el usuario carga los balances mes a mes
+  // Sistema parte desde cero si no hay datos cargados previamente
+  // Los meses cargados por el usuario persisten en localStorage entre sesiones
   var _mesesBase = [];
   var SALDO_MAYO_ESTATICO = {};
 
-  // Limpiar registros contables al iniciar para garantizar datos frescos
-  // NOTA: slf_sobregiros NO se limpia — persiste entre sesiones para permitir
-  // exportar el reporte de cuentas con sobregiro en cualquier momento
-  try{ localStorage.removeItem('slf_months'); }catch(e){}
-  try{ localStorage.removeItem('slf_saldos_crudos'); }catch(e){}
-
-  // Limpiar localStorage de meses si tiene datos inválidos o vacíos
+  // Limpiar localStorage solo si hay datos inválidos
   try{
     var _ls=localStorage.getItem('slf_months');
     var _lsParsed=_ls?JSON.parse(_ls):null;
