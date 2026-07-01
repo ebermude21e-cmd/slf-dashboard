@@ -1365,20 +1365,32 @@ function loadMonthsList(){
     var sPos=saldo>=0;
     var bcvAvg=loaded&&md.bcv&&md.bcv.avg?md.bcv.avg:1;
     function usd(v){ return (v/bcvAvg).toLocaleString('es-VE',{maximumFractionDigits:0}); }
-    // Acumulado USD = Σ(saldo_mes_Bs / BCV_mes) — Opción A: suma de conversiones mensuales
+    // Acumulado USD = ACUM_CERTIFICADO_Bs / BCV_mes_actual
+    // Idéntico al dashboard (única fuente de verdad, evita cálculos redundantes)
+    // Ene-May: certificados de ACUM_CERTIFICADO del dashboard
+    // Jun en adelante: calculado dinámicamente desde STATE.months
+    var ACUM_CERT_BS={'Enero':10850225.31,'Febrero':-48211947.05,'Marzo':27793183.75,'Abril':42876909.74,'Mayo':69856436.05};
     var ORDEN_M=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
     var idxActual=ORDEN_M.indexOf(mes);
-    var acumUSD=0; var hayAcum=false;
-    if(loaded && idxActual>=0){
-      (STATE.months||[]).forEach(function(md2){
-        var n2=(md2.month||'').split(' ')[0];
-        var idx2=ORDEN_M.indexOf(n2);
-        if(idx2>=0 && idx2<=idxActual && md2.totals){
-          var s2=md2.totals.saldo_gen||0;
-          var b2=md2.bcv&&md2.bcv.avg&&md2.bcv.avg>1?md2.bcv.avg:0;
-          if(b2>0){ acumUSD+=s2/b2; hayAcum=true; }
-        }
-      });
+    var hayAcum=false; var acumUSD=0;
+    if(loaded && bcvAvg>1){
+      if(ACUM_CERT_BS.hasOwnProperty(mes)){
+        // Meses certificados: usar valor exacto del ACUM_CERTIFICADO
+        acumUSD=ACUM_CERT_BS[mes]/bcvAvg;
+        hayAcum=true;
+      } else if(idxActual>=0){
+        // Meses más allá de Mayo: sumar saldos mensuales cargados / BCV_mes
+        var acumBs=0;
+        (STATE.months||[]).forEach(function(md2){
+          var n2=(md2.month||'').split(' ')[0];
+          var idx2=ORDEN_M.indexOf(n2);
+          if(idx2>=0 && idx2<=idxActual && md2.totals){
+            acumBs+=md2.totals.saldo_gen||0;
+            hayAcum=true;
+          }
+        });
+        if(hayAcum) acumUSD=acumBs/bcvAvg;
+      }
     }
     var aPos=acumUSD>=0;
     // Mostrar USD solo si hay tasa BCV cargada (mayor a 1 = no es el valor por defecto)
@@ -1757,7 +1769,7 @@ function renderBcvTable(){
       +'<td class="r">'+(r.min?r.min.toFixed(2):'—')+'</td>'
       +'<td class="r">'+(r.max?r.max.toFixed(2):'—')+'</td>'
       +'<td class="r"><input type="number" step="0.01" value="'+(usdt||'')+'" style="width:80px;text-align:right" onchange="updateBcv(&quot;'+mes+'&quot;,&quot;usdt&quot;,this.value)"></td>'
-      +'<td class="r">'+(express?express.toFixed(4)+'x':'—')+'</td>'
+      +'<td class="r">'+(express?express.toFixed(2)+'x':'—')+'</td>'
       +'<td class="r">'+(spread?spread.toFixed(1)+'%':'—')+'</td>'
       +'<td><button class="btn btn-danger" style="font-size:9px;padding:3px 8px" onclick="eliminarBcvMes(&quot;'+mes+'&quot;)">✕</button></td>'
       +'</tr>';
