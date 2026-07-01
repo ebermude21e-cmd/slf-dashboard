@@ -489,10 +489,24 @@ table.diff td.new{background:#DCFCE7;color:var(--g);font-weight:700}
         <div style="background:#FFF8E1;border-radius:8px;padding:12px 14px;margin-bottom:10px">
           <div style="font-size:9px;font-weight:700;color:#7A5000;text-transform:uppercase;margin-bottom:6px">₿ Tasa USDT — Consulta de referencia y registro manual</div>
           <p style="font-size:9px;color:#7A5000;margin-bottom:8px">
-            Consulta el precio actual de USDT/VES en CoinGecko como referencia de mercado.
-            Luego ingresa el <strong>promedio mensual real de Binance P2P</strong> directamente en la columna <strong>USDT Bs.</strong> de la tabla de abajo para cada mes.
+            Ingresa el <strong>promedio mensual real de Binance P2P</strong> directamente en la columna <strong>USDT Bs.</strong> de la tabla de abajo para cada mes.
+            Puedes consultar el histórico en estas referencias:
           </p>
-          <button class="btn btn-success" style="font-size:10px" onclick="sincronizarUsdt()">₿ Consultar precio USDT actual (CoinGecko)</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+            <a href="https://exchangemonitor.net/historico/venezuela/dolar-binance" target="_blank"
+               style="font-size:9px;font-weight:700;padding:5px 10px;background:#1a3a5c;color:#fff;border-radius:6px;text-decoration:none;display:inline-flex;align-items:center;gap:4px">
+              📊 ExchangeMonitor — Histórico diario Binance
+            </a>
+            <a href="https://alcambio.app/" target="_blank"
+               style="font-size:9px;font-weight:700;padding:5px 10px;background:#0f3460;color:#fff;border-radius:6px;text-decoration:none;display:inline-flex;align-items:center;gap:4px">
+              📱 Al Cambio — Gráfica USDT histórica
+            </a>
+            <a href="https://dolitoday.com/graficos/usdt.html" target="_blank"
+               style="font-size:9px;font-weight:700;padding:5px 10px;background:#1b402b;color:#fff;border-radius:6px;text-decoration:none;display:inline-flex;align-items:center;gap:4px">
+              📈 DolitoDay — Gráfico USDT/VES Binance
+            </a>
+          </div>
+          <button class="btn btn-ghost" style="font-size:10px" onclick="sincronizarUsdt()">₿ Consultar precio USDT hoy (CoinGecko)</button>
           <div id="usdt-sync-status" style="margin-top:8px"></div>
         </div>
         <div style="overflow-x:auto">
@@ -1249,8 +1263,13 @@ function initApp(){
       localStorage.removeItem('slf_months');
       _lsParsed=null;
     }
-    // Solo usar localStorage si tiene MÁS meses que los embebidos
-    STATE.months=(_lsParsed&&_lsParsed.length>_mesesBase.length)?_lsParsed:_mesesBase;
+    // Usar localStorage si existe y tiene datos válidos con todos los campos necesarios
+    // La comparación por longitud era frágil — si el usuario tenía exactamente los mismos
+    // meses que _mesesBase pero modificados, se perdían los cambios.
+    // Ahora: localStorage gana siempre que tenga al menos 1 mes con totals (datos reales).
+    var lsValido = _lsParsed && _lsParsed.length > 0 &&
+      _lsParsed.some(function(m){ return m.totals && m.ramos; });
+    STATE.months = lsValido ? _lsParsed : _mesesBase;
   }catch(e){ STATE.months=_mesesBase; }
   try{localStorage.setItem('slf_months',JSON.stringify(STATE.months));}catch(e){}
   // Precargar el saldo crudo acumulado de Mayo 2026 como referencia para calcular
@@ -1997,7 +2016,8 @@ function handleFile(file){
       var prevSaldoMap = getPrevMonthSaldoMap();
       var result=extractData(rows, ext, file.name, prevSaldoMap);
       if(!result.ok){
-        body.innerHTML='<div class="alert err"><span class="alert-icon">❌</span>'+result.error+'</div>';
+        body.innerHTML='<div class="alert err"><span class="alert-icon">❌</span>'+(result.error||'No se pudo procesar el archivo. Verifica el formato y las columnas requeridas.')+'</div>'
+          +'<div class="btn-row" style="margin-top:10px"><button class="btn btn-ghost" style="font-size:10px" onclick="resetUpload()">← Intentar con otro archivo</button></div>';
         return;
       }
       STATE.extractedData=result;
@@ -2258,20 +2278,21 @@ function showPreview(){
   var d=STATE.extractedData;
   if(!d) return;
 
-  // ── FIX 9: Validar tasa BCV cargada para el mes detectado ──
+  // ── Validar tasa BCV cargada para el mes detectado ──
   var nombreMes = (d.month||'').split(' ')[0];
   var tasaMes = STATE.bcvRates && STATE.bcvRates[nombreMes];
   var tasaOk = tasaMes && tasaMes.avg && tasaMes.avg > 0;
   if(!tasaOk){
-    document.getElementById('phase-validate').style.display='none';
-    document.getElementById('phase-upload').style.display='block';
-    setStep(1);
-    var alertsEl = document.getElementById('alerts-carga');
-    alertsEl.innerHTML = '<div class="alert err" style="margin-bottom:12px"><span class="alert-icon">⚠️</span>'
-      +'<strong>Tasa BCV no cargada para '+nombreMes+'</strong><br>'
-      +'Antes de cargar el balance de <strong>'+d.month+'</strong> debes registrar la tasa BCV promedio ASK de ese mes. '
-      +'Ve a <strong>Configuración → Tasas BCV/USDT</strong>, carga el archivo del BCV o ingresa la tasa manualmente, y luego regresa aquí.'
-      +'</div>';
+    // Mostrar el error en el body de validación (donde el usuario ya está viendo)
+    var body2=document.getElementById('validation-body');
+    if(body2){
+      body2.innerHTML='<div class="alert err" style="margin-bottom:12px"><span class="alert-icon">⚠️</span>'
+        +'<strong>Tasa BCV no cargada para '+nombreMes+'</strong><br>'
+        +'Antes de cargar el balance de <strong>'+d.month+'</strong> debes registrar la tasa BCV promedio ASK de ese mes. '
+        +'Ve a <strong>Configuración → Tasas BCV/USDT</strong>, carga el archivo BCV o ingresa la tasa manualmente, y luego regresa aquí.'
+        +'<div style="margin-top:10px"><button class="btn btn-ghost" style="font-size:10px" onclick="resetUpload()">← Cargar otro archivo</button></div>'
+        +'</div>';
+    }
     STATE.extractedData = null;
     STATE.currentFile = null;
     return;
