@@ -1282,6 +1282,7 @@ function loadMonthsList(){
         +(bcvCargado?'<div style="font-size:9px;color:var(--td);margin-top:0">USD '+(sPos?'':'(')+usd(Math.abs(saldo))+(sPos?'':')')+'</div>':'<div style="font-size:9px;color:var(--td);margin-top:0">USD — (carga tasa BCV)</div>')
         +(hasAcum?'<div style="font-size:9px;font-weight:700;margin-top:3px;padding-top:3px;border-top:1px solid #E4DCF5;color:'+(aPos?'var(--g)':'var(--r)')+'">Acum. Ene–'+mes+': '+(aPos?'Bs. ':'(Bs. ')+Math.abs(acum).toLocaleString('es-VE',{maximumFractionDigits:0})+(aPos?'':')')+'</div>'
           +(bcvCargado?'<div style="font-size:9px;color:var(--td);margin-top:0">USD '+(aPos?'':'(')+usd(Math.abs(acum))+(aPos?'':')')+'</div>':'<div style="font-size:9px;color:var(--td);margin-top:0">USD — (carga tasa BCV)</div>'):'')
+        :'');
     if(loaded) card.style.cursor='pointer';
     if(loaded) card.onclick=(function(m,d){return function(){showMonthDetail(m,d);};})(mes,md);
     grid.appendChild(card);
