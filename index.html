@@ -586,32 +586,39 @@ function initDashboard(){
     }catch(ex){ return false; }
   }
 
-  // ── PRIORIDAD 2: datos estáticos embebidos (Enero–Mayo certificados) ──
+  // ── PRIORIDAD 2: si no hay datos en localStorage, mostrar pantalla vacía ──
   ldrSet(50,'Cargando datos...');
   var usoDatosReales = intentarDatosReales();
   if(!usoDatosReales){
-    aplicarData(DATA_ESTATICA);
-  }
-  renderizar(usoDatosReales ? 'Datos actualizados' : 'Datos Enero–Mayo 2026');
-
-  // ── PRIORIDAD 3: intentar actualizar desde la API de Google (background) ──
-  // Solo se usa si no había datos reales en localStorage.
-  if(!usoDatosReales){
-    gasGet({action:'all'}, function(json){
-      var months=json.data||json.months||[];
-      if(months&&months.length){
-        try{localStorage.setItem('slf_dashboard_months',JSON.stringify(months));}catch(e){}
-        var loadedMeses=buildFromApi(months);
-        loadedMeses.sort(function(a,b){return mesesOrder.indexOf(a)-mesesOrder.indexOf(b);});
-        PAIRS=[];
-        for(var i=loadedMeses.length-1;i>=1;i--) PAIRS.push({cur:loadedMeses[i],prev:loadedMeses[i-1]});
-        if(!PAIRS.length&&loadedMeses.length===1) PAIRS=[{cur:loadedMeses[0],prev:loadedMeses[0]}];
-        MESES=loadedMeses;
+    // No hay balances cargados — mostrar pantalla informativa en lugar de datos estáticos
+    ldrDone();
+    setTimeout(function(){
+      var allPanes=['p-cmp','p-acum','p-cam','p-kpi'];
+      allPanes.forEach(function(id){
+        var el=document.getElementById(id);
+        if(el){
+          el.classList.remove('on');
+          el.innerHTML='';
+        }
+      });
+      // Mostrar mensaje en el pane-cmp
+      var pcmp=document.getElementById('p-cmp');
+      if(pcmp){
+        pcmp.classList.add('on');
+        pcmp.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:40px">'
+          +'<div style="font-size:40px;margin-bottom:16px">📂</div>'
+          +'<div style="font-size:20px;font-weight:700;color:var(--ink2,#1A1040);margin-bottom:10px">Sin balances cargados</div>'
+          +'<div style="font-size:13px;color:#8A7EAA;max-width:380px;line-height:1.7">'
+          +'Carga los balances de comprobación mes a mes desde la aplicación de administración para visualizar los resultados aquí.'
+          +'</div>'
+          +'</div>';
       }
-    }, function(){/* silencioso */});
+      document.getElementById('chips').innerHTML='';
+    },200);
+    return;
   }
+  renderizar('Datos actualizados');
 }
-var PAIRS=[];var MESES=['Enero','Febrero','Marzo','Abril','Mayo'];
 var RAMOS=['vida','fun','ap','rcv'];
 var RLBL={vida:'Vida',fun:'Funerario',ap:'Acc. Personales',rcv:'RC Vehículos'};
 var RCLR={vida:'#4B2D8F',fun:'#0D7A4E',ap:'#B07A00',rcv:'#8B1A1A'};
@@ -1129,7 +1136,42 @@ function renderKpi(){
     +'RCV y Funerario: valores extremos en algunos meses reflejan ajustes de reservas que invierten la prima devengada'
     +'</td></tr></tfoot></table></div>';
 
-  html_out+='</div>';
+  // ── KPI Gestión General Empresa ────────────────────────────────
+  // Fórmula: Siniestros Incurridos + Total Comisiones y Gastos + |Saldo Financiero|
+  var ggeHtml='';
+  if(ultimoMesKpi && DATA[ultimoMesKpi]){
+    var dm=DATA[ultimoMesKpi];
+    var t=dm.totals||{}, f=dm.fin||{};
+    var gge=(t.n||0)+(t.i||0)+Math.abs(f.saldo_fin||0);
+    var avg=BCV[ultimoMesKpi]?BCV[ultimoMesKpi].avg:0;
+    var ggeUsd=avg?gge/avg:0;
+    var pctPrima=t.a?((gge/t.a)*100):0;
+    var pctCls=pctPrima<=80?'sm-g':pctPrima<=100?'sm-w':'sm-r';
+    ggeHtml='<div style="background:var(--s,#F7F5FF);border:1px solid #D8D0F0;border-radius:10px;padding:14px 18px;margin-top:14px">'
+      +'<div style="font-size:8px;font-weight:700;color:#4B2D8F;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">📊 Gestión General Empresa — '+ultimoMesKpi+'</div>'
+      +'<div style="font-size:9px;color:#8A7EAA;margin-bottom:12px">Siniestros Incurridos + Total Comisiones y Gastos + |Saldo Financiero|</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">'
+      +'<div style="background:#fff;border-radius:8px;padding:10px 12px;border:1px solid #E4DCF5">'
+        +'<div style="font-size:7.5px;color:#8A7EAA;font-weight:700;text-transform:uppercase;margin-bottom:4px">Total Bs.</div>'
+        +'<div style="font-size:16px;font-weight:800;color:#1A1040">'+Math.round(gge).toLocaleString('es-VE')+'</div>'
+      +'</div>'
+      +(avg?'<div style="background:#fff;border-radius:8px;padding:10px 12px;border:1px solid #E4DCF5">'
+        +'<div style="font-size:7.5px;color:#8A7EAA;font-weight:700;text-transform:uppercase;margin-bottom:4px">Total USD</div>'
+        +'<div style="font-size:16px;font-weight:800;color:#1A1040">'+Math.round(ggeUsd).toLocaleString('es-VE')+'</div>'
+      +'</div>':'')
+      +'<div style="background:#fff;border-radius:8px;padding:10px 12px;border:1px solid #E4DCF5">'
+        +'<div style="font-size:7.5px;color:#8A7EAA;font-weight:700;text-transform:uppercase;margin-bottom:4px">% / Prima Cobrada</div>'
+        +'<div style="font-size:16px;font-weight:800" class="'+pctCls+'">'+pctPrima.toFixed(1)+'%</div>'
+      +'</div>'
+      +'<div style="background:#fff;border-radius:8px;padding:10px 12px;border:1px solid #E4DCF5;font-size:8.5px;color:#5A4A7A">'
+        +'<div style="margin-bottom:3px">Sin.: Bs. '+Math.round(t.n||0).toLocaleString('es-VE')+'</div>'
+        +'<div style="margin-bottom:3px">Com+Gtos: Bs. '+Math.round(t.i||0).toLocaleString('es-VE')+'</div>'
+        +'<div>Saldo Fin.: Bs. '+Math.round(f.saldo_fin||0).toLocaleString('es-VE')+'</div>'
+      +'</div>'
+      +'</div></div>';
+  }
+
+  html_out+=ggeHtml+'</div>';
   pane.innerHTML=html_out;
 }
 
