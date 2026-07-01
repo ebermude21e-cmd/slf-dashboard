@@ -271,7 +271,7 @@ table.diff td.new{background:#DCFCE7;color:var(--g);font-weight:700}
     <div class="sb-sub" id="sb-consulta">
       <button class="sb-item" onclick="showTab('meses',this)">📅 Meses Cargados</button>
       <button class="sb-item" onclick="showTab('tasas',this)">💱 Tasas BCV / USDT</button>
-      <button class="sb-item" onclick="showTab('kpis',this)">📊 KPIs</button>
+      <button class="sb-item" onclick="showTab('kpis-view',this)">📊 KPIs</button>
     </div>
   </div>
 
@@ -448,7 +448,7 @@ table.diff td.new{background:#DCFCE7;color:var(--g);font-weight:700}
   </div>
 </div>
 
-<!-- ══ TAB: KPIs ══ -->
+<!-- ══ TAB: KPIs CONFIG ══ -->
 <div class="pane" id="pane-kpis">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
     <h2 style="font-size:14px;font-weight:700;color:var(--ink2)">Configuración de KPIs</h2>
@@ -457,6 +457,18 @@ table.diff td.new{background:#DCFCE7;color:var(--g);font-weight:700}
   <div class="card">
     <div class="card-body" id="kpis-body">
       <div class="empty-state"><div class="ei">🔄</div><div class="et">Cargando KPIs...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB: KPIs CONSULTA (calculados) ══ -->
+<div class="pane" id="pane-kpis-view">
+  <div style="margin-bottom:12px">
+    <h2 style="font-size:14px;font-weight:700;color:var(--ink2)">Consulta de KPIs</h2>
+  </div>
+  <div class="card">
+    <div class="card-body" id="kpis-view-body">
+      <div class="empty-state"><div class="ei">🔄</div><div class="et">Cargando...</div></div>
     </div>
   </div>
 </div>
@@ -952,6 +964,7 @@ function showTab(name, btn){
   if(name==='carga') actualizarInfoUltimoMes();
   if(name==='cuentas') renderAccountsTable();
   if(name==='kpis') renderKpisTable();
+  if(name==='kpis-view') renderKpisView();
   if(name==='ajustes') initAjustesTab();
   if(name==='tasas') renderTasasConsulta();
 }
@@ -1255,11 +1268,11 @@ function initApp(){
   var _mesesBase = [];
   var SALDO_MAYO_ESTATICO = {};
 
-  // Limpiar todos los registros contables del localStorage al iniciar
-  // para garantizar que los datos cargados mes a mes sean los únicos en el sistema
+  // Limpiar registros contables al iniciar para garantizar datos frescos
+  // NOTA: slf_sobregiros NO se limpia — persiste entre sesiones para permitir
+  // exportar el reporte de cuentas con sobregiro en cualquier momento
   try{ localStorage.removeItem('slf_months'); }catch(e){}
   try{ localStorage.removeItem('slf_saldos_crudos'); }catch(e){}
-  try{ localStorage.removeItem('slf_sobregiros'); }catch(e){}
 
   // Limpiar localStorage de meses si tiene datos inválidos o vacíos
   try{
@@ -1593,6 +1606,125 @@ function renderKpisTable(){
     html+='</tbody></table></div>';
   }
   html+='<p style="font-size:10px;color:var(--td);margin-top:12px;padding:0 4px">⚠️ Los KPIs adicionales se calculan sobre datos reales cargados desde el balance de comprobación.</p>';
+  container.innerHTML=html;
+}
+
+// ── Consulta de KPIs calculados ─────────────────────────────────────────────
+// Muestra los 8 indicadores técnicos calculados sobre los meses cargados,
+// desglosados por ramo. Solo lectura — la configuración está en pane-kpis.
+function renderKpisView(){
+  var container = document.getElementById('kpis-view-body');
+  if(!container) return;
+
+  var months = STATE.months || [];
+  if(!months.length){
+    container.innerHTML='<div class="empty-state"><div class="ei">📂</div><div class="et">Sin balances cargados</div><div class="es">Carga balances para ver los KPIs calculados</div></div>';
+    return;
+  }
+
+  var ORDEN_M=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var RAMOS=['vida','fun','ap','rcv'];
+  var RLBL={vida:'Vida',fun:'Funerario',ap:'Acc. Personales',rcv:'RC Vehículos'};
+  var RCLR={vida:'#4B2D8F',fun:'#0D7A4E',ap:'#B07A00',rcv:'#8B1A1A'};
+
+  var KDEFS=[
+    {id:'k1', lbl:'① Composición de Cartera',               desc:'Prima cobrada ramo / Prima cobrada total × 100',           neutral:true,  inv:false},
+    {id:'k2', lbl:'② Siniestralidad Pagada / Prima Cobrada', desc:'Siniestros pagados / Prima cobrada × 100',                 neutral:false, inv:true},
+    {id:'k3', lbl:'③ Siniestralidad Pagada / Prima Devengada',desc:'Siniestros pagados / Prima devengada × 100',              neutral:false, inv:true},
+    {id:'k4', lbl:'④ Siniestralidad Incurrida / Prima Cobrada',desc:'Siniestros incurridos / Prima cobrada × 100',            neutral:false, inv:true},
+    {id:'k5', lbl:'⑤ Comisiones Adq. / Prima Cobrada',       desc:'Comisiones y gastos adq. / Prima cobrada × 100',          neutral:false, inv:true},
+    {id:'k6', lbl:'⑥ Gasto Adm. Directo / Prima Cobrada',    desc:'Gastos directos adm. / Prima cobrada × 100',              neutral:false, inv:true},
+    {id:'k7', lbl:'⑦ Gasto Adm. Prorrateo / Prima Cobrada',  desc:'Gasto adm. prorrateo / Prima cobrada × 100',              neutral:true,  inv:true},
+    {id:'k8', lbl:'⑧ Índice Combinado',                       desc:'Resultado Técnico Bruto / Prima cobrada × 100',           neutral:false, inv:false},
+  ];
+
+  function calcKpi(rd, total_a){
+    var a=rd.a||0, e=rd.e||0, f=rd.f||0, g=rd.g||0, h=rd.h||0, j=rd.j||0, n=rd.n||0, o=rd.o||0;
+    return {
+      k1: total_a ? Math.round(a/total_a*10000)/100 : 0,
+      k2: a ? Math.round(j/a*10000)/100 : 0,
+      k3: e ? Math.round(j/e*10000)/100 : 0,
+      k4: a ? Math.round(n/a*10000)/100 : 0,
+      k5: a ? Math.round(f/a*10000)/100 : 0,
+      k6: a ? Math.round(g/a*10000)/100 : 0,
+      k7: a ? Math.round(h/a*10000)/100 : 0,
+      k8: a ? Math.round(o/a*10000)/100 : 0,
+    };
+  }
+
+  function semCls(v, kd){
+    if(kd.neutral) return 'color:var(--td)';
+    if(kd.id==='k8') return v>=0?'color:var(--g)':'color:var(--r)';
+    if(kd.inv) return v<=25?'color:var(--g)':v<=40?'color:#B07A00':'color:var(--r)';
+    return v>=0?'color:var(--g)':'color:var(--r)';
+  }
+
+  function fmtV(v, kd){
+    if(kd.id==='k6' && v===0) return '—';
+    var abs = Math.abs(v);
+    return v<0?'('+abs.toFixed(1)+'%)':v.toFixed(1)+'%';
+  }
+
+  // Ordenar meses cargados
+  var sorted = months.slice().sort(function(a,b){
+    return ORDEN_M.indexOf((a.month||'').split(' ')[0]) - ORDEN_M.indexOf((b.month||'').split(' ')[0]);
+  });
+
+  var html = '';
+
+  // Bloque GGE sistémico
+  var ultimo = sorted[sorted.length-1];
+  if(ultimo && ultimo.totals){
+    var t=ultimo.totals, f=ultimo.fin||{};
+    var gge=(t.n||0)+(t.i||0)+Math.abs(f.saldo_fin||0);
+    var bcvAvg=ultimo.bcv&&ultimo.bcv.avg&&ultimo.bcv.avg>1?ultimo.bcv.avg:0;
+    var ggeUsd=bcvAvg?gge/bcvAvg:0;
+    var mesNombre=(ultimo.month||'').split(' ')[0];
+    html+='<div style="background:var(--s2);border:1px solid var(--br);border-radius:10px;padding:14px 16px;margin-bottom:16px">'
+      +'<div style="font-size:8px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">📊 Gestión General Empresa — '+mesNombre+'</div>'
+      +'<div style="font-size:9px;color:var(--td);margin-bottom:8px">Siniestros Incurridos + Total Comisiones y Gastos + |Saldo Financiero|</div>'
+      +'<div style="display:flex;gap:24px;align-items:baseline">'
+      +'<div><span style="font-size:20px;font-weight:800;color:var(--ink2)">Bs. '+Math.round(gge).toLocaleString('es-VE')+'</span>'
+      +(ggeUsd?'<span style="font-size:11px;color:var(--td);margin-left:8px">USD '+Math.round(ggeUsd).toLocaleString('es-VE')+'</span>':'')+'</div>'
+      +(t.a>0?'<div style="font-size:14px;font-weight:700;color:var(--r)">'+((gge/t.a)*100).toFixed(1)+'% prima cobrada</div>':'')
+      +'</div>'
+      +'<div style="font-size:9px;color:var(--td);margin-top:6px;display:flex;gap:12px">'
+      +'<span>Siniestros: Bs. '+(t.n||0).toLocaleString('es-VE',{maximumFractionDigits:0})+'</span>'
+      +'<span>Com.+Gastos: Bs. '+(t.i||0).toLocaleString('es-VE',{maximumFractionDigits:0})+'</span>'
+      +'<span>Saldo Fin.: Bs. '+(f.saldo_fin||0).toLocaleString('es-VE',{maximumFractionDigits:0})+'</span>'
+      +'</div></div>';
+  }
+
+  // Una tabla por cada KPI
+  KDEFS.forEach(function(kd){
+    var mesHdrs = sorted.map(function(m){
+      return '<th style="text-align:center;padding:6px 10px;font-size:9px;color:var(--td)">'+((m.month||'').split(' ')[0])+'</th>';
+    }).join('');
+
+    var rows = RAMOS.map(function(r){
+      var cells = sorted.map(function(m){
+        var rd=(m.ramos||{})[r]||{};
+        var total_a=m.totals?m.totals.a||1:1;
+        var kpis=calcKpi(rd,total_a);
+        var v=kpis[kd.id];
+        return '<td style="text-align:center;padding:5px 10px;font-size:11px;font-weight:700;'+semCls(v,kd)+'">'+fmtV(v,kd)+'</td>';
+      }).join('');
+      return '<tr>'
+        +'<td style="padding:5px 10px;white-space:nowrap">'
+        +'<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:'+RCLR[r]+';margin-right:6px"></span>'
+        +RLBL[r]+'</td>'+cells+'</tr>';
+    }).join('');
+
+    html+='<div style="margin-bottom:14px">'
+      +'<div style="font-size:8px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">'+kd.lbl+'</div>'
+      +'<div style="font-size:8px;color:var(--td);margin-bottom:6px">'+kd.desc+'</div>'
+      +'<div style="overflow-x:auto"><table class="tbl" style="min-width:100%">'
+      +'<thead><tr><th style="text-align:left;padding:6px 10px;font-size:9px">Ramo</th>'+mesHdrs+'</tr></thead>'
+      +'<tbody>'+rows+'</tbody>'
+      +'</table></div></div>';
+  });
+
+  html+='<p style="font-size:9px;color:var(--td);padding:4px 0">🟢 Verde ≤25% · 🟡 Ámbar 25–40% · 🔴 Rojo >40% · K1/K7 sin semáforo · K8 verde=utilidad</p>';
   container.innerHTML=html;
 }
 
