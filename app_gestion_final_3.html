@@ -1689,42 +1689,49 @@ function renderKpisView(){
     var ggeVals=sorted.map(function(m){
       var tt=m.totals||{}; return tt.a ? Math.round((tt.saldo_gen||0)/tt.a*10000)/100 : 0;
     });
+    // Siniestros pagados = suma j de todos los ramos (campo del totals no existe, se suma por ramo)
+    var sinPag = ['vida','fun','ap','rcv'].reduce(function(s,r){ return s+((ultimo.ramos||{})[r]?((ultimo.ramos||{})[r].j||0):0); },0);
+    // Gastos administrativos = total comisiones y gastos (i)
+    var gastoAdm = t.i||0;
+    // USD (solo si hay tasa)
+    function usd(v){ return bcvAvg ? 'USD '+Math.round(Math.abs(v)/bcvAvg).toLocaleString('es-VE') : '—'; }
+    function usdClr(v){ return v>=0?'var(--g)':'var(--r)'; }
 
     html+='<div style="background:var(--s);border:2px solid '+(ggePos?'rgba(13,122,78,.35)':'rgba(176,25,15,.35)')+';border-radius:12px;padding:18px 20px;margin-bottom:18px;position:relative;overflow:hidden">'
       +'<div style="position:absolute;left:0;top:0;bottom:0;width:5px;background:'+ggeClr+';border-radius:12px 0 0 12px"></div>'
       +'<div style="margin-left:14px">'
       +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">'
       +'<div><div style="font-size:9px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.12em;margin-bottom:3px">★ Gestión General Empresa — Indicador Principal</div>'
-      +'<div style="font-size:10px;color:var(--td)">Resultado General / Prima Cobrada × 100 · '+mesNombre+'</div></div>'
+      +'<div style="font-size:10px;color:var(--td)">Resultado General / Prima Cobrada × 100 · '+mesNombre+(bcvAvg?' · BCV Bs.'+bcvAvg.toFixed(2):'')+'</div></div>'
       +(sorted.length>1?'<div style="text-align:center"><div style="font-size:7px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:3px">Tendencia</div>'+sparkline(ggeVals,ggeClr)+'</div>':'')
       +'</div>'
       +'<div style="display:flex;align-items:stretch;gap:16px;margin-bottom:12px">'
-      // Métrica principal
+      // Métrica principal %
       +'<div style="background:'+ggeBg+';border:1px solid '+(ggePos?'rgba(13,122,78,.2)':'rgba(176,25,15,.2)')+';border-radius:10px;padding:14px 20px;text-align:center;min-width:120px;display:flex;flex-direction:column;justify-content:center">'
       +'<div style="font-size:34px;font-weight:900;color:'+ggeClr+';line-height:1">'+(ggePos?'+':'')+gge.toFixed(1)+'%</div>'
       +'<div style="font-size:8px;font-weight:700;color:'+ggeClr+';text-transform:uppercase;margin-top:4px">'+(ggePos?'✓ Utilidad':'✗ Pérdida')+'</div>'
       +'</div>'
-      // Desglose
+      // 4 cuadros en USD: Prima Cobrada | Utilidad (arriba) — Siniestros Pagados | Gastos Adm. (abajo)
       +'<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px">'
-      +'<div style="background:var(--s2);border-radius:8px;padding:10px 12px">'
-      +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:4px">Resultado General</div>'
-      +'<div style="font-size:15px;font-weight:800;color:'+ggeClr+'">Bs. '+Math.round(Math.abs(sg)).toLocaleString('es-VE')+'</div>'
-      +(bcvAvg?'<div style="font-size:9px;color:var(--td);margin-top:2px">USD '+Math.round(Math.abs(sg)/bcvAvg).toLocaleString('es-VE')+'</div>':'')
-      +'</div>'
+      // Prima Cobrada
       +'<div style="background:var(--s2);border-radius:8px;padding:10px 12px">'
       +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:4px">Prima Cobrada</div>'
-      +'<div style="font-size:15px;font-weight:800;color:var(--ink2)">Bs. '+Math.round(aPCob).toLocaleString('es-VE')+'</div>'
-      +(bcvAvg?'<div style="font-size:9px;color:var(--td);margin-top:2px">USD '+Math.round(aPCob/bcvAvg).toLocaleString('es-VE')+'</div>':'')
+      +'<div style="font-size:17px;font-weight:800;color:var(--ink2)">'+usd(aPCob)+'</div>'
       +'</div>'
-      +'<div style="background:var(--s2);border-radius:8px;padding:8px 12px">'
-      +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:3px">Res. Técnico</div>'
-      +'<div style="font-size:12px;font-weight:700;color:var(--ink2)">Bs. '+Math.round(t.o||0).toLocaleString('es-VE')+'</div>'
-      +(bcvAvg?'<div style="font-size:9px;color:var(--td);margin-top:2px">USD '+Math.round(Math.abs(t.o||0)/bcvAvg).toLocaleString('es-VE')+'</div>':'')
+      // Utilidad (saldo general)
+      +'<div style="background:'+ggeBg+';border:1px solid '+(ggePos?'rgba(13,122,78,.15)':'rgba(176,25,15,.15)')+';border-radius:8px;padding:10px 12px">'
+      +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:4px">Utilidad Neta</div>'
+      +'<div style="font-size:17px;font-weight:800;color:'+ggeClr+'">'+(bcvAvg?(ggePos?'':'-')+'USD '+Math.round(Math.abs(sg)/bcvAvg).toLocaleString('es-VE'):'—')+'</div>'
       +'</div>'
-      +'<div style="background:var(--s2);border-radius:8px;padding:8px 12px">'
-      +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:3px">Saldo Financiero</div>'
-      +'<div style="font-size:12px;font-weight:700;color:var(--ink2)">Bs. '+Math.round(fin.saldo_fin||0).toLocaleString('es-VE')+'</div>'
-      +(bcvAvg?'<div style="font-size:9px;color:var(--td);margin-top:2px">USD '+Math.round(Math.abs(fin.saldo_fin||0)/bcvAvg).toLocaleString('es-VE')+'</div>':'')
+      // Siniestros Pagados
+      +'<div style="background:var(--s2);border-radius:8px;padding:10px 12px">'
+      +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:4px">Siniestros Pagados</div>'
+      +'<div style="font-size:17px;font-weight:800;color:var(--r)">'+usd(sinPag)+'</div>'
+      +'</div>'
+      // Gastos Administrativos
+      +'<div style="background:var(--s2);border-radius:8px;padding:10px 12px">'
+      +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:4px">Gastos Administrativos</div>'
+      +'<div style="font-size:17px;font-weight:800;color:var(--r)">'+usd(gastoAdm)+'</div>'
       +'</div>'
       +'</div>'
       +'</div>'
@@ -1756,12 +1763,26 @@ function renderKpisView(){
   ];
 
   KDEFS.forEach(function(kd){
+    // bcvAvg del último mes para conversión USD en barras
+    var bcvLast = ultimo.bcv&&ultimo.bcv.avg&&ultimo.bcv.avg>1 ? ultimo.bcv.avg : 0;
+    // total_a del último mes para calcular valor absoluto desde %
+    var taLast = ultimo.totals ? (ultimo.totals.a||1) : 1;
+
     var dataRamos=RAMOS.map(function(r){
       return {r:r, vals:sorted.map(function(m){
         var rd=(m.ramos||{})[r]||{};
         var ta=m.totals?m.totals.a||1:1;
         return calcKpi(rd,ta)[kd.id];
-      })};
+      }),
+      // Valor absoluto en Bs. del último mes para convertir a USD
+      bsUltimo: (function(){
+        var rd=(ultimo.ramos||{})[r]||{};
+        // Monto base según el KPI
+        var map={k1:rd.a||0, k2:rd.j||0, k3:rd.j||0, k4:rd.n||0,
+                 k5:rd.f||0, k6:rd.g||0, k7:rd.h||0, k8:rd.a-(rd.o||0)};
+        return Math.abs(map[kd.id]||0);
+      })()
+      };
     });
     var ultimoVals=dataRamos.map(function(d){return d.vals[d.vals.length-1];});
     var maxAbs=Math.ceil(Math.max.apply(null,ultimoVals.map(Math.abs).concat([10]))/10)*10;
@@ -1781,6 +1802,7 @@ function renderKpisView(){
         var clr=semColor(v,kd.neutral,kd.inv,kd.isK8);
         var pct=maxAbs>0?Math.min(Math.abs(v)/maxAbs*100,100):0;
         var fv=kd.id==='k6'&&v===0?'—':(v<0?'('+Math.abs(v).toFixed(1)+'%)':v.toFixed(1)+'%');
+        var usdStr=bcvLast&&d.bsUltimo?'USD '+Math.round(d.bsUltimo/bcvLast).toLocaleString('es-VE'):'';
         return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'
           +'<div style="display:flex;align-items:center;gap:5px;width:116px;flex-shrink:0">'
           +'<span style="width:8px;height:8px;border-radius:2px;background:'+RCLR[d.r]+';flex-shrink:0;display:inline-block"></span>'
@@ -1791,7 +1813,11 @@ function renderKpisView(){
             ?'<div style="position:absolute;right:0;top:1px;height:14px;width:'+pct+'%;background:'+clr+';opacity:.8;border-radius:3px"></div>'
             :'<div style="position:absolute;left:0;top:1px;height:14px;width:'+pct+'%;background:'+clr+';border-radius:3px"></div>'
           )+'</div>'
-          +'<div style="width:52px;text-align:right;font-size:11px;font-weight:700;color:'+clr+'">'+fv+'</div>'
+          // % en grande + USD en pequeño a la derecha
+          +'<div style="width:100px;text-align:right;flex-shrink:0">'
+          +'<span style="font-size:11px;font-weight:700;color:'+clr+'">'+fv+'</span>'
+          +(usdStr?'<span style="font-size:9px;color:var(--td);margin-left:5px">'+usdStr+'</span>':'')
+          +'</div>'
           +'</div>';
       }).join('')
       +'</div>'
