@@ -1604,16 +1604,14 @@ function renderKpisTable(){
   container.innerHTML=html;
 }
 
-// ── Consulta de KPIs calculados ─────────────────────────────────────────────
-// Muestra los 8 indicadores técnicos calculados sobre los meses cargados,
-// desglosados por ramo. Solo lectura — la configuración está en pane-kpis.
+// ── Consulta de KPIs calculados (vista ejecutiva con gráficos) ──────────────
 function renderKpisView(){
   var container = document.getElementById('kpis-view-body');
   if(!container) return;
 
   var months = STATE.months || [];
   if(!months.length){
-    container.innerHTML='<div class="empty-state"><div class="ei">📂</div><div class="et">Sin balances cargados</div><div class="es">Carga balances para ver los KPIs calculados</div></div>';
+    container.innerHTML='<div class="empty-state"><div class="ei">📂</div><div class="et">Sin balances cargados</div><div class="es">Carga balances mes a mes para ver los KPIs calculados</div></div>';
     return;
   }
 
@@ -1622,111 +1620,199 @@ function renderKpisView(){
   var RLBL={vida:'Vida',fun:'Funerario',ap:'Acc. Personales',rcv:'RC Vehículos'};
   var RCLR={vida:'#4B2D8F',fun:'#0D7A4E',ap:'#B07A00',rcv:'#8B1A1A'};
 
-  var KDEFS=[
-    {id:'k1', lbl:'① Composición de Cartera',               desc:'Prima cobrada ramo / Prima cobrada total × 100',           neutral:true,  inv:false},
-    {id:'k2', lbl:'② Siniestralidad Pagada / Prima Cobrada', desc:'Siniestros pagados / Prima cobrada × 100',                 neutral:false, inv:true},
-    {id:'k3', lbl:'③ Siniestralidad Pagada / Prima Devengada',desc:'Siniestros pagados / Prima devengada × 100',              neutral:false, inv:true},
-    {id:'k4', lbl:'④ Siniestralidad Incurrida / Prima Cobrada',desc:'Siniestros incurridos / Prima cobrada × 100',            neutral:false, inv:true},
-    {id:'k5', lbl:'⑤ Comisiones Adq. / Prima Cobrada',       desc:'Comisiones y gastos adq. / Prima cobrada × 100',          neutral:false, inv:true},
-    {id:'k6', lbl:'⑥ Gasto Adm. Directo / Prima Cobrada',    desc:'Gastos directos adm. / Prima cobrada × 100',              neutral:false, inv:true},
-    {id:'k7', lbl:'⑦ Gasto Adm. Prorrateo / Prima Cobrada',  desc:'Gasto adm. prorrateo / Prima cobrada × 100',              neutral:true,  inv:true},
-    {id:'k8', lbl:'⑧ Índice Combinado',                       desc:'Resultado Técnico Bruto / Prima cobrada × 100',           neutral:false, inv:false},
-  ];
+  var sorted = months.slice().sort(function(a,b){
+    return ORDEN_M.indexOf((a.month||'').split(' ')[0]) - ORDEN_M.indexOf((b.month||'').split(' ')[0]);
+  });
+  var ultimo = sorted[sorted.length-1];
+  var mesNombre = (ultimo.month||'').split(' ')[0];
 
+  // ── Calcular K1-K8 por ramo ──────────────────────────────────────────────
   function calcKpi(rd, total_a){
     var a=rd.a||0, e=rd.e||0, f=rd.f||0, g=rd.g||0, h=rd.h||0, j=rd.j||0, n=rd.n||0, o=rd.o||0;
     return {
       k1: total_a ? Math.round(a/total_a*10000)/100 : 0,
-      k2: a ? Math.round(j/a*10000)/100 : 0,
-      k3: e ? Math.round(j/e*10000)/100 : 0,
-      k4: a ? Math.round(n/a*10000)/100 : 0,
-      k5: a ? Math.round(f/a*10000)/100 : 0,
-      k6: a ? Math.round(g/a*10000)/100 : 0,
-      k7: a ? Math.round(h/a*10000)/100 : 0,
-      k8: a ? Math.round(o/a*10000)/100 : 0,
+      k2: a       ? Math.round(j/a*10000)/100       : 0,
+      k3: e       ? Math.round(j/e*10000)/100       : 0,
+      k4: a       ? Math.round(n/a*10000)/100       : 0,
+      k5: a       ? Math.round(f/a*10000)/100       : 0,
+      k6: a       ? Math.round(g/a*10000)/100       : 0,
+      k7: a       ? Math.round(h/a*10000)/100       : 0,
+      k8: a       ? Math.round(o/a*10000)/100       : 0
     };
   }
 
-  function semCls(v, kd){
-    if(kd.neutral) return 'color:var(--td)';
-    if(kd.id==='k8') return v>=0?'color:var(--g)':'color:var(--r)';
-    if(kd.inv) return v<=25?'color:var(--g)':v<=40?'color:#B07A00':'color:var(--r)';
-    return v>=0?'color:var(--g)':'color:var(--r)';
+  // ── Semáforo ──────────────────────────────────────────────────────────────
+  function semColor(v, neutral, inv, isK8){
+    if(neutral) return '#8A7EAA';
+    if(isK8)    return v>=0 ? '#0D7A4E' : '#B0190F';
+    if(inv)     return v<=25 ? '#0D7A4E' : v<=40 ? '#B07A00' : '#B0190F';
+    return v>=0 ? '#0D7A4E' : '#B0190F';
   }
 
-  function fmtV(v, kd){
-    if(kd.id==='k6' && v===0) return '—';
-    var abs = Math.abs(v);
-    return v<0?'('+abs.toFixed(1)+'%)':v.toFixed(1)+'%';
+  // ── Sparkline SVG de tendencia ───────────────────────────────────────────
+  function sparkline(vals, color){
+    var W=72, H=24;
+    if(vals.length<2) return '';
+    var min=Math.min.apply(null,vals), max=Math.max.apply(null,vals), rng=max-min||1;
+    var pts=vals.map(function(v,i){
+      return Math.round(i*(W-4)/(vals.length-1)+2)+','+Math.round((1-(v-min)/rng)*(H-4)+2);
+    }).join(' ');
+    return '<svg width="'+W+'" height="'+H+'" style="vertical-align:middle">'
+      +'<polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linejoin="round"/>'
+      +vals.map(function(v,i){
+        var x=Math.round(i*(W-4)/(vals.length-1)+2), y=Math.round((1-(v-min)/rng)*(H-4)+2);
+        return '<circle cx="'+x+'" cy="'+y+'" r="2.5" fill="'+color+'" stroke="#fff" stroke-width="1"/>';
+      }).join('')
+      +'</svg>';
   }
 
-  // Ordenar meses cargados
-  var sorted = months.slice().sort(function(a,b){
-    return ORDEN_M.indexOf((a.month||'').split(' ')[0]) - ORDEN_M.indexOf((b.month||'').split(' ')[0]);
-  });
+  var html='';
 
-  var html = '';
-
-  // Bloque GGE sistémico
-  var ultimo = sorted[sorted.length-1];
+  // ══════════════════════════════════════════════════════════════════════════
+  // GESTIÓN GENERAL EMPRESA — PRIMERO — KPI de mayor relevancia
+  // Fórmula: Resultado General (Saldo General) / Prima Cobrada × 100
+  // ══════════════════════════════════════════════════════════════════════════
   if(ultimo && ultimo.totals){
-    var t=ultimo.totals, f=ultimo.fin||{};
-    var gge=(t.n||0)+(t.i||0)+Math.abs(f.saldo_fin||0);
+    var t=ultimo.totals, fin=ultimo.fin||{};
     var bcvAvg=ultimo.bcv&&ultimo.bcv.avg&&ultimo.bcv.avg>1?ultimo.bcv.avg:0;
-    var ggeUsd=bcvAvg?gge/bcvAvg:0;
-    var mesNombre=(ultimo.month||'').split(' ')[0];
-    html+='<div style="background:var(--s2);border:1px solid var(--br);border-radius:10px;padding:14px 16px;margin-bottom:16px">'
-      +'<div style="font-size:8px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">📊 Gestión General Empresa — '+mesNombre+'</div>'
-      +'<div style="font-size:9px;color:var(--td);margin-bottom:8px">Siniestros Incurridos + Total Comisiones y Gastos + |Saldo Financiero|</div>'
-      +'<div style="display:flex;gap:24px;align-items:baseline">'
-      +'<div><span style="font-size:20px;font-weight:800;color:var(--ink2)">Bs. '+Math.round(gge).toLocaleString('es-VE')+'</span>'
-      +(ggeUsd?'<span style="font-size:11px;color:var(--td);margin-left:8px">USD '+Math.round(ggeUsd).toLocaleString('es-VE')+'</span>':'')+'</div>'
-      +(t.a>0?'<div style="font-size:14px;font-weight:700;color:var(--r)">'+((gge/t.a)*100).toFixed(1)+'% prima cobrada</div>':'')
+    var sg=t.saldo_gen||0, aPCob=t.a||1;
+    var gge=aPCob ? Math.round(sg/aPCob*10000)/100 : 0;
+    var ggePos=gge>=0;
+    var ggeClr=ggePos?'#0D7A4E':'#B0190F';
+    var ggeBg=ggePos?'rgba(13,122,78,.07)':'rgba(176,25,15,.07)';
+    var ggeVals=sorted.map(function(m){
+      var tt=m.totals||{}; return tt.a ? Math.round((tt.saldo_gen||0)/tt.a*10000)/100 : 0;
+    });
+
+    html+='<div style="background:var(--s);border:2px solid '+(ggePos?'rgba(13,122,78,.35)':'rgba(176,25,15,.35)')+';border-radius:12px;padding:18px 20px;margin-bottom:18px;position:relative;overflow:hidden">'
+      +'<div style="position:absolute;left:0;top:0;bottom:0;width:5px;background:'+ggeClr+';border-radius:12px 0 0 12px"></div>'
+      +'<div style="margin-left:14px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">'
+      +'<div><div style="font-size:9px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.12em;margin-bottom:3px">★ Gestión General Empresa — Indicador Principal</div>'
+      +'<div style="font-size:10px;color:var(--td)">Resultado General / Prima Cobrada × 100 · '+mesNombre+'</div></div>'
+      +(sorted.length>1?'<div style="text-align:center"><div style="font-size:7px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:3px">Tendencia</div>'+sparkline(ggeVals,ggeClr)+'</div>':'')
       +'</div>'
-      +'<div style="font-size:9px;color:var(--td);margin-top:6px;display:flex;gap:12px">'
-      +'<span>Siniestros: Bs. '+(t.n||0).toLocaleString('es-VE',{maximumFractionDigits:0})+'</span>'
-      +'<span>Com.+Gastos: Bs. '+(t.i||0).toLocaleString('es-VE',{maximumFractionDigits:0})+'</span>'
-      +'<span>Saldo Fin.: Bs. '+(f.saldo_fin||0).toLocaleString('es-VE',{maximumFractionDigits:0})+'</span>'
+      +'<div style="display:flex;align-items:stretch;gap:16px;margin-bottom:12px">'
+      // Métrica principal
+      +'<div style="background:'+ggeBg+';border:1px solid '+(ggePos?'rgba(13,122,78,.2)':'rgba(176,25,15,.2)')+';border-radius:10px;padding:14px 20px;text-align:center;min-width:120px;display:flex;flex-direction:column;justify-content:center">'
+      +'<div style="font-size:34px;font-weight:900;color:'+ggeClr+';line-height:1">'+(ggePos?'+':'')+gge.toFixed(1)+'%</div>'
+      +'<div style="font-size:8px;font-weight:700;color:'+ggeClr+';text-transform:uppercase;margin-top:4px">'+(ggePos?'✓ Utilidad':'✗ Pérdida')+'</div>'
+      +'</div>'
+      // Desglose
+      +'<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+      +'<div style="background:var(--s2);border-radius:8px;padding:10px 12px">'
+      +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:4px">Resultado General</div>'
+      +'<div style="font-size:15px;font-weight:800;color:'+ggeClr+'">Bs. '+Math.round(Math.abs(sg)).toLocaleString('es-VE')+'</div>'
+      +(bcvAvg?'<div style="font-size:9px;color:var(--td);margin-top:2px">USD '+Math.round(Math.abs(sg)/bcvAvg).toLocaleString('es-VE')+'</div>':'')
+      +'</div>'
+      +'<div style="background:var(--s2);border-radius:8px;padding:10px 12px">'
+      +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:4px">Prima Cobrada</div>'
+      +'<div style="font-size:15px;font-weight:800;color:var(--ink2)">Bs. '+Math.round(aPCob).toLocaleString('es-VE')+'</div>'
+      +(bcvAvg?'<div style="font-size:9px;color:var(--td);margin-top:2px">USD '+Math.round(aPCob/bcvAvg).toLocaleString('es-VE')+'</div>':'')
+      +'</div>'
+      +'<div style="background:var(--s2);border-radius:8px;padding:8px 12px">'
+      +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:3px">Res. Técnico</div>'
+      +'<div style="font-size:12px;font-weight:700;color:var(--ink2)">Bs. '+Math.round(t.o||0).toLocaleString('es-VE')+'</div>'
+      +'</div>'
+      +'<div style="background:var(--s2);border-radius:8px;padding:8px 12px">'
+      +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:3px">Saldo Financiero</div>'
+      +'<div style="font-size:12px;font-weight:700;color:var(--ink2)">Bs. '+Math.round(fin.saldo_fin||0).toLocaleString('es-VE')+'</div>'
+      +'</div>'
+      +'</div>'
+      +'</div>'
+      // Barra de rentabilidad
+      +'<div style="display:flex;align-items:center;gap:10px">'
+      +'<span style="font-size:8px;color:var(--r);width:60px">Pérdida</span>'
+      +'<div style="flex:1;height:8px;background:var(--s2);border-radius:4px;position:relative">'
+      +'<div style="position:absolute;left:50%;top:-1px;bottom:-1px;width:2px;background:var(--br)"></div>'
+      +'<div style="height:100%;background:'+ggeClr+';border-radius:4px;'
+        +(ggePos?'margin-left:50%;width:'+Math.min(Math.abs(gge)/2,50)+'%':'margin-left:'+Math.max(50-Math.min(Math.abs(gge)/2,50),0)+'%;width:'+Math.min(Math.abs(gge)/2,50)+'%')+'"></div>'
+      +'</div>'
+      +'<span style="font-size:8px;color:var(--g);width:60px;text-align:right">Utilidad</span>'
+      +'</div>'
       +'</div></div>';
   }
 
-  // Una tabla por cada KPI
+  // ══════════════════════════════════════════════════════════════════════════
+  // K1-K8 — Gráficos de barras horizontales por ramo con sparkline tendencia
+  // ══════════════════════════════════════════════════════════════════════════
+  var KDEFS=[
+    {id:'k1',lbl:'Composición de Cartera',           short:'K1',desc:'Prima ramo / Prima total × 100',            neutral:true, inv:false,isK8:false},
+    {id:'k2',lbl:'Siniestralidad / Prima Cobrada',    short:'K2',desc:'Siniestros pagados / Prima cobrada × 100',  neutral:false,inv:true, isK8:false},
+    {id:'k3',lbl:'Siniestralidad / Prima Devengada',  short:'K3',desc:'Siniestros pagados / Prima devengada × 100',neutral:false,inv:true, isK8:false},
+    {id:'k4',lbl:'Sin. Incurrida / Prima Cobrada',    short:'K4',desc:'Siniestros incurridos / Prima cobrada × 100',neutral:false,inv:true, isK8:false},
+    {id:'k5',lbl:'Comisiones Adq. / Prima Cobrada',   short:'K5',desc:'Comisiones adq. / Prima cobrada × 100',    neutral:false,inv:true, isK8:false},
+    {id:'k6',lbl:'Gasto Adm. Directo / Prima',        short:'K6',desc:'Gastos directos adm. / Prima cobrada × 100',neutral:false,inv:true, isK8:false},
+    {id:'k7',lbl:'Gasto Adm. Prorrateo / Prima',      short:'K7',desc:'Gasto adm. prorrateo / Prima cobrada × 100',neutral:true, inv:true, isK8:false},
+    {id:'k8',lbl:'Índice Combinado',                   short:'K8',desc:'Resultado Técnico / Prima cobrada × 100',  neutral:false,inv:false,isK8:true}
+  ];
+
   KDEFS.forEach(function(kd){
-    var mesHdrs = sorted.map(function(m){
-      return '<th style="text-align:center;padding:6px 10px;font-size:9px;color:var(--td)">'+((m.month||'').split(' ')[0])+'</th>';
-    }).join('');
-
-    var rows = RAMOS.map(function(r){
-      var cells = sorted.map(function(m){
+    var dataRamos=RAMOS.map(function(r){
+      return {r:r, vals:sorted.map(function(m){
         var rd=(m.ramos||{})[r]||{};
-        var total_a=m.totals?m.totals.a||1:1;
-        var kpis=calcKpi(rd,total_a);
-        var v=kpis[kd.id];
-        return '<td style="text-align:center;padding:5px 10px;font-size:11px;font-weight:700;'+semCls(v,kd)+'">'+fmtV(v,kd)+'</td>';
-      }).join('');
-      return '<tr>'
-        +'<td style="padding:5px 10px;white-space:nowrap">'
-        +'<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:'+RCLR[r]+';margin-right:6px"></span>'
-        +RLBL[r]+'</td>'+cells+'</tr>';
-    }).join('');
+        var ta=m.totals?m.totals.a||1:1;
+        return calcKpi(rd,ta)[kd.id];
+      })};
+    });
+    var ultimoVals=dataRamos.map(function(d){return d.vals[d.vals.length-1];});
+    var maxAbs=Math.ceil(Math.max.apply(null,ultimoVals.map(Math.abs).concat([10]))/10)*10;
 
-    html+='<div style="margin-bottom:14px">'
-      +'<div style="font-size:8px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">'+kd.lbl+'</div>'
-      +'<div style="font-size:8px;color:var(--td);margin-bottom:6px">'+kd.desc+'</div>'
-      +'<div style="overflow-x:auto"><table class="tbl" style="min-width:100%">'
-      +'<thead><tr><th style="text-align:left;padding:6px 10px;font-size:9px">Ramo</th>'+mesHdrs+'</tr></thead>'
-      +'<tbody>'+rows+'</tbody>'
-      +'</table></div></div>';
+    html+='<div style="background:var(--s);border:1px solid var(--br);border-radius:10px;padding:14px 16px;margin-bottom:10px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+      +'<div style="display:flex;align-items:center;gap:8px">'
+      +'<span style="background:var(--p);color:#fff;font-size:9px;font-weight:700;border-radius:4px;padding:2px 8px">'+kd.short+'</span>'
+      +'<span style="font-size:12px;font-weight:700;color:var(--ink2)">'+kd.lbl+'</span>'
+      +'</div>'
+      +'<span style="font-size:8.5px;color:var(--td)">'+kd.desc+'</span>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:'+(sorted.length>1?'1fr 100px':'1fr')+';gap:12px;align-items:start">'
+      +'<div>'
+      +dataRamos.map(function(d){
+        var v=d.vals[d.vals.length-1];
+        var clr=semColor(v,kd.neutral,kd.inv,kd.isK8);
+        var pct=maxAbs>0?Math.min(Math.abs(v)/maxAbs*100,100):0;
+        var fv=kd.id==='k6'&&v===0?'—':(v<0?'('+Math.abs(v).toFixed(1)+'%)':v.toFixed(1)+'%');
+        return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'
+          +'<div style="display:flex;align-items:center;gap:5px;width:116px;flex-shrink:0">'
+          +'<span style="width:8px;height:8px;border-radius:2px;background:'+RCLR[d.r]+';flex-shrink:0;display:inline-block"></span>'
+          +'<span style="font-size:10px;color:var(--tm);white-space:nowrap">'+RLBL[d.r]+'</span>'
+          +'</div>'
+          +'<div style="flex:1;height:16px;background:var(--s2);border-radius:4px;overflow:hidden;position:relative">'
+          +(v<0
+            ?'<div style="position:absolute;right:0;top:1px;height:14px;width:'+pct+'%;background:'+clr+';opacity:.8;border-radius:3px"></div>'
+            :'<div style="position:absolute;left:0;top:1px;height:14px;width:'+pct+'%;background:'+clr+';border-radius:3px"></div>'
+          )+'</div>'
+          +'<div style="width:52px;text-align:right;font-size:11px;font-weight:700;color:'+clr+'">'+fv+'</div>'
+          +'</div>';
+      }).join('')
+      +'</div>'
+      +(sorted.length>1
+        ?'<div><div style="font-size:7px;font-weight:700;color:var(--td);text-transform:uppercase;text-align:center;margin-bottom:4px;letter-spacing:.1em">Tend.</div>'
+         +dataRamos.map(function(d){
+           var clr=semColor(d.vals[d.vals.length-1],kd.neutral,kd.inv,kd.isK8);
+           return '<div style="height:28px;display:flex;align-items:center;justify-content:center;margin-bottom:5px">'+sparkline(d.vals,clr)+'</div>';
+         }).join('')
+         +'</div>'
+        :''
+      )
+      +'</div>'
+      +(kd.inv&&!kd.neutral?'<div style="margin-top:6px;display:flex;gap:12px;padding-top:6px;border-top:1px solid var(--br)">'
+        +'<span style="font-size:8px;color:#0D7A4E">● ≤25% óptimo</span>'
+        +'<span style="font-size:8px;color:#B07A00">● 25–40% alerta</span>'
+        +'<span style="font-size:8px;color:#B0190F">● >40% crítico</span>'
+        +'</div>':'')
+      +'</div>';
   });
 
-  html+='<p style="font-size:9px;color:var(--td);padding:4px 0">🟢 Verde ≤25% · 🟡 Ámbar 25–40% · 🔴 Rojo >40% · K1/K7 sin semáforo · K8 verde=utilidad</p>';
+  html+='<div style="margin-top:4px;padding:8px 4px;border-top:1px solid var(--br);font-size:8.5px;color:var(--td)">'
+    +'K1=Prima ramo/total · K2=Sin.Pag/PCob · K3=Sin.Pag/PDev · K4=Sin.Inc/PCob · K5=Comis/PCob · K6=GtoDir/PCob · K7=GtoProrr/PCob · K8=ResTéc/PCob · Todos ×100'
+    +'</div>';
+
   container.innerHTML=html;
 }
 
-// ── Consulta de Tasas (vista de solo lectura, agrupada por indicador) ──
-// Toma los mismos datos de STATE.bcvRates que alimenta la tabla editable
-// de Configuración, pero los presenta como panel de consulta: bloques
-// grandes por mes para BCV Promedio y para USDT, con variación mes a mes.
+// ── Consulta de Tasas ──────────────────────────────────────────────────────
 function renderTasasConsulta(){
   var body = document.getElementById('tasas-consulta-body');
   if(!body) return;
