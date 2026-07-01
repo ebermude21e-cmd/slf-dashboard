@@ -2016,20 +2016,43 @@ function handleFile(file){
       var prevSaldoMap = getPrevMonthSaldoMap();
       var result=extractData(rows, ext, file.name, prevSaldoMap);
       if(!result.ok){
-        body.innerHTML='<div class="alert err"><span class="alert-icon">❌</span>'+(result.error||'No se pudo procesar el archivo. Verifica el formato y las columnas requeridas.')+'</div>'
-          +'<div class="btn-row" style="margin-top:10px"><button class="btn btn-ghost" style="font-size:10px" onclick="resetUpload()">← Intentar con otro archivo</button></div>';
+        body.innerHTML='<div class="alert err"><span class="alert-icon">❌</span>'
+          +(result.error||'No se pudo procesar el archivo. Verifica el formato y las columnas requeridas.')
+          +'</div>'
+          +'<div class="btn-row" style="margin-top:10px">'
+          +'<button class="btn btn-ghost" style="font-size:10px" onclick="resetUpload()">← Intentar con otro archivo</button>'
+          +'</div>';
         return;
       }
       STATE.extractedData=result;
+      // Advertencia de tasa BCV (informativa, NO bloquea la carga)
+      var nombreMes=(result.month||'').split(' ')[0];
+      var tasaMes=STATE.bcvRates&&STATE.bcvRates[nombreMes];
+      var tasaOk=tasaMes&&tasaMes.avg&&tasaMes.avg>0;
+      var bcvWarn=tasaOk?''
+        :'<div class="alert warn" style="margin-top:8px"><span class="alert-icon">⚠️</span>'
+        +'Tasa BCV de <strong>'+nombreMes+'</strong> no detectada. Puedes cargar el balance de todas formas, '
+        +'pero las conversiones a USD aparecerán como "—" hasta que ingreses la tasa en '
+        +'<strong>Configuración → Tasas BCV/USDT</strong>.</div>';
       var sgMsg = result.sobregiros && result.sobregiros.length
-        ? '<div class="alert warn" style="margin-top:8px"><span class="alert-icon">⚠️</span>'+result.sobregiros.length+' cuenta(s) detectada(s) con sobregiro o reversión — esto es informativo y no bloquea la carga. Podrás revisarlas y descargarlas luego de confirmar.</div>'
+        ? '<div class="alert warn" style="margin-top:8px"><span class="alert-icon">⚠️</span>'+result.sobregiros.length+' cuenta(s) con sobregiro detectadas — informativo, no bloquea la carga.</div>'
         : '';
       body.innerHTML='<div class="alert ok"><span class="alert-icon">✅</span>Archivo válido — <strong>'+result.month+' '+result.year+'</strong> detectado. '+result.rowsRead+' filas procesadas.</div>'
-        +sgMsg
+        +bcvWarn+sgMsg
         +'<div class="btn-row" style="margin-top:12px"><button class="btn btn-primary" onclick="showPreview()">Ver cifras extraídas →</button></div>';
     }catch(err){
-      body.innerHTML='<div class="alert err"><span class="alert-icon">❌</span>Error al leer el archivo: '+err.message+'</div>';
+      body.innerHTML='<div class="alert err"><span class="alert-icon">❌</span>'
+        +'Error al leer el archivo: <strong>'+(err.message||'error desconocido')+'</strong><br>'
+        +'<span style="font-size:10px;color:var(--td)">Detalle: '+String(err)+'</span>'
+        +'</div>'
+        +'<div class="btn-row" style="margin-top:10px">'
+        +'<button class="btn btn-ghost" style="font-size:10px" onclick="resetUpload()">← Intentar con otro archivo</button>'
+        +'</div>';
     }
+  };
+  reader.onerror=function(){
+    body.innerHTML='<div class="alert err"><span class="alert-icon">❌</span>Error al leer el archivo. Verifica que no esté dañado o en uso por otro programa.</div>'
+      +'<div class="btn-row" style="margin-top:10px"><button class="btn btn-ghost" style="font-size:10px" onclick="resetUpload()">← Intentar con otro archivo</button></div>';
   };
   reader.readAsArrayBuffer(file);
 }
@@ -2276,25 +2299,9 @@ function fmtN(n){
 
 function showPreview(){
   var d=STATE.extractedData;
-  if(!d) return;
-
-  // ── Validar tasa BCV cargada para el mes detectado ──
-  var nombreMes = (d.month||'').split(' ')[0];
-  var tasaMes = STATE.bcvRates && STATE.bcvRates[nombreMes];
-  var tasaOk = tasaMes && tasaMes.avg && tasaMes.avg > 0;
-  if(!tasaOk){
-    // Mostrar el error en el body de validación (donde el usuario ya está viendo)
-    var body2=document.getElementById('validation-body');
-    if(body2){
-      body2.innerHTML='<div class="alert err" style="margin-bottom:12px"><span class="alert-icon">⚠️</span>'
-        +'<strong>Tasa BCV no cargada para '+nombreMes+'</strong><br>'
-        +'Antes de cargar el balance de <strong>'+d.month+'</strong> debes registrar la tasa BCV promedio ASK de ese mes. '
-        +'Ve a <strong>Configuración → Tasas BCV/USDT</strong>, carga el archivo BCV o ingresa la tasa manualmente, y luego regresa aquí.'
-        +'<div style="margin-top:10px"><button class="btn btn-ghost" style="font-size:10px" onclick="resetUpload()">← Cargar otro archivo</button></div>'
-        +'</div>';
-    }
-    STATE.extractedData = null;
-    STATE.currentFile = null;
+  if(!d){
+    // extractedData fue borrado — volver al inicio
+    resetUpload();
     return;
   }
 
