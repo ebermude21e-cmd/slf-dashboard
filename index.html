@@ -540,8 +540,8 @@ function initDashboard(){
           min: bcvMes.min || 0,
           max: bcvMes.max || 0,
           usdt: bcvMes.usdt || 0,
-          express: (bcvMes.usdt && bcvMes.avg) ? (bcvMes.usdt/bcvMes.avg) : (bcvMes.express || 0),
-          spread: (bcvMes.usdt && bcvMes.avg) ? ((bcvMes.usdt/bcvMes.avg - 1)*100) : (bcvMes.spread || 0)
+          express: (bcvMes.usdt && bcvMes.avg) ? Math.round((bcvMes.usdt/bcvMes.avg)*10000)/10000 : (bcvMes.express ? Math.round(bcvMes.express*10000)/10000 : 0),
+          spread: (bcvMes.usdt && bcvMes.avg) ? Math.round((bcvMes.usdt/bcvMes.avg - 1)*10000)/100 : (bcvMes.spread || 0)
         };
 
         if(ACUM_CERTIFICADO[mesNombre]){
@@ -663,7 +663,7 @@ function chips(pr){
     +'<div class="hc"><div class="hc-l">'+pr.prev+' BCV</div><div class="hc-v">Bs.'+AP.toFixed(2)+'</div><div class="hc-s">'+BCV[pr.prev].dias+'d · '+BCV[pr.prev].min+'–'+BCV[pr.prev].max+'</div></div>'
     +'<div class="hc '+cls+'"><div class="hc-l">Var. BCV</div><div class="hc-v">'+(da>=0?'▲':'▼')+' '+Math.abs(dv).toFixed(2)+'%</div><div class="hc-s">'+(da>=0?'+':'')+da.toFixed(2)+' Bs.</div></div>'
     +'<div class="hc '+uCls+'"><div class="hc-l">USDT '+pr.cur+'</div><div class="hc-v">Bs.'+UC.toFixed(2)+'</div><div class="hc-s">'+(du>=0?'▲ +':'▼ ')+Math.abs(duv).toFixed(2)+'% vs '+pr.prev+'</div></div>'
-    +'<div class="hc exp"><div class="hc-l">Express '+pr.cur+'</div><div class="hc-v">'+BCV[pr.cur].spread+'%</div><div class="hc-s">brecha vs BCV oficial</div></div>';
+    +'<div class="hc exp"><div class="hc-l">Express '+pr.cur+'</div><div class="hc-v">'+parseFloat(BCV[pr.cur].spread).toFixed(2)+'%</div><div class="hc-s">brecha vs BCV oficial</div></div>';
 }
 
 function TH(pr){
@@ -841,7 +841,7 @@ function renderCmp(){
     +'<div class="hinfo">Res. Técnico: <b>'+PR(TC.o,function(v){return 'Bs.'+M(v);})+' vs '+PR(TP.o,function(v){return 'Bs.'+M(v);})+'</b></div>'
     +'<div class="hinfo">Saldo Fin.: <b>'+PR(FC.saldo_fin,function(v){return 'Bs.'+M(v);})+' vs '+PR(FP.saldo_fin,function(v){return 'Bs.'+M(v);})+'</b></div>'
     +'<div class="hinfo">BCV '+pr.cur+': <b>Bs.'+AC.toFixed(4)+'</b> · USDT: <b>Bs.'+BCV[pr.cur].usdt+'</b></div>'
-    +'<div class="hinfo">Express: <b>'+BCV[pr.cur].express.toFixed(4)+'</b> · Brecha: <b>'+BCV[pr.cur].spread+'%</b></div>'
+    +'<div class="hinfo">Express: <b>'+BCV[pr.cur].express.toFixed(2)+'</b> · Brecha: <b>'+BCV[pr.cur].spread+'%</b></div>'
     +'</div></div>'
     +'<div class="chart-card"><div class="chart-hdr"><h3>Resultado Técnico Bruto en USD — Tendencia Ene–May 2026</h3>'
     +'<p>Expresado en USD a tasa BCV promedio del mes · Puntos destacados = período comparado</p></div>'+tsvg+'</div>';
@@ -883,9 +883,14 @@ function renderAcum(){
     {l:'Res. Técnico Acum.',v:tot.o,c:tot.o>=0?'g':'r'},
     {l:'Saldo Gral. Acum.',v:tot.saldo_gen,c:tot.saldo_gen>=0?'g':'r'},
   ].map(function(k){
+    var neutro=k.c==='a';
+    var bcCls=neutro?'kv bc':'kv '+(k.v>=0?'gv':'rv')+' bc';
+    var ucCls=neutro?'kv uc':'kv '+(k.v>=0?'gv':'rv')+' uc';
+    var bcStyle=neutro?'color:var(--ink2)':'';
+    var ucStyle=neutro?'color:var(--td)':'';
     return '<div class="kc '+k.c+'"><div class="kl">'+k.l+'</div>'
-      +'<div class="kv '+(k.v>=0?'gv':'rv')+' bc">'+PR(k.v,N)+'</div>'
-      +'<div class="kv '+(k.v>=0?'gv':'rv')+' uc">USD '+PR(k.v,function(v){return U(v,avg);})+'</div></div>';
+      +'<div class="'+bcCls+'"'+(bcStyle?' style="'+bcStyle+'"':'')+'>'+PR(k.v,N)+'</div>'
+      +'<div class="'+ucCls+'"'+(ucStyle?' style="'+ucStyle+'"':'')+'>USD '+PR(k.v,function(v){return U(v,avg);})+'</div></div>';
   }).join('');
 
   // ── Tasas BCV: comparativo Enero vs último mes cargado, con variación y USDT ──
@@ -896,8 +901,8 @@ function renderAcum(){
     {l:'BCV Promedio — '+primerMes,v:'Bs. '+bcvEne.avg.toFixed(2),s:bcvEne.dias+'d hábiles · '+bcvEne.min+'–'+bcvEne.max},
     {l:'BCV Promedio — '+ultimoMes,v:'Bs. '+bcvUlt.avg.toFixed(2),s:bcvUlt.dias+'d hábiles · '+bcvUlt.min+'–'+bcvUlt.max},
     {l:'Variación BCV Acumulada',v:(varBcv>=0?'▲ +':'▼ ')+Math.abs(varBcv).toFixed(2)+'%',s:(bcvUlt.avg-bcvEne.avg>=0?'+':'')+(bcvUlt.avg-bcvEne.avg).toFixed(2)+' Bs. desde '+primerMes,cls:varBcv>=0?'up':'dn'},
-    {l:'USDT Binance P2P — '+primerMes,v:'Bs. '+bcvEne.usdt.toFixed(2),s:'Express ×'+bcvEne.express.toFixed(4)},
-    {l:'USDT Binance P2P — '+ultimoMes,v:'Bs. '+bcvUlt.usdt.toFixed(2),s:'Express ×'+bcvUlt.express.toFixed(4)},
+    {l:'USDT Binance P2P — '+primerMes,v:'Bs. '+bcvEne.usdt.toFixed(2),s:'Express ×'+bcvEne.express.toFixed(2)},
+    {l:'USDT Binance P2P — '+ultimoMes,v:'Bs. '+bcvUlt.usdt.toFixed(2),s:'Express ×'+bcvUlt.express.toFixed(2)},
   ].map(function(c){
     return '<div class="hc'+(c.cls?' '+c.cls:'')+'"><div class="hc-l">'+c.l+'</div><div class="hc-v">'+c.v+'</div><div class="hc-s">'+c.s+'</div></div>';
   }).join('');
@@ -1101,7 +1106,7 @@ function renderCam(){
     +'<div class="ch-sub">Bs. '+ene.avg.toFixed(2)+' → Bs. '+may.avg.toFixed(2)+' · +'+(may.avg-ene.avg).toFixed(2)+' Bs./USD</div></div>'
     +'<div><div class="ch-lbl">Convergencia Express vs BCV</div>'
     +'<div class="ch-val"><b>'+(expDep).toFixed(2)+'%</b> de brecha</div>'
-    +'<div class="ch-sub">Express: '+ene.express.toFixed(4)+'x → '+may.express.toFixed(4)+'x · Spread: '+ene.spread+'% → '+may.spread+'%</div></div>'
+    +'<div class="ch-sub">Express: '+ene.express.toFixed(2)+'x → '+may.express.toFixed(2)+'x · Spread: '+ene.spread+'% → '+may.spread+'%</div></div>'
     +'<div><div class="ch-lbl">Brecha Express actual · '+ultimoMes+'</div>'
     +'<div class="ch-val"><b>'+may.spread+'%</b></div>'
     +'<div class="ch-sub">USDT Bs. '+may.usdt+' vs BCV Bs. '+may.avg.toFixed(2)+'</div></div>'
@@ -1170,52 +1175,7 @@ function renderCam(){
     prev_bcv=d.avg; prev_exp=d.express;
   }
 
-  // SVG dual-line chart
-  var W=840, H=200, PL=30, PR=30, PT=50, PB=50, cw=W-PL-PR, ch=H-PT-PB;
-  var MESES5=MESES;
-  var bcvVals=MESES5.map(function(m){return BCV[m].avg;});
-  var sprVals=MESES5.map(function(m){return BCV[m].spread;});
-  var usdtVals=MESES5.map(function(m){return BCV[m].usdt;});
-  var expVals=MESES5.map(function(m){return BCV[m].express;});
-  var minB=Math.min.apply(null,bcvVals), maxB=Math.max.apply(null,bcvVals);
-  var minE=Math.min.apply(null,expVals), maxE=Math.max.apply(null,expVals);
-  function sxf(i){return PL+i*(cw/(MESES5.length-1));}
-  function syB(v){return H-PB-(v-minB)/(maxB-minB)*ch;}
-  function syE(v){return H-PB-(v-minE)/(maxE-minE)*ch;}
-  var xArr=MESES5.map(function(_,i){return sxf(i);});
-  var ybArr=bcvVals.map(syB);
-  var yeArr=expVals.map(syE);
-  var pathB=MESES5.map(function(_,i){return (i===0?'M':'L')+xArr[i].toFixed(1)+' '+ybArr[i].toFixed(1);}).join(' ');
-  var pathE=MESES5.map(function(_,i){return (i===0?'M':'L')+xArr[i].toFixed(1)+' '+yeArr[i].toFixed(1);}).join(' ');
-  var dots='', bcvLabels='', expLabels='';
-  for(var i=0;i<MESES5.length;i++){
-    var x=xArr[i], yb=ybArr[i], ye=yeArr[i];
-    var bcvTxt='Bs.'+Math.round(bcvVals[i]);
-    var expTxt='USDT Bs.'+usdtVals[i]+' ('+sprVals[i]+'%)';
-    dots+='<circle cx="'+x.toFixed(1)+'" cy="'+yb.toFixed(1)+'" r="5.5" fill="#4B2D8F" stroke="#fff" stroke-width="2"/>';
-    dots+='<circle cx="'+x.toFixed(1)+'" cy="'+ye.toFixed(1)+'" r="5.5" fill="#E5C229" stroke="#fff" stroke-width="2"/>';
-    var bcvLy, expLy, bcvAnchor='middle', expAnchor='middle', bcvDx=0, expDx=0;
-    var separation=yb-ye;
-    if(Math.abs(separation)<28){
-      bcvLy=yb; expLy=ye;
-      if(x<W/2){bcvAnchor='end';bcvDx=-10;expAnchor='start';expDx=10;}
-      else{bcvAnchor='start';bcvDx=10;expAnchor='end';expDx=-10;}
-    } else if(separation>0){
-      expLy=ye-14; bcvLy=yb+16;
-    } else {
-      expLy=ye+16; bcvLy=yb-12;
-    }
-    bcvLy=Math.max(14,Math.min(H-4,bcvLy));
-    expLy=Math.max(14,Math.min(H-4,expLy));
-    bcvLabels+='<text x="'+(x+bcvDx).toFixed(1)+'" y="'+bcvLy.toFixed(1)+'" text-anchor="'+bcvAnchor+'" font-size="9.5" font-weight="700" fill="#4B2D8F">'+bcvTxt+'</text>';
-    expLabels+='<text x="'+(x+expDx).toFixed(1)+'" y="'+expLy.toFixed(1)+'" text-anchor="'+expAnchor+'" font-size="8.5" font-weight="700" fill="#B07A00">'+expTxt+'</text>';
-  }
-  var xlbls=MESES5.map(function(m,i){return '<text x="'+xArr[i].toFixed(1)+'" y="'+(H-PB+18).toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="600" fill="#4A4260">'+m+'</text>';}).join('');
-  var grids=''; for(var gi=0;gi<4;gi++){var gy=PT+gi*(ch/3);grids+='<line x1="'+PL+'" y1="'+gy.toFixed(1)+'" x2="'+(W-PR)+'" y2="'+gy.toFixed(1)+'" stroke="#E4DCF5" stroke-width="0.8" stroke-dasharray="4,4"/>';}
-  var vlines=MESES5.map(function(_,i){return '<line x1="'+xArr[i].toFixed(1)+'" y1="'+PT+'" x2="'+xArr[i].toFixed(1)+'" y2="'+(H-PB)+'" stroke="#F2EEFB" stroke-width="1"/>';}).join('');
-  var legY=PT-28;
-  var legend='<line x1="'+PL+'" y1="'+legY+'" x2="'+(PL+24)+'" y2="'+legY+'" stroke="#4B2D8F" stroke-width="2.5"/><circle cx="'+(PL+12)+'" cy="'+legY+'" r="4" fill="#4B2D8F" stroke="#fff" stroke-width="1.5"/><text x="'+(PL+30)+'" y="'+(legY+4)+'" font-size="9" font-weight="700" fill="#4B2D8F">BCV Promedio ASK (Bs.)</text><line x1="'+(PL+180)+'" y1="'+legY+'" x2="'+(PL+204)+'" y2="'+legY+'" stroke="#E5C229" stroke-width="2" stroke-dasharray="6,3"/><circle cx="'+(PL+192)+'" cy="'+legY+'" r="4" fill="#E5C229" stroke="#fff" stroke-width="1.5"/><text x="'+(PL+210)+'" y="'+(legY+4)+'" font-size="9" fill="#B07A00">USDT Binance P2P (Bs.) — Brecha vs BCV</text>';
-  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block;overflow:visible">'+grids+vlines+'<path d="'+pathB+'" fill="none" stroke="#4B2D8F" stroke-width="2.5"/>'+'<path d="'+pathE+'" fill="none" stroke="#E5C229" stroke-width="2.5" stroke-dasharray="7,4"/>'+dots+expLabels+bcvLabels+xlbls+legend+'</svg>';
+
 
   document.getElementById('p-cam').innerHTML=
     '<div class="page">'
@@ -1226,9 +1186,6 @@ function renderCam(){
     +'<div class="cam-cards">'+bcvCards+'</div>'
     +'<div style="font-size:8px;font-weight:700;color:#B07A00;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Express Cambiario — USDT Binance P2P</div>'
     +'<div class="cam-cards">'+expCards+'</div>'
-    +'<div class="kpi-section"><h4>Tendencia Histórica — BCV Promedio ASK vs USDT Binance P2P (línea punteada)</h4>'
-    +'<p>BCV Promedio ASK (línea sólida) · USDT Binance P2P con brecha % vs BCV (línea punteada) · Convergencia = brecha se cierra</p>'
-    +svg+'</div>'
     +'<div class="cam-tbl-wrap"><div class="cam-tbl-lbl">Tabla Histórica Comparativa — BCV vs Express</div>'
     +'<table class="cam-tbl"><thead><tr>'
     +'<th style="text-align:left;padding-left:16px">Mes</th>'
