@@ -22,13 +22,21 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 .hdr-h{font-size:14px;font-weight:300;color:#fff;line-height:1.1}.hdr-h b{font-weight:700}
 .hdr-s{font-size:7.5px;color:var(--px);opacity:.65}
 .hdr-chips{display:flex;gap:6px;flex-shrink:0}
-.hc{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);border-radius:7px;padding:5px 10px;text-align:center;min-width:76px}
-.hc-l{font-size:7px;color:var(--px);font-weight:700;text-transform:uppercase;letter-spacing:.07em;opacity:.8}
+.hc{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:7px;padding:5px 10px;text-align:center;min-width:76px}
+.hc-l{font-size:7px;color:#E4DCF5;font-weight:700;text-transform:uppercase;letter-spacing:.07em}
 .hc-v{font-size:13px;font-weight:700;color:#fff;line-height:1.1}
-.hc-s{font-size:6.5px;color:var(--px);opacity:.6}
-.hc.up{border-color:rgba(13,122,78,.5);background:rgba(13,122,78,.18)}.hc.up .hc-v{color:#8AEFB8}
-.hc.dn{border-color:rgba(176,25,15,.4);background:rgba(176,25,15,.14)}.hc.dn .hc-v{color:#FF9999}
-.hc.exp{border-color:rgba(229,194,41,.4);background:rgba(176,122,0,.18)}.hc.exp .hc-v{color:#FFD700}
+.hc-s{font-size:6.5px;color:#C8B8F0}
+.hc.up{border-color:rgba(138,239,184,.5);background:rgba(13,122,78,.28)}.hc.up .hc-v{color:#8AEFB8}
+.hc.dn{border-color:rgba(255,153,153,.4);background:rgba(176,25,15,.22)}.hc.dn .hc-v{color:#FF9999}
+.hc.exp{border-color:rgba(229,194,41,.5);background:rgba(176,122,0,.25)}.hc.exp .hc-v{color:#FFD700}
+/* chips sobre fondo claro (sección .body — renderAcum y similares) */
+.body .hc{background:var(--s2);border:1px solid var(--br)}
+.body .hc-l{color:var(--td)}
+.body .hc-v{color:var(--ink2)}
+.body .hc-s{color:var(--td)}
+.body .hc.up{background:rgba(13,122,78,.08);border-color:rgba(13,122,78,.3)}.body .hc.up .hc-v{color:#0D7A4E}
+.body .hc.dn{background:rgba(176,25,15,.08);border-color:rgba(176,25,15,.3)}.body .hc.dn .hc-v{color:#B0190F}
+.body .hc.exp{background:rgba(176,122,0,.08);border-color:rgba(176,122,0,.3)}.body .hc.exp .hc-v{color:#B07A00}
 .nav{flex-shrink:0;display:flex;align-items:stretch;background:var(--ink2);border-bottom:1px solid rgba(255,255,255,.07);overflow-x:auto;scrollbar-width:none}
 .nav::-webkit-scrollbar{display:none}
 .nt{flex-shrink:0;padding:0 13px;height:34px;display:flex;align-items:center;font-size:8.5px;font-weight:700;color:rgba(155,120,224,.75);background:transparent;border:none;border-bottom:2.5px solid transparent;cursor:pointer;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;transition:all .15s}
@@ -880,9 +888,10 @@ function renderCmp(){
       }
       return '<div style="background:var(--pb);border:1px solid var(--br);border-radius:10px;padding:14px 18px;margin-bottom:14px">'
         +'<div style="font-size:8px;font-weight:700;color:var(--td);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">📋 Resumen Comparativo · '+pr.cur+(sameMes?'':' vs '+pr.prev)+'</div>'
-        +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">'
+        +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">'
         +tarjeta('Prima Cobrada',        TC.a, TP.a, false, false)
-        +tarjeta('Siniestros Incurridos', TC.n, TP.n, true,  false)
+        +tarjeta('Prima Devengada',      TC.e, TP.e, false, false)
+        +tarjeta('Siniestros Pagados',   TC.j, TP.j, true,  false)
         +tarjeta('Resultado Técnico',     TC.o, TP.o, false, true)
         +'</div></div>';
     })()
