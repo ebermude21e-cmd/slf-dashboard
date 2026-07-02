@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="slf-version"    content="1.0.0">
+<meta name="slf-env"        content="production">
+<meta name="slf-build"      content="2026-07-02">
+<meta name="slf-certified"  content="Contabilidad · Fase 1 · Ene–May 2026">
 <title>App de Gestión · Seguros La Fe</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -27,7 +31,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#EDEAF5;color:var(--
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 
 /* ── NAV TABS ── */
-.sidebar{background:var(--ink2);width:230px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid rgba(255,255,255,.08);overflow-y:auto}
+.sidebar{background:var(--ink2);width:230px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid rgba(255,255,255,.08);overflow-y:auto;position:relative;padding-bottom:64px}
 .sb-group{border-bottom:1px solid rgba(255,255,255,.06)}
 .sb-main{width:100%;text-align:left;padding:13px 16px;background:transparent;border:none;color:rgba(255,255,255,.85);font-size:11px;font-weight:700;letter-spacing:.03em;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .15s}
 .sb-main:hover{background:rgba(255,255,255,.06)}
@@ -291,6 +295,15 @@ table.diff td.new{background:#DCFCE7;color:var(--g);font-weight:700}
       <button class="sb-item" onclick="showTab('config',this)">🛠️ Configuración del Sistema</button>
     </div>
   </div>
+</div>
+<!-- Badge de versión al pie del sidebar -->
+<div style="position:absolute;bottom:0;left:0;right:0;padding:10px 16px;border-top:1px solid rgba(255,255,255,.07);background:rgba(0,0,0,.15)">
+  <div style="font-size:8px;color:rgba(255,255,255,.4);font-weight:600;text-transform:uppercase;letter-spacing:.08em">Versión</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px">
+    <span style="font-size:10px;font-weight:700;color:rgba(255,255,255,.7)">v1.0.0</span>
+    <span style="font-size:8px;color:rgba(255,255,255,.35);background:rgba(255,255,255,.08);border-radius:3px;padding:1px 6px">PRODUCCIÓN</span>
+  </div>
+  <div style="font-size:7.5px;color:rgba(255,255,255,.3);margin-top:2px">Certificado · Fase 1 · Jul 2026</div>
 </div>
 
 <!-- MAIN COLUMN -->
