@@ -1798,13 +1798,52 @@ function renderKpisView(modo){
   // Fórmula: Resultado General (Saldo General) / Prima Cobrada × 100
   // ══════════════════════════════════════════════════════════════════════════
   var t=totalsActivos, fin=finActivos;
-  var sg=t.saldo_gen||0, aPCob=t.a||1;
-  var gge=aPCob ? Math.round(sg/aPCob*10000)/100 : 0;
-  var ggePos=gge>=0;
-  var ggeClr=ggePos?'#0D7A4E':'#B0190F';
-  var ggeBg=ggePos?'rgba(13,122,78,.07)':'rgba(176,25,15,.07)';
+
+  // saldo_gen acumulado: usar el valor certificado cuando está disponible
+  // (mismo criterio que loadMonthsList usa para las tarjetas de mes)
+  // Los balances de comprobación contienen movimientos del período, y la suma
+  // directa de saldo_gen puede acumular errores de redondeo o de prevSaldoMap.
+  // ACUM_CERT_BS es la fuente de verdad validada al centavo.
+  var ACUM_CERT_KPI = {
+    'Enero':10850225.31,'Febrero':-48211947.05,
+    'Marzo':27793183.75,'Abril':42876909.74,'Mayo':69856436.05
+  };
+  var sg_calc;
+  if(esAcum){
+    // Modo acumulado: usar el valor certificado del último mes activo si existe
+    var ultimoMesActivo = (activeMeses[activeMeses.length-1].month||'').split(' ')[0];
+    if(ACUM_CERT_KPI.hasOwnProperty(ultimoMesActivo)){
+      sg_calc = ACUM_CERT_KPI[ultimoMesActivo];
+    } else {
+      // Más allá de Mayo: suma de saldo_gen mensual + base certificada de Mayo
+      var idxUltimo = ORDEN_M.indexOf(ultimoMesActivo);
+      sg_calc = ACUM_CERT_KPI['Mayo'] || 0;
+      activeMeses.forEach(function(m){
+        var mn=(m.month||'').split(' ')[0];
+        var idx=ORDEN_M.indexOf(mn);
+        if(idx > ORDEN_M.indexOf('Mayo') && (m.totals||{}).saldo_gen){
+          sg_calc += (m.totals||{}).saldo_gen||0;
+        }
+      });
+    }
+  } else {
+    // Modo mes individual: usar el saldo_gen mensual del registro
+    sg_calc = t.saldo_gen||0;
+  }
+
+  var sg = sg_calc;
+  var aPCob = t.a || 1;
+  var gge = aPCob ? Math.round(sg/aPCob*10000)/100 : 0;
+  var ggePos = gge>=0;
+  var ggeClr = ggePos?'#0D7A4E':'#B0190F';
+  var ggeBg  = ggePos?'rgba(13,122,78,.07)':'rgba(176,25,15,.07)';
+
+  // Sparkline: GGE por cada mes individual (mensual puntual)
   var ggeVals=sortedAll.map(function(m){
-    var tt=m.totals||{}; return tt.a ? Math.round((tt.saldo_gen||0)/tt.a*10000)/100 : 0;
+    var mn=(m.month||'').split(' ')[0];
+    var tt=m.totals||{};
+    // Para sparkline usamos el saldo_gen mensual del registro (tendencia)
+    return tt.a ? Math.round((tt.saldo_gen||0)/tt.a*10000)/100 : 0;
   });
   var sinPag = RAMOS.reduce(function(s,r){ return s+((ramosActivos[r]||{}).j||0); },0);
   var gastoAdm = t.i||0;
@@ -2923,9 +2962,16 @@ function exportarSobregiros(mes){
     var sg=localStorage.getItem('slf_sobregiros');
     if(sg) sobregirosAll=JSON.parse(sg);
   }catch(e){}
-  var lista = sobregirosAll[mes] || [];
+  // Buscar con múltiples variantes de clave (con año, sin año, con/sin espacio)
+  var mesBase=(mes||'').replace(/\s*\d{4}$/,'').trim(); // "Abril 2026" → "Abril"
+  var mesConAnio=mesBase+' 2026';
+  var lista = sobregirosAll[mes] || sobregirosAll[mesConAnio] || sobregirosAll[mesBase] || [];
   if(!lista.length){
-    showToast('No hay cuentas con sobregiro registradas para '+mes);
+    // Diagnóstico: mostrar claves disponibles
+    var claves=Object.keys(sobregirosAll);
+    var msg='No hay cuentas con sobregiro registradas para '+mes;
+    if(claves.length) msg+=' · Disponibles: '+claves.join(', ');
+    showToast(msg);
     return;
   }
   var rows = '<tr><th>Cuenta</th><th>Tipo</th><th>Movimiento del Mes (crudo)</th><th>Valor Aplicado (regularizado)</th></tr>';
