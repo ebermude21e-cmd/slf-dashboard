@@ -1202,6 +1202,15 @@ function renderCam(){
   ['p-cmp','p-acum','p-cam','p-kpi'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('on');});
   document.getElementById('p-cam').classList.add('on');
 
+  // Guard: sin datos no se puede renderizar
+  if(!MESES||!MESES.length||!BCV[MESES[0]]||!BCV[MESES[MESES.length-1]]){
+    document.getElementById('p-cam').innerHTML=
+      '<div class="page"><div class="empty-state"><div class="ei">💱</div>'
+      +'<div class="et">Sin tasas de cambio cargadas</div>'
+      +'<div class="es">Carga las tasas BCV y USDT desde la app de administración para ver el análisis cambiario.</div></div></div>';
+    return;
+  }
+
   var ultimoMes=MESES[MESES.length-1];
   var primerMes=MESES[0];
   var base_bcv=BCV[primerMes].avg, base_exp=BCV[primerMes].express;
