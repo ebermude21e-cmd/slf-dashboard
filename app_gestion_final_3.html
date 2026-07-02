@@ -1762,7 +1762,9 @@ function renderKpisView(modo){
 
   // Último mes (para referencia de BCV en label)
   var ultimo = esAcum ? sorted[sorted.length-1] : activeMeses[0];
-  var mesNombre = esAcum ? ('Ene–'+(sorted[sorted.length-1].month||'').split(' ')[0]) : modoActual;
+  var modoLabel = esAcum
+    ? 'Ene–'+(sorted[sorted.length-1].month||'').split(' ')[0]
+    : (mesesSelec.length===1 ? mesesSelec[0] : mesesSelec.join('+'));
 
   // ── Calcular K1-K8 por ramo ──────────────────────────────────────────────
   function calcKpi(rd, total_a){
@@ -1888,7 +1890,7 @@ function renderKpisView(modo){
     +'<div style="margin-left:14px">'
     +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">'
     +'<div><div style="font-size:9px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.12em;margin-bottom:3px">★ Gestión General Empresa — Indicador Principal</div>'
-    +'<div style="font-size:10px;color:var(--td)">Resultado General / Prima Cobrada × 100 · '+mesNombre+(bcvActivo?' · BCV Bs.'+bcvActivo.toFixed(2):'')+'</div></div>'
+    +'<div style="font-size:10px;color:var(--td)">Resultado General / Prima Cobrada × 100 · '+modoLabel+(bcvActivo?' · BCV Bs.'+bcvActivo.toFixed(2):'')+'</div></div>'
     +(sortedAll.length>1?'<div style="text-align:center"><div style="font-size:7px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:3px">Tendencia</div>'+sparkline(ggeVals,ggeClr)+'</div>':'')
     +'</div>'
     +'<div style="display:flex;align-items:stretch;gap:16px;margin-bottom:12px">'
