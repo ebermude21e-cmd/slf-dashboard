@@ -463,8 +463,9 @@ table.diff td.new{background:#DCFCE7;color:var(--g);font-weight:700}
 
 <!-- ══ TAB: KPIs CONSULTA (calculados) ══ -->
 <div class="pane" id="pane-kpis-view">
-  <div style="margin-bottom:12px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
     <h2 style="font-size:14px;font-weight:700;color:var(--ink2)">Consulta de KPIs</h2>
+    <div id="kpis-mes-selector" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"></div>
   </div>
   <div class="card">
     <div class="card-body" id="kpis-view-body">
@@ -1400,6 +1401,25 @@ function loadMonthsList(){
         +(hayAcum?'<div style="font-size:9px;font-weight:700;margin-top:3px;padding-top:3px;border-top:1px solid #E4DCF5;color:'+(aPos?'var(--g)':'var(--r)')+'">Acum. Ene–'+mes+': USD '+(aPos?'':'(')+Math.round(Math.abs(acumUSD)).toLocaleString('es-VE')+(aPos?'':')')+'</div>':'')
         :''  );
     if(loaded) card.style.cursor='pointer';
+    // Botón sobregiros — visible directamente en la tarjeta si hay datos
+    if(loaded){
+      try{
+        var sgAll=JSON.parse(localStorage.getItem('slf_sobregiros')||'{}');
+        var mesKey=mes+' 2026';
+        var sgLista=sgAll[mesKey]||sgAll[mes]||[];
+        if(sgLista.length){
+          var btnSg=document.createElement('button');
+          btnSg.className='btn btn-ghost';
+          btnSg.style.cssText='font-size:8px;padding:2px 7px;margin-top:4px;width:100%;text-align:left';
+          btnSg.textContent='⬇ '+sgLista.length+' sobregiro(s) — Excel';
+          btnSg.onclick=(function(k){ return function(e){
+            e.stopPropagation();
+            exportarSobregiros(k);
+          }; })(mesKey);
+          card.appendChild(btnSg);
+        }
+      }catch(e){}
+    }
     if(loaded) card.onclick=(function(m,d){return function(){showMonthDetail(m,d);};})(mes,md);
     grid.appendChild(card);
   });
@@ -1604,13 +1624,18 @@ function renderKpisTable(){
   container.innerHTML=html;
 }
 
-// ── Consulta de KPIs calculados (vista ejecutiva con gráficos) ──────────────
-function renderKpisView(){
+// Estado del selector de mes en KPIs (persiste mientras el tab está abierto)
+var _kpiModoActual = 'acum'; // 'acum' | 'Enero' | 'Febrero' | etc.
+
+function renderKpisView(modo){
+  // modo: 'acum' | nombre del mes ('Enero', 'Febrero'…)
+  if(modo !== undefined) _kpiModoActual = modo;
   var container = document.getElementById('kpis-view-body');
   if(!container) return;
 
   var months = STATE.months || [];
   if(!months.length){
+    document.getElementById('kpis-mes-selector').innerHTML='';
     container.innerHTML='<div class="empty-state"><div class="ei">📂</div><div class="et">Sin balances cargados</div><div class="es">Carga balances mes a mes para ver los KPIs calculados</div></div>';
     return;
   }
@@ -1623,8 +1648,101 @@ function renderKpisView(){
   var sorted = months.slice().sort(function(a,b){
     return ORDEN_M.indexOf((a.month||'').split(' ')[0]) - ORDEN_M.indexOf((b.month||'').split(' ')[0]);
   });
-  var ultimo = sorted[sorted.length-1];
-  var mesNombre = (ultimo.month||'').split(' ')[0];
+
+  // ── Construir selector de mes ──────────────────────────────────────────
+  var sel = document.getElementById('kpis-mes-selector');
+  if(sel){
+    var btnBase='font-size:10px;font-weight:700;border:none;border-radius:6px;padding:4px 12px;cursor:pointer;transition:all .15s;';
+    var btnActivo=btnBase+'background:var(--p);color:#fff;';
+    var btnNormal=btnBase+'background:var(--s2);color:var(--tm);';
+    var btns='<button style="'+((_kpiModoActual==='acum')?btnActivo:btnNormal)+'" onclick="renderKpisView(\'acum\')">ACUM.</button>';
+    sorted.forEach(function(m){
+      var mn=(m.month||'').split(' ')[0];
+      btns+='<button style="'+((_kpiModoActual===mn)?btnActivo:btnNormal)+'" onclick="renderKpisView(\''+mn+'\')">'+mn+'</button>';
+    });
+    sel.innerHTML=btns;
+  }
+
+  // ── Determinar el conjunto de meses a usar ─────────────────────────────
+  // ACUMULADO: usa todos los meses sumando totals y ramos
+  // MES ESPECÍFICO: usa solo ese mes
+  var modoActual = _kpiModoActual;
+  var esAcum = modoActual === 'acum';
+
+  // Para sparklines siempre usamos todos los meses
+  var sortedAll = sorted;
+
+  // Mes/conjunto activo
+  var activeMeses = esAcum ? sorted : sorted.filter(function(m){
+    return (m.month||'').split(' ')[0] === modoActual;
+  });
+  if(!activeMeses.length) activeMeses = sorted; // fallback
+
+  // ── Sumar meses activos para acumulado ────────────────────────────────
+  function sumarRamos(meses){
+    var acc={vida:{},fun:{},ap:{},rcv:{}};
+    var campos=['a','e','f','g','h','j','l','ll','m','n','o'];
+    RAMOS.forEach(function(r){
+      campos.forEach(function(c){ acc[r][c]=0; });
+      acc[r].h_pct=0;
+    });
+    var total_h_pct_check=0;
+    meses.forEach(function(m){
+      var rm=m.ramos||{};
+      RAMOS.forEach(function(r){
+        var rd=rm[r]||{};
+        campos.forEach(function(c){ acc[r][c]+=(rd[c]||0); });
+        acc[r].h_pct += (rd.h_pct||0);
+      });
+    });
+    // h_pct acumulado: promedio ponderado por prima
+    var totalA_acc=0;
+    RAMOS.forEach(function(r){ totalA_acc+=acc[r].a||0; });
+    RAMOS.forEach(function(r){
+      acc[r].h_pct = totalA_acc ? Math.round((acc[r].a/totalA_acc)*10000)/100 : 0;
+    });
+    return acc;
+  }
+
+  function sumarTotals(meses){
+    var t={a:0,e:0,h:0,i:0,n:0,o:0,saldo_gen:0};
+    var fin={saldo_fin:0};
+    meses.forEach(function(m){
+      var tt=m.totals||{}, ff=m.fin||{};
+      Object.keys(t).forEach(function(k){ t[k]+=(tt[k]||0); });
+      fin.saldo_fin+=(ff.saldo_fin||0);
+    });
+    // saldo_gen = o + saldo_fin
+    t.saldo_gen = t.o + fin.saldo_fin;
+    return {totals:t, fin:fin};
+  }
+
+  // Datos activos (acum o mes único)
+  var ramosActivos = sumarRamos(activeMeses);
+  var sf = sumarTotals(activeMeses);
+  var totalsActivos = sf.totals;
+  var finActivos = sf.fin;
+  var total_a_activo = totalsActivos.a || 1;
+
+  // BCV del mes activo (para conversión USD)
+  var bcvActivo = 0;
+  if(esAcum){
+    // Para acumulado: bcvAvg ponderado por prima
+    var sumPrima=0, sumBcvPrima=0;
+    activeMeses.forEach(function(m){
+      var a=(m.totals||{}).a||0;
+      var b=m.bcv&&m.bcv.avg&&m.bcv.avg>1?m.bcv.avg:0;
+      if(b){ sumPrima+=a; sumBcvPrima+=b*a; }
+    });
+    bcvActivo = sumPrima ? sumBcvPrima/sumPrima : 0;
+  } else {
+    var mAct=activeMeses[0];
+    bcvActivo = mAct&&mAct.bcv&&mAct.bcv.avg&&mAct.bcv.avg>1 ? mAct.bcv.avg : 0;
+  }
+
+  // Último mes (para referencia de BCV en label)
+  var ultimo = esAcum ? sorted[sorted.length-1] : activeMeses[0];
+  var mesNombre = esAcum ? ('Ene–'+(sorted[sorted.length-1].month||'').split(' ')[0]) : modoActual;
 
   // ── Calcular K1-K8 por ramo ──────────────────────────────────────────────
   function calcKpi(rd, total_a){
@@ -1679,75 +1797,61 @@ function renderKpisView(){
   // GESTIÓN GENERAL EMPRESA — PRIMERO — KPI de mayor relevancia
   // Fórmula: Resultado General (Saldo General) / Prima Cobrada × 100
   // ══════════════════════════════════════════════════════════════════════════
-  if(ultimo && ultimo.totals){
-    var t=ultimo.totals, fin=ultimo.fin||{};
-    var bcvAvg=ultimo.bcv&&ultimo.bcv.avg&&ultimo.bcv.avg>1?ultimo.bcv.avg:0;
-    var sg=t.saldo_gen||0, aPCob=t.a||1;
-    var gge=aPCob ? Math.round(sg/aPCob*10000)/100 : 0;
-    var ggePos=gge>=0;
-    var ggeClr=ggePos?'#0D7A4E':'#B0190F';
-    var ggeBg=ggePos?'rgba(13,122,78,.07)':'rgba(176,25,15,.07)';
-    var ggeVals=sorted.map(function(m){
-      var tt=m.totals||{}; return tt.a ? Math.round((tt.saldo_gen||0)/tt.a*10000)/100 : 0;
-    });
-    // Siniestros pagados = suma j de todos los ramos (campo del totals no existe, se suma por ramo)
-    var sinPag = ['vida','fun','ap','rcv'].reduce(function(s,r){ return s+((ultimo.ramos||{})[r]?((ultimo.ramos||{})[r].j||0):0); },0);
-    // Gastos administrativos = total comisiones y gastos (i)
-    var gastoAdm = t.i||0;
-    // USD (solo si hay tasa)
-    function usd(v){ return bcvAvg ? 'USD '+Math.round(Math.abs(v)/bcvAvg).toLocaleString('es-VE') : '—'; }
-    function usdClr(v){ return v>=0?'var(--g)':'var(--r)'; }
+  var t=totalsActivos, fin=finActivos;
+  var sg=t.saldo_gen||0, aPCob=t.a||1;
+  var gge=aPCob ? Math.round(sg/aPCob*10000)/100 : 0;
+  var ggePos=gge>=0;
+  var ggeClr=ggePos?'#0D7A4E':'#B0190F';
+  var ggeBg=ggePos?'rgba(13,122,78,.07)':'rgba(176,25,15,.07)';
+  var ggeVals=sortedAll.map(function(m){
+    var tt=m.totals||{}; return tt.a ? Math.round((tt.saldo_gen||0)/tt.a*10000)/100 : 0;
+  });
+  var sinPag = RAMOS.reduce(function(s,r){ return s+((ramosActivos[r]||{}).j||0); },0);
+  var gastoAdm = t.i||0;
+  function usd(v){ return bcvActivo ? 'USD '+Math.round(Math.abs(v)/bcvActivo).toLocaleString('es-VE') : '—'; }
 
-    html+='<div style="background:var(--s);border:2px solid '+(ggePos?'rgba(13,122,78,.35)':'rgba(176,25,15,.35)')+';border-radius:12px;padding:18px 20px;margin-bottom:18px;position:relative;overflow:hidden">'
-      +'<div style="position:absolute;left:0;top:0;bottom:0;width:5px;background:'+ggeClr+';border-radius:12px 0 0 12px"></div>'
-      +'<div style="margin-left:14px">'
-      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">'
-      +'<div><div style="font-size:9px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.12em;margin-bottom:3px">★ Gestión General Empresa — Indicador Principal</div>'
-      +'<div style="font-size:10px;color:var(--td)">Resultado General / Prima Cobrada × 100 · '+mesNombre+(bcvAvg?' · BCV Bs.'+bcvAvg.toFixed(2):'')+'</div></div>'
-      +(sorted.length>1?'<div style="text-align:center"><div style="font-size:7px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:3px">Tendencia</div>'+sparkline(ggeVals,ggeClr)+'</div>':'')
-      +'</div>'
-      +'<div style="display:flex;align-items:stretch;gap:16px;margin-bottom:12px">'
-      // Métrica principal %
-      +'<div style="background:'+ggeBg+';border:1px solid '+(ggePos?'rgba(13,122,78,.2)':'rgba(176,25,15,.2)')+';border-radius:10px;padding:14px 20px;text-align:center;min-width:120px;display:flex;flex-direction:column;justify-content:center">'
-      +'<div style="font-size:34px;font-weight:900;color:'+ggeClr+';line-height:1">'+(ggePos?'+':'')+gge.toFixed(1)+'%</div>'
-      +'<div style="font-size:8px;font-weight:700;color:'+ggeClr+';text-transform:uppercase;margin-top:4px">'+(ggePos?'✓ Utilidad':'✗ Pérdida')+'</div>'
-      +'</div>'
-      // 4 cuadros en USD: Prima Cobrada | Utilidad (arriba) — Siniestros Pagados | Gastos Adm. (abajo)
-      +'<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px">'
-      // Prima Cobrada
-      +'<div style="background:var(--s2);border-radius:8px;padding:10px 12px">'
-      +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:4px">Prima Cobrada</div>'
-      +'<div style="font-size:17px;font-weight:800;color:var(--ink2)">'+usd(aPCob)+'</div>'
-      +'</div>'
-      // Utilidad (saldo general)
-      +'<div style="background:'+ggeBg+';border:1px solid '+(ggePos?'rgba(13,122,78,.15)':'rgba(176,25,15,.15)')+';border-radius:8px;padding:10px 12px">'
-      +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:4px">Utilidad Neta</div>'
-      +'<div style="font-size:17px;font-weight:800;color:'+ggeClr+'">'+(bcvAvg?(ggePos?'':'-')+'USD '+Math.round(Math.abs(sg)/bcvAvg).toLocaleString('es-VE'):'—')+'</div>'
-      +'</div>'
-      // Siniestros Pagados
-      +'<div style="background:var(--s2);border-radius:8px;padding:10px 12px">'
-      +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:4px">Siniestros Pagados</div>'
-      +'<div style="font-size:17px;font-weight:800;color:var(--r)">'+usd(sinPag)+'</div>'
-      +'</div>'
-      // Gastos Administrativos
-      +'<div style="background:var(--s2);border-radius:8px;padding:10px 12px">'
-      +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:4px">Gastos Administrativos</div>'
-      +'<div style="font-size:17px;font-weight:800;color:var(--r)">'+usd(gastoAdm)+'</div>'
-      +'</div>'
-      +'</div>'
-      +'</div>'
-      // Barra de rentabilidad
-      +'<div style="display:flex;align-items:center;gap:10px">'
-      +'<span style="font-size:8px;color:var(--r);width:60px">Pérdida</span>'
-      +'<div style="flex:1;height:8px;background:var(--s2);border-radius:4px;position:relative">'
-      +'<div style="position:absolute;left:50%;top:-1px;bottom:-1px;width:2px;background:var(--br)"></div>'
-      +'<div style="height:100%;background:'+ggeClr+';border-radius:4px;'
-        +(ggePos?'margin-left:50%;width:'+Math.min(Math.abs(gge)/2,50)+'%':'margin-left:'+Math.max(50-Math.min(Math.abs(gge)/2,50),0)+'%;width:'+Math.min(Math.abs(gge)/2,50)+'%')+'"></div>'
-      +'</div>'
-      +'<span style="font-size:8px;color:var(--g);width:60px;text-align:right">Utilidad</span>'
-      +'</div>'
-      +'</div></div>';
-  }
+  html+='<div style="background:var(--s);border:2px solid '+(ggePos?'rgba(13,122,78,.35)':'rgba(176,25,15,.35)')+';border-radius:12px;padding:18px 20px;margin-bottom:18px;position:relative;overflow:hidden">'
+    +'<div style="position:absolute;left:0;top:0;bottom:0;width:5px;background:'+ggeClr+';border-radius:12px 0 0 12px"></div>'
+    +'<div style="margin-left:14px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">'
+    +'<div><div style="font-size:9px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.12em;margin-bottom:3px">★ Gestión General Empresa — Indicador Principal</div>'
+    +'<div style="font-size:10px;color:var(--td)">Resultado General / Prima Cobrada × 100 · '+mesNombre+(bcvActivo?' · BCV Bs.'+bcvActivo.toFixed(2):'')+'</div></div>'
+    +(sortedAll.length>1?'<div style="text-align:center"><div style="font-size:7px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:3px">Tendencia</div>'+sparkline(ggeVals,ggeClr)+'</div>':'')
+    +'</div>'
+    +'<div style="display:flex;align-items:stretch;gap:16px;margin-bottom:12px">'
+    +'<div style="background:'+ggeBg+';border:1px solid '+(ggePos?'rgba(13,122,78,.2)':'rgba(176,25,15,.2)')+';border-radius:10px;padding:14px 20px;text-align:center;min-width:120px;display:flex;flex-direction:column;justify-content:center">'
+    +'<div style="font-size:34px;font-weight:900;color:'+ggeClr+';line-height:1">'+(ggePos?'+':'')+gge.toFixed(1)+'%</div>'
+    +'<div style="font-size:8px;font-weight:700;color:'+ggeClr+';text-transform:uppercase;margin-top:4px">'+(ggePos?'✓ Utilidad':'✗ Pérdida')+'</div>'
+    +'</div>'
+    +'<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    +'<div style="background:var(--s2);border-radius:8px;padding:10px 12px">'
+    +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:4px">Prima Cobrada</div>'
+    +'<div style="font-size:17px;font-weight:800;color:var(--ink2)">'+usd(aPCob)+'</div>'
+    +'</div>'
+    +'<div style="background:'+ggeBg+';border:1px solid '+(ggePos?'rgba(13,122,78,.15)':'rgba(176,25,15,.15)')+';border-radius:8px;padding:10px 12px">'
+    +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:4px">Utilidad Neta</div>'
+    +'<div style="font-size:17px;font-weight:800;color:'+ggeClr+'">'+(bcvActivo?(ggePos?'':'-')+'USD '+Math.round(Math.abs(sg)/bcvActivo).toLocaleString('es-VE'):'—')+'</div>'
+    +'</div>'
+    +'<div style="background:var(--s2);border-radius:8px;padding:10px 12px">'
+    +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:4px">Siniestros Pagados</div>'
+    +'<div style="font-size:17px;font-weight:800;color:var(--r)">'+usd(sinPag)+'</div>'
+    +'</div>'
+    +'<div style="background:var(--s2);border-radius:8px;padding:10px 12px">'
+    +'<div style="font-size:7.5px;font-weight:700;color:var(--td);text-transform:uppercase;margin-bottom:4px">Gastos Administrativos</div>'
+    +'<div style="font-size:17px;font-weight:800;color:var(--r)">'+usd(gastoAdm)+'</div>'
+    +'</div>'
+    +'</div>'
+    +'</div>'
+    +'<div style="display:flex;align-items:center;gap:10px">'
+    +'<span style="font-size:8px;color:var(--r);width:60px">Pérdida</span>'
+    +'<div style="flex:1;height:8px;background:var(--s2);border-radius:4px;position:relative">'
+    +'<div style="position:absolute;left:50%;top:-1px;bottom:-1px;width:2px;background:var(--br)"></div>'
+    +'<div style="height:100%;background:'+ggeClr+';border-radius:4px;'
+      +(ggePos?'margin-left:50%;width:'+Math.min(Math.abs(gge)/2,50)+'%':'margin-left:'+Math.max(50-Math.min(Math.abs(gge)/2,50),0)+'%;width:'+Math.min(Math.abs(gge)/2,50)+'%')+'"></div>'
+    +'</div>'
+    +'<span style="font-size:8px;color:var(--g);width:60px;text-align:right">Utilidad</span>'
+    +'</div>'
+    +'</div></div>';
 
   // ══════════════════════════════════════════════════════════════════════════
   // K1-K8 — Gráficos de barras horizontales por ramo con sparkline tendencia
@@ -1764,29 +1868,30 @@ function renderKpisView(){
   ];
 
   KDEFS.forEach(function(kd){
-    // bcvAvg del último mes para conversión USD en barras
-    var bcvLast = ultimo.bcv&&ultimo.bcv.avg&&ultimo.bcv.avg>1 ? ultimo.bcv.avg : 0;
-    // total_a del último mes para calcular valor absoluto desde %
-    var taLast = ultimo.totals ? (ultimo.totals.a||1) : 1;
+    var bcvLast = bcvActivo;
+    var taLast = total_a_activo;
 
     var dataRamos=RAMOS.map(function(r){
-      return {r:r, vals:sorted.map(function(m){
+      // Sparkline: valor por cada mes individual (siempre todos los meses)
+      var vals=sortedAll.map(function(m){
         var rd=(m.ramos||{})[r]||{};
         var ta=m.totals?m.totals.a||1:1;
         return calcKpi(rd,ta)[kd.id];
-      }),
-      // Valor absoluto en Bs. del último mes para convertir a USD
-      bsUltimo: (function(){
-        var rd=(ultimo.ramos||{})[r]||{};
-        // Monto base según el KPI
-        var map={k1:rd.a||0, k2:rd.j||0, k3:rd.j||0, k4:rd.n||0,
-                 k5:rd.f||0, k6:rd.g||0, k7:rd.h||0, k8:rd.a-(rd.o||0)};
-        return Math.abs(map[kd.id]||0);
-      })()
+      });
+      // Valor activo: del acumulado o del mes seleccionado
+      var rdActivo = ramosActivos[r] || {};
+      var vActivo = calcKpi(rdActivo, total_a_activo)[kd.id];
+      return {r:r, vals:vals, vActivo:vActivo,
+        bsUltimo:(function(){
+          var map={k1:rdActivo.a||0, k2:rdActivo.j||0, k3:rdActivo.j||0, k4:rdActivo.n||0,
+                   k5:rdActivo.f||0, k6:rdActivo.g||0, k7:rdActivo.h||0, k8:(rdActivo.a||0)-(rdActivo.o||0)};
+          return Math.abs(map[kd.id]||0);
+        })()
       };
     });
-    var ultimoVals=dataRamos.map(function(d){return d.vals[d.vals.length-1];});
-    var maxAbs=Math.ceil(Math.max.apply(null,ultimoVals.map(Math.abs).concat([10]))/10)*10;
+
+    var activoVals=dataRamos.map(function(d){return d.vActivo;});
+    var maxAbs=Math.ceil(Math.max.apply(null,activoVals.map(Math.abs).concat([10]))/10)*10;
 
     html+='<div style="background:var(--s);border:1px solid var(--br);border-radius:10px;padding:14px 16px;margin-bottom:10px">'
       +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
@@ -1796,10 +1901,10 @@ function renderKpisView(){
       +'</div>'
       +'<span style="font-size:8.5px;color:var(--td)">'+kd.desc+'</span>'
       +'</div>'
-      +'<div style="display:grid;grid-template-columns:'+(sorted.length>1?'1fr 100px':'1fr')+';gap:12px;align-items:start">'
+      +'<div style="display:grid;grid-template-columns:'+(sortedAll.length>1?'1fr 100px':'1fr')+';gap:12px;align-items:start">'
       +'<div>'
       +dataRamos.map(function(d){
-        var v=d.vals[d.vals.length-1];
+        var v=d.vActivo;
         var clr=semColor(v,kd.neutral,kd.inv,kd.isK8);
         var pct=maxAbs>0?Math.min(Math.abs(v)/maxAbs*100,100):0;
         var fv=kd.id==='k6'&&v===0?'—':(v<0?'('+Math.abs(v).toFixed(1)+'%)':v.toFixed(1)+'%');
@@ -1814,7 +1919,6 @@ function renderKpisView(){
             ?'<div style="position:absolute;right:0;top:1px;height:14px;width:'+pct+'%;background:'+clr+';opacity:.8;border-radius:3px"></div>'
             :'<div style="position:absolute;left:0;top:1px;height:14px;width:'+pct+'%;background:'+clr+';border-radius:3px"></div>'
           )+'</div>'
-          // % en grande + USD en pequeño a la derecha
           +'<div style="width:100px;text-align:right;flex-shrink:0">'
           +'<span style="font-size:11px;font-weight:700;color:'+clr+'">'+fv+'</span>'
           +(usdStr?'<span style="font-size:9px;color:var(--td);margin-left:5px">'+usdStr+'</span>':'')
@@ -1822,10 +1926,10 @@ function renderKpisView(){
           +'</div>';
       }).join('')
       +'</div>'
-      +(sorted.length>1
+      +(sortedAll.length>1
         ?'<div><div style="font-size:7px;font-weight:700;color:var(--td);text-transform:uppercase;text-align:center;margin-bottom:4px;letter-spacing:.1em">Tend.</div>'
          +dataRamos.map(function(d){
-           var clr=semColor(d.vals[d.vals.length-1],kd.neutral,kd.inv,kd.isK8);
+           var clr=semColor(d.vActivo,kd.neutral,kd.inv,kd.isK8);
            return '<div style="height:28px;display:flex;align-items:center;justify-content:center;margin-bottom:5px">'+sparkline(d.vals,clr)+'</div>';
          }).join('')
          +'</div>'
@@ -1841,7 +1945,7 @@ function renderKpisView(){
   });
 
   html+='<div style="margin-top:4px;padding:8px 4px;border-top:1px solid var(--br);font-size:8.5px;color:var(--td)">'
-    +'K1=Prima ramo/total · K2=Sin.Pag/PCob · K3=Sin.Pag/PDev · K4=Sin.Inc/PCob · K5=Comis/PCob · K6=GtoDir/PCob · K7=GtoProrr/PCob · K8=ResTéc/PCob · Todos ×100'
+    +'K1=Prima ramo/total · K2=Sin.Pag/PCobTotal · K3=Sin.Pag/PDev · K4=Sin.Inc/PCobTotal · K5=Comis/PCobTotal · K6=GtoDir/PCobTotal · K7=GtoProrr/PCob · K8=ResTéc/PCob · Todos ×100'
     +'</div>';
 
   container.innerHTML=html;
