@@ -2066,6 +2066,79 @@ function renderTasasConsulta(){
       +'</div>';
   }
 
+  // ── Panel ejecutivo: Devaluación acumulada BCV y USDT ──────────────
+  var panelDevaluacion = '';
+  if(meses.length >= 2){
+    var primerMes = meses[0];
+    var ultimoMes = meses[meses.length-1];
+    var rPri = rates[primerMes], rUlt = rates[ultimoMes];
+    var bcvPri = rPri.avg||0, bcvUlt = rUlt.avg||0;
+    var usdtPri = rPri.usdt||0, usdtUlt = rUlt.usdt||0;
+    var depBcv  = bcvPri  ? (bcvUlt - bcvPri) / bcvPri * 100  : 0;
+    var depUsdt = usdtPri ? (usdtUlt - usdtPri) / usdtPri * 100 : 0;
+    var brechaPri = usdtPri && bcvPri ? (usdtPri/bcvPri - 1)*100 : 0;
+    var brechaUlt = usdtUlt && bcvUlt ? (usdtUlt/bcvUlt - 1)*100 : 0;
+    var brechaDelta = brechaUlt - brechaPri;
+
+    panelDevaluacion =
+      '<div style="margin-bottom:24px">'
+      +'<h2 style="font-size:18px;font-weight:800;color:var(--ink2);margin-bottom:4px">📊 Devaluación Acumulada del Bolívar</h2>'
+      +'<p style="font-size:10px;color:var(--td);margin-bottom:14px">Pérdida de valor del Bs. desde <strong>'+primerMes+' 2026</strong> hasta <strong>'+ultimoMes+' 2026</strong> · '+meses.length+' meses</p>'
+      +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">'
+
+      // Card 1 — BCV
+      +'<div style="background:linear-gradient(135deg,#2D1860 0%,#4B2D8F 100%);border-radius:12px;padding:18px 20px;color:#fff">'
+      +'<div style="font-size:8px;font-weight:700;color:#C8B8F0;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px">📉 Depreciación BCV Oficial</div>'
+      +'<div style="font-size:9px;color:#E4DCF5;margin-bottom:10px">'+primerMes+' → '+ultimoMes+' · Venta ASK promedio</div>'
+      +'<div style="font-size:36px;font-weight:900;color:#FFD700;line-height:1">+'+depBcv.toFixed(2)+'%</div>'
+      +'<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.15)">'
+      +'<div style="display:flex;justify-content:space-between;font-size:9px;color:#C8B8F0;margin-bottom:3px">'
+      +'<span>'+primerMes+'</span><span style="color:#fff;font-weight:700">Bs. '+bcvPri.toFixed(2)+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;font-size:9px;color:#C8B8F0;margin-bottom:3px">'
+      +'<span>'+ultimoMes+'</span><span style="color:#FFD700;font-weight:700">Bs. '+bcvUlt.toFixed(2)+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;font-size:9px;color:#C8B8F0">'
+      +'<span>Δ absoluto</span><span style="color:#8AEFB8;font-weight:700">+Bs. '+(bcvUlt-bcvPri).toFixed(2)+'/USD</span></div>'
+      +'</div></div>'
+
+      // Card 2 — USDT
+      +(usdtPri && usdtUlt ?
+        '<div style="background:linear-gradient(135deg,#0A5C35 0%,#0D7A4E 100%);border-radius:12px;padding:18px 20px;color:#fff">'
+        +'<div style="font-size:8px;font-weight:700;color:#8AEFB8;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px">₿ Variación USDT Binance P2P</div>'
+        +'<div style="font-size:9px;color:#C8EFD8;margin-bottom:10px">'+primerMes+' → '+ultimoMes+' · Mercado paralelo</div>'
+        +'<div style="font-size:36px;font-weight:900;color:'+(depUsdt>=0?'#FFD700':'#8AEFB8')+';line-height:1">'+(depUsdt>=0?'+':'')+depUsdt.toFixed(2)+'%</div>'
+        +'<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.15)">'
+        +'<div style="display:flex;justify-content:space-between;font-size:9px;color:#8AEFB8;margin-bottom:3px">'
+        +'<span>'+primerMes+'</span><span style="color:#fff;font-weight:700">Bs. '+usdtPri.toFixed(2)+'</span></div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:9px;color:#8AEFB8;margin-bottom:3px">'
+        +'<span>'+ultimoMes+'</span><span style="color:#FFD700;font-weight:700">Bs. '+usdtUlt.toFixed(2)+'</span></div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:9px;color:#8AEFB8">'
+        +'<span>Δ absoluto</span><span style="color:#FFD700;font-weight:700">'+(depUsdt>=0?'+':'')+( usdtUlt-usdtPri).toFixed(2)+' Bs./USDT</span></div>'
+        +'</div></div>'
+      : '<div style="background:var(--s2);border-radius:12px;padding:18px 20px;border:1px dashed var(--br);display:flex;align-items:center;justify-content:center">'
+        +'<p style="color:var(--td);font-size:11px;text-align:center">Sin datos USDT<br>carga tasas P2P</p></div>')
+
+      // Card 3 — Brecha Express
+      +(usdtPri && bcvPri ?
+        '<div style="background:linear-gradient(135deg,#7A5000 0%,#B07A00 100%);border-radius:12px;padding:18px 20px;color:#fff">'
+        +'<div style="font-size:8px;font-weight:700;color:#FFD700;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px">⚡ Brecha BCV vs USDT (Express)</div>'
+        +'<div style="font-size:9px;color:#FFE090;margin-bottom:10px">Convergencia del mercado paralelo</div>'
+        +'<div style="font-size:36px;font-weight:900;color:#fff;line-height:1">'+brechaUlt.toFixed(1)+'%</div>'
+        +'<div style="font-size:9px;color:#FFD700;margin-top:4px">Brecha actual · '+ultimoMes+'</div>'
+        +'<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.15)">'
+        +'<div style="display:flex;justify-content:space-between;font-size:9px;color:#FFE090;margin-bottom:3px">'
+        +'<span>Brecha '+primerMes+'</span><span style="color:#fff;font-weight:700">'+brechaPri.toFixed(1)+'%</span></div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:9px;color:#FFE090;margin-bottom:3px">'
+        +'<span>Brecha '+ultimoMes+'</span><span style="color:#FFD700;font-weight:700">'+brechaUlt.toFixed(1)+'%</span></div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:9px;color:#FFE090">'
+        +'<span>Variación</span><span style="color:'+(brechaDelta<=0?'#8AEFB8':'#FF9999')+';font-weight:700">'+(brechaDelta>=0?'+':'')+brechaDelta.toFixed(1)+'%</span></div>'
+        +'</div></div>'
+      : '')
+
+      +'</div>'
+      +'</div>'
+      +'<hr style="border:none;border-top:1px solid var(--br);margin-bottom:24px">';
+  }
+
   // ── Sección BCV ──
   var bcvCards = meses.map(function(m,i){ return tarjetaMes(m,i,'avg','Bs. ',2); }).join('');
   var bcvMin = Math.min.apply(null, meses.map(function(m){return rates[m].min||rates[m].avg||0;}).filter(Boolean));
@@ -2142,7 +2215,8 @@ function renderTasasConsulta(){
   var graficoUSDT = datosUSDT.length>=2 ? buildChart(datosUSDT, '#0D7A4E', 'USDT', 'Bs. ') : '';
 
   body.innerHTML =
-    '<div style="margin-bottom:24px">'
+    panelDevaluacion
+    +'<div style="margin-bottom:24px">'
       +'<h2 style="font-size:18px;font-weight:800;color:var(--ink2);margin-bottom:4px">📈 Tasa BCV Promedio</h2>'
       +'<p style="font-size:10px;color:var(--td);margin-bottom:12px">Tipo de cambio oficial — Venta (ASK), promedio de días hábiles por mes. Rango histórico: Bs. '+bcvMin.toFixed(2)+' – Bs. '+bcvMax.toFixed(2)+'</p>'
       +'<div style="display:flex;gap:10px;flex-wrap:wrap">'+bcvCards+'</div>'
