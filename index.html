@@ -1290,12 +1290,43 @@ function renderCam(){
 
   document.getElementById('p-cam').innerHTML=
     '<div class="page">'
-    +'<div class="ph"><div><h2>Análisis Cambiario · Enero–Mayo 2026</h2>'
-    +'<p>BCV Promedio ASK vs. Express USDT Binance P2P · Variación mensual y acumulada · Base = Enero 2026</p></div></div>'
-    +heroHtml
+    +'<div class="ph"><div><h2>Análisis Cambiario · '+primerMes+'–'+ultimoMes+' 2026</h2>'
+    +'<p>BCV Promedio ASK vs. USDT Binance P2P · Variación mensual y acumulada · Base = '+primerMes+' 2026</p></div></div>'
+    // ── Panel ejecutivo: 3 cards de devaluación acumulada ─────────────
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px">'
+    // Card 1: Depreciación BCV acumulada
+    +'<div style="background:linear-gradient(135deg,#2D1860,#4B2D8F);border-radius:12px;padding:16px 18px;color:#fff">'
+    +'<div style="font-size:8px;font-weight:700;color:#C8B8F0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px">📉 Depreciación BCV Acumulada</div>'
+    +'<div style="font-size:8px;color:#E4DCF5;margin-bottom:8px">'+primerMes+' → '+ultimoMes+' 2026</div>'
+    +'<div style="font-size:32px;font-weight:900;color:#FFD700;line-height:1">+'+(bcvDep).toFixed(2)+'%</div>'
+    +'<div style="font-size:9px;color:#C8B8F0;margin-top:8px">Bs.'+ene.avg.toFixed(2)+' → Bs.'+may.avg.toFixed(2)+'</div>'
+    +'<div style="font-size:9px;color:#E4DCF5;margin-top:2px">Δ +'+(may.avg-ene.avg).toFixed(2)+' Bs./USD · '+MESES.length+' mes'+(MESES.length>1?'es':'')+'</div>'
+    +'</div>'
+    // Card 2: Variación USDT acumulada
+    +(function(){
+      var usdtDep=(may.usdt-ene.usdt)/ene.usdt*100;
+      var col=usdtDep>=0?'#FFD700':'#8AEFB8';
+      return '<div style="background:linear-gradient(135deg,#0A5C35,#0D7A4E);border-radius:12px;padding:16px 18px;color:#fff">'
+        +'<div style="font-size:8px;font-weight:700;color:#8AEFB8;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px">₿ Variación USDT Acumulada</div>'
+        +'<div style="font-size:8px;color:#C8EFD8;margin-bottom:8px">'+primerMes+' → '+ultimoMes+' 2026 · Binance P2P</div>'
+        +'<div style="font-size:32px;font-weight:900;color:'+col+';line-height:1">'+(usdtDep>=0?'+':'')+usdtDep.toFixed(2)+'%</div>'
+        +'<div style="font-size:9px;color:#8AEFB8;margin-top:8px">Bs.'+ene.usdt.toFixed(2)+' → Bs.'+may.usdt.toFixed(2)+'</div>'
+        +'<div style="font-size:9px;color:#C8EFD8;margin-top:2px">Δ '+(usdtDep>=0?'+':'')+( may.usdt-ene.usdt).toFixed(2)+' Bs./USDT · '+MESES.length+' mes'+(MESES.length>1?'es':'')+'</div>'
+        +'</div>';
+    })()
+    // Card 3: Brecha Express actual
+    +'<div style="background:linear-gradient(135deg,#7A5000,#B07A00);border-radius:12px;padding:16px 18px;color:#fff">'
+    +'<div style="font-size:8px;font-weight:700;color:#FFD700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px">⚡ Brecha BCV vs USDT</div>'
+    +'<div style="font-size:8px;color:#FFE090;margin-bottom:8px">Express al '+ultimoMes+' 2026</div>'
+    +'<div style="font-size:32px;font-weight:900;color:#fff;line-height:1">'+may.spread+'%</div>'
+    +'<div style="font-size:9px;color:#FFE090;margin-top:8px">USDT Bs.'+may.usdt.toFixed(2)+' vs BCV Bs.'+may.avg.toFixed(2)+'</div>'
+    +'<div style="font-size:9px;color:#FFE090;margin-top:2px">Express: '+may.express.toFixed(4)+'× sobre BCV oficial</div>'
+    +'</div>'
+    +'</div>'
+    // ── Tarjetas BCV por mes ──────────────────────────────────────────
     +'<div style="font-size:8px;font-weight:700;color:#4B2D8F;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">BCV — Tipo de cambio oficial promedio mensual</div>'
     +'<div class="cam-cards">'+bcvCards+'</div>'
-    +'<div style="font-size:8px;font-weight:700;color:#B07A00;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Express Cambiario — USDT Binance P2P</div>'
+    +'<div style="font-size:8px;font-weight:700;color:#B07A00;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;margin-top:16px">Express Cambiario — USDT Binance P2P</div>'
     +'<div class="cam-cards">'+expCards+'</div>'
     +'<div class="cam-tbl-wrap"><div class="cam-tbl-lbl">Tabla Histórica Comparativa — BCV vs Express</div>'
     +'<table class="cam-tbl"><thead><tr>'
@@ -1304,7 +1335,7 @@ function renderCam(){
     +'<th>USDT Bs.</th><th>Spread %</th>'
     +'<th>Var. % Express</th><th>Acum. % Express</th>'
     +'</tr></thead><tbody>'+tblRows+'</tbody></table></div>'
-    +'<div class="cam-note"><strong>Interpretación:</strong> El BCV acumuló +51.97% de depreciación en 5 meses (Bs. 341.60 → 519.15). El mercado paralelo (Express) se redujo de 1.7857× a 1.2713×, acumulando -28.81%, lo que indica una <strong>convergencia significativa</strong> entre el tipo de cambio oficial y el mercado P2P. La brecha pasó de 78.6% en Enero a 27.1% en Mayo — señal de mayor sincronización cambiaria.'
+    +'<div class="cam-note"><strong>Interpretación:</strong> BCV acumuló +'+(bcvDep).toFixed(2)+'% de depreciación en '+MESES.length+' mes'+(MESES.length>1?'es':'')+' (Bs.'+ene.avg.toFixed(2)+' → Bs.'+may.avg.toFixed(2)+'). La brecha USDT vs BCV al '+ultimoMes+' es de '+may.spread+'%.'
     +'</div></div>';
 }
 
