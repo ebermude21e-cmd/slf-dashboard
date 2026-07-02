@@ -1482,8 +1482,8 @@ function showMonthDetail(mes, md){
     var lista = sgAll[mesKey] || sgAll[mes] || [];
     if(lista.length){
       sobregirosSection = '<div style="background:#FFF8E1;border-left:3px solid #E5C229;border-radius:8px;padding:10px 12px;margin-top:10px">'
-        +'<div style="font-size:10px;font-weight:700;color:#7A5000;margin-bottom:4px">⚠️ '+lista.length+' cuenta(s) con sobregiro/reversión detectadas</div>'
-        +'<div style="font-size:9px;color:#7A5000;margin-bottom:6px">Informativo — recomendamos revisar y regularizar en el sistema contable de origen.</div>'
+        +'<div style="font-size:10px;font-weight:700;color:#7A5000;margin-bottom:4px">⚠️ '+lista.length+' cuenta(s) con saldo final girado (informativo)</div>'
+        +'<div style="font-size:9px;color:#7A5000;margin-bottom:6px">El saldo final de estas cuentas tiene signo contrario al natural. Revisar en el sistema contable de origen.</div>'
         +'<button class="btn btn-ghost" style="font-size:9px;padding:4px 10px" onclick="exportarSobregiros(&quot;'+mesKey+'&quot;)">⬇ Descargar Excel</button>'
         +'</div>';
     }
@@ -1624,12 +1624,30 @@ function renderKpisTable(){
   container.innerHTML=html;
 }
 
-// Estado del selector de mes en KPIs (persiste mientras el tab está abierto)
-var _kpiModoActual = 'acum'; // 'acum' | 'Enero' | 'Febrero' | etc.
+// Estado del selector de mes en KPIs
+// _kpiModoActual: 'acum' | array de nombres ['Enero','Febrero',...]
+var _kpiModoActual = 'acum';
 
 function renderKpisView(modo){
-  // modo: 'acum' | nombre del mes ('Enero', 'Febrero'…)
-  if(modo !== undefined) _kpiModoActual = modo;
+  // Toggle de mes en multiselección:
+  // - 'acum' → modo acumulado (todos los meses)
+  // - nombre de mes → activa/desactiva ese mes en la selección múltiple
+  if(modo !== undefined){
+    if(modo === 'acum'){
+      _kpiModoActual = 'acum';
+    } else {
+      // Si estaba en 'acum', pasar a selección del mes clicado
+      if(_kpiModoActual === 'acum'){
+        _kpiModoActual = [modo];
+      } else {
+        // Toggle: añadir o quitar el mes del array
+        var arr = _kpiModoActual.slice ? _kpiModoActual.slice() : [_kpiModoActual];
+        var idx = arr.indexOf(modo);
+        if(idx >= 0){ arr.splice(idx,1); } else { arr.push(modo); }
+        _kpiModoActual = arr.length ? arr : 'acum'; // si queda vacío → acum
+      }
+    }
+  }
   var container = document.getElementById('kpis-view-body');
   if(!container) return;
 
@@ -1649,34 +1667,36 @@ function renderKpisView(modo){
     return ORDEN_M.indexOf((a.month||'').split(' ')[0]) - ORDEN_M.indexOf((b.month||'').split(' ')[0]);
   });
 
-  // ── Construir selector de mes ──────────────────────────────────────────
+  // ── Construir selector de mes (multiselección) ─────────────────────
+  var esAcum = _kpiModoActual === 'acum';
+  var mesesSelec = esAcum ? [] : (_kpiModoActual.slice ? _kpiModoActual : [_kpiModoActual]);
+
   var sel = document.getElementById('kpis-mes-selector');
   if(sel){
     var btnBase='font-size:10px;font-weight:700;border:none;border-radius:6px;padding:4px 12px;cursor:pointer;transition:all .15s;';
-    var btnActivo=btnBase+'background:var(--p);color:#fff;';
-    var btnNormal=btnBase+'background:var(--s2);color:var(--tm);';
-    var btns='<button style="'+((_kpiModoActual==='acum')?btnActivo:btnNormal)+'" onclick="renderKpisView(\'acum\')">ACUM.</button>';
+    var btnActivo =btnBase+'background:var(--p);color:#fff;box-shadow:0 0 0 2px var(--pl);';
+    var btnNormal =btnBase+'background:var(--s2);color:var(--tm);';
+    var btns='<span style="font-size:8px;color:var(--td);margin-right:4px">VER:</span>';
+    btns+='<button style="'+(esAcum?btnActivo:btnNormal)+'" onclick="renderKpisView(\'acum\')">ACUM.</button>';
     sorted.forEach(function(m){
       var mn=(m.month||'').split(' ')[0];
-      btns+='<button style="'+((_kpiModoActual===mn)?btnActivo:btnNormal)+'" onclick="renderKpisView(\''+mn+'\')">'+mn+'</button>';
+      var activo = mesesSelec.indexOf(mn)>=0;
+      btns+='<button style="'+(activo?btnActivo:btnNormal)+'" onclick="renderKpisView(\''+mn+'\')" title="'+(activo?'Quitar':'Agregar')+' '+mn+'">'+mn+'</button>';
     });
+    if(!esAcum && mesesSelec.length>1){
+      btns+='<span style="font-size:8px;color:var(--td);margin-left:6px">'+mesesSelec.length+' meses seleccionados</span>';
+    }
     sel.innerHTML=btns;
   }
 
-  // ── Determinar el conjunto de meses a usar ─────────────────────────────
-  // ACUMULADO: usa todos los meses sumando totals y ramos
-  // MES ESPECÍFICO: usa solo ese mes
-  var modoActual = _kpiModoActual;
-  var esAcum = modoActual === 'acum';
-
-  // Para sparklines siempre usamos todos los meses
-  var sortedAll = sorted;
-
-  // Mes/conjunto activo
+  // ── Determinar meses activos ───────────────────────────────────────
   var activeMeses = esAcum ? sorted : sorted.filter(function(m){
-    return (m.month||'').split(' ')[0] === modoActual;
+    return mesesSelec.indexOf((m.month||'').split(' ')[0]) >= 0;
   });
-  if(!activeMeses.length) activeMeses = sorted; // fallback
+  if(!activeMeses.length) activeMeses = sorted;
+
+  // Para sparklines siempre usamos todos los meses cargados
+  var sortedAll = sorted;
 
   // ── Sumar meses activos para acumulado ────────────────────────────────
   function sumarRamos(meses){
@@ -1815,8 +1835,7 @@ function renderKpisView(modo){
     if(ACUM_CERT_KPI.hasOwnProperty(ultimoMesActivo)){
       sg_calc = ACUM_CERT_KPI[ultimoMesActivo];
     } else {
-      // Más allá de Mayo: suma de saldo_gen mensual + base certificada de Mayo
-      var idxUltimo = ORDEN_M.indexOf(ultimoMesActivo);
+      // Más allá de Mayo: base certificada de Mayo + incrementos posteriores
       sg_calc = ACUM_CERT_KPI['Mayo'] || 0;
       activeMeses.forEach(function(m){
         var mn=(m.month||'').split(' ')[0];
@@ -1827,8 +1846,23 @@ function renderKpisView(modo){
       });
     }
   } else {
-    // Modo mes individual: usar el saldo_gen mensual del registro
-    sg_calc = t.saldo_gen||0;
+    // Modo mes individual o multiselección manual:
+    // saldo_gen correcto = diferencia entre el acumulado certificado del último mes
+    // y el acumulado certificado del mes inmediatamente anterior al primero seleccionado.
+    // Esto es necesario porque los balances de comprobación son acumulados del año.
+    var primerMesActivo=(activeMeses[0].month||'').split(' ')[0];
+    var ultimoMesActivo2=(activeMeses[activeMeses.length-1].month||'').split(' ')[0];
+    var idxPrimero=ORDEN_M.indexOf(primerMesActivo);
+    var mesAnterior=idxPrimero>0?ORDEN_M[idxPrimero-1]:'';
+    var acumUltimo=ACUM_CERT_KPI.hasOwnProperty(ultimoMesActivo2)?ACUM_CERT_KPI[ultimoMesActivo2]:null;
+    var acumBase  =mesAnterior&&ACUM_CERT_KPI.hasOwnProperty(mesAnterior)?ACUM_CERT_KPI[mesAnterior]:0;
+    if(acumUltimo !== null){
+      // Diferencia de acumulados certificados
+      sg_calc = acumUltimo - acumBase;
+    } else {
+      // Fuera del rango certificado: usar saldo_gen sumado de los meses activos
+      sg_calc = activeMeses.reduce(function(s,m){ return s+((m.totals||{}).saldo_gen||0); },0);
+    }
   }
 
   var sg = sg_calc;
@@ -2691,29 +2725,35 @@ function extractData(rows, ext, fileName, prevSaldoMap){
   //   3) Cuenta tipo 3 (egreso/gasto): se usa tal cual si el movimiento mensual es
   //      positivo (caso normal); se invierte si resulta negativo (reversión de
   //      reserva o sobregiro contable)
-  var sobregiros=[]; // {cuenta, tipo, crudoMensual, valorAplicado}
+  var sobregiros=[]; // {cuenta, tipo, saldoFinal, crudoMensual}
   function valorCuenta(ctaKey){
     var existeActual = saldoMap.hasOwnProperty(ctaKey);
     var existiaPrev  = prevSaldoMap ? prevSaldoMap.hasOwnProperty(ctaKey) : false;
     if(!existeActual && existiaPrev){
       return 0; // cuenta liquidada: ya no aparece en el balance actual
     }
-    var crudoActual = saldoMap[ctaKey] || 0;
-    var crudoPrev   = (prevSaldoMap && prevSaldoMap[ctaKey]!==undefined) ? prevSaldoMap[ctaKey] : 0;
+    var crudoActual  = saldoMap[ctaKey] || 0;
+    var crudoPrev    = (prevSaldoMap && prevSaldoMap[ctaKey]!==undefined) ? prevSaldoMap[ctaKey] : 0;
     var crudoMensual = crudoActual - crudoPrev;
-    var esIngreso = ctaKey.indexOf('5 ')===0;
+    var esIngreso    = ctaKey.indexOf('5 ')===0;
     var valor;
     if(esIngreso){
       valor = -crudoMensual;
-      if(valor < 0){
-        sobregiros.push({cuenta:ctaKey, tipo:'Ingreso', crudoMensual:crudoMensual, valorAplicado:valor});
+      // Sobregiro real: el SALDO FINAL de una cuenta de ingreso (cta 5) es positivo
+      // (su saldo natural es acreedor = negativo; girado = positivo)
+      if(crudoActual > 0){
+        sobregiros.push({cuenta:ctaKey, tipo:'Ingreso', saldoFinal:crudoActual, crudoMensual:crudoMensual});
       }
     } else {
       if(crudoMensual >= 0){
         valor = crudoMensual;
       } else {
         valor = -crudoMensual;
-        sobregiros.push({cuenta:ctaKey, tipo:'Egreso', crudoMensual:crudoMensual, valorAplicado:valor});
+      }
+      // Sobregiro real: el SALDO FINAL de una cuenta de egreso (cta 3) es negativo
+      // (su saldo natural es deudor = positivo; girado = negativo)
+      if(crudoActual < 0){
+        sobregiros.push({cuenta:ctaKey, tipo:'Egreso', saldoFinal:crudoActual, crudoMensual:crudoMensual});
       }
     }
     return valor;
@@ -2974,13 +3014,16 @@ function exportarSobregiros(mes){
     showToast(msg);
     return;
   }
-  var rows = '<tr><th>Cuenta</th><th>Tipo</th><th>Movimiento del Mes (crudo)</th><th>Valor Aplicado (regularizado)</th></tr>';
+  var rows = '<tr><th>Cuenta</th><th>Tipo</th><th>Saldo Final (Bs.)</th><th>Movimiento del Mes (Bs.)</th><th>Nota</th></tr>';
   lista.forEach(function(sg){
+    var saldoFinal = sg.saldoFinal !== undefined ? sg.saldoFinal : (sg.valorAplicado !== undefined ? -sg.valorAplicado : 0);
+    var movMes    = sg.crudoMensual || 0;
     rows += '<tr>'
       +'<td>'+sg.cuenta+'</td>'
       +'<td>'+sg.tipo+'</td>'
-      +'<td>'+fmtN(sg.crudoMensual)+'</td>'
-      +'<td>'+fmtN(sg.valorAplicado)+'</td>'
+      +'<td style="color:red">'+saldoFinal.toLocaleString('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>'
+      +'<td>'+movMes.toLocaleString('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>'
+      +'<td>Saldo final girado — revisar en sistema contable</td>'
       +'</tr>';
   });
   var html = '<html><head><meta charset="UTF-8"></head><body>'
