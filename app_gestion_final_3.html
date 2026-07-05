@@ -700,671 +700,811 @@ table.diff td.new{background:#DCFCE7;color:var(--g);font-weight:700}
 </div>
 
 
-<!-- ══ TAB: TESORERÍA — FLUJO DE CAJA ══ -->
+<!-- == TAB: TESORERIA == -->
 <div class="pane" id="pane-tesoreria-flujo" style="padding:0;flex-direction:column;overflow:hidden">
-
-<!-- ESTILOS TESORERÍA (scoped) -->
 <style>
-.tf-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;padding:14px 16px;background:linear-gradient(110deg,var(--ink),var(--ink2),#4B2D8F);border-bottom:1px solid rgba(255,255,255,.08)}
-.tf-kpi{background:rgba(255,255,255,.07);border-radius:8px;padding:10px 12px;border-left:3px solid #E5C229;cursor:pointer;transition:background .2s}
-.tf-kpi:hover{background:rgba(255,255,255,.13)}
-.tf-kpi-lbl{font-size:9px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.6px;font-weight:700}
-.tf-kpi-val{font-size:18px;font-weight:800;color:#fff;margin-top:2px;line-height:1}
-.tf-kpi-sub{font-size:9px;color:rgba(255,255,255,.45);margin-top:3px}
-.tf-kpi.rojo{border-color:#FF6B6B}
-.tf-kpi.verde{border-color:#4DB37E}
-.tf-kpi.azul{border-color:#6CA0DC}
-.tf-body{display:flex;flex-direction:column;flex:1;overflow:hidden}
-.tf-controls{padding:10px 16px;background:var(--ink2);display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.08)}
-.tf-mes-btn{padding:5px 13px;border:1.5px solid rgba(255,255,255,.2);border-radius:20px;background:transparent;cursor:pointer;font-size:11px;font-weight:600;color:rgba(255,255,255,.7);transition:all .2s}
-.tf-mes-btn.on{background:#E5C229;color:var(--ink);border-color:#E5C229}
-.tf-mes-btn:hover:not(.on){background:rgba(255,255,255,.1);color:#fff}
-.tf-scroll{flex:1;overflow-y:auto;padding:14px 16px}
-/* TABLA FC */
-.tf-tbl{width:100%;border-collapse:collapse;font-size:12px}
-.tf-tbl th{background:var(--ink2);color:#fff;padding:8px 12px;text-align:right;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;position:sticky;top:0;z-index:2}
-.tf-tbl th:first-child{text-align:left;width:280px}
-.tf-tbl td{padding:7px 12px;border-bottom:1px solid #EEEAF8;text-align:right;color:#1A1025}
-.tf-tbl td:first-child{text-align:left;color:#2D1860}
-.tf-tbl tr:hover td{background:#F9F8FC}
-.tf-grp td{background:#EDE8F8!important;font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.3px;color:#4B2D8F!important;cursor:default}
-.tf-sub td:first-child{padding-left:28px!important;color:#1A1025!important;font-size:12px}
-.tf-tot td{background:var(--ink2)!important;color:#fff!important;font-weight:700;font-size:12px}
-.tf-gtot td{background:linear-gradient(90deg,var(--ink),#4B2D8F)!important;color:#fff!important;font-weight:800;font-size:13px}
-.tf-pres-grp td{background:#FFF3CD!important;color:#B07A00!important;font-weight:800;font-size:11px;text-transform:uppercase}
-.tf-pres-tot td{background:#B07A00!important;color:#fff!important;font-weight:700}
-.tf-gtot2 td{background:linear-gradient(90deg,#2D1860,#7B1FA2)!important;color:#fff!important;font-weight:800;font-size:13px}
-.tf-ver-btn{background:none;border:1px solid #4B2D8F;color:#4B2D8F;padding:2px 9px;border-radius:10px;cursor:pointer;font-size:10px;font-weight:700;transition:all .2s;white-space:nowrap}
-.tf-ver-btn:hover{background:#4B2D8F;color:#fff}
-/* MODAL */
-.tf-modal-ov{display:none;position:fixed;inset:0;background:rgba(15,10,30,.65);z-index:500;align-items:center;justify-content:center}
-.tf-modal-ov.open{display:flex}
-.tf-modal{background:#fff;border-radius:12px;width:94vw;max-width:1150px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 16px 48px rgba(75,45,143,.3)}
-.tf-modal-hdr{background:linear-gradient(110deg,var(--ink),#4B2D8F);color:#fff;padding:14px 18px;border-radius:12px 12px 0 0;display:flex;align-items:flex-start;justify-content:space-between}
-.tf-modal-hdr h3{font-size:14px;font-weight:800;margin:0}
-.tf-modal-hdr .sub{font-size:10px;opacity:.7;margin-top:2px}
-.tf-modal-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.tf-modal-close:hover{background:rgba(255,255,255,.3)}
-.tf-modal-body{padding:14px 16px;overflow-y:auto;flex:1}
-.tf-mkpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
-.tf-mkpi{background:#F5F4F8;border-radius:8px;padding:10px 12px;text-align:center}
-.tf-mkpi-lbl{font-size:9px;color:#6B6080;font-weight:700;text-transform:uppercase}
-.tf-mkpi-val{font-size:17px;font-weight:800;color:#2D1860;margin-top:2px}
-.tf-det-filt{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
-.tf-det-filt input,.tf-det-filt select{padding:6px 10px;border:1.5px solid #E2DFF0;border-radius:20px;font-size:11px;background:#fff;outline:none}
-.tf-det-filt input:focus,.tf-det-filt select:focus{border-color:#4B2D8F}
-.tf-det-filt input{flex:1;min-width:160px}
-.tf-det-tbl{width:100%;border-collapse:collapse;font-size:11px}
-.tf-det-tbl th{background:#4B2D8F;color:#fff;padding:7px 8px;text-align:left;white-space:nowrap;position:sticky;top:0;font-size:10px;font-weight:700}
-.tf-det-tbl td{padding:6px 8px;border-bottom:1px solid #E2DFF0;vertical-align:top;white-space:nowrap}
-.tf-det-tbl tr:hover td{background:#F9F8FC}
-.tf-monto{text-align:right!important;font-family:'Courier New',monospace;font-weight:700}
-.tf-usd{color:#B0190F;font-weight:800}
-.tf-badge{display:inline-block;padding:1px 7px;border-radius:8px;font-size:9px;font-weight:700;text-transform:uppercase}
-.tf-badge.core{background:#EDE8F8;color:#4B2D8F}
-.tf-badge.mayor{background:#E8F4F0;color:#0D7A4E}
-.tf-badge.divisas{background:#FFF3CD;color:#B07A00}
-.tf-pag{display:flex;gap:4px;justify-content:center;margin-top:10px;flex-wrap:wrap;align-items:center}
-.tf-pg-btn{padding:4px 9px;border:1px solid #E2DFF0;border-radius:5px;background:#fff;cursor:pointer;font-size:11px;transition:all .2s}
-.tf-pg-btn.on{background:#4B2D8F;color:#fff;border-color:#4B2D8F}
-.tf-pg-btn:hover:not(.on){border-color:#4B2D8F}
-/* DIVISAS MODAL */
-.tf-div-form{background:#FFF9E6;border-radius:8px;padding:14px;margin-bottom:14px;border:1px solid #E5C229}
-.tf-div-form h4{font-size:12px;font-weight:700;color:#2D1860;margin-bottom:10px}
-.tf-div-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:10px}
-.tf-fld label{display:block;font-size:9px;font-weight:700;color:#6B6080;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
-.tf-fld input,.tf-fld select{width:100%;padding:6px 9px;border:1.5px solid #E2DFF0;border-radius:6px;font-size:11px;background:#fff;outline:none}
-.tf-fld input:focus,.tf-fld select:focus{border-color:#4B2D8F}
-.tf-btn-p{background:#4B2D8F;color:#fff;border:none;padding:7px 16px;border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;transition:all .2s}
-.tf-btn-p:hover{background:#2D1860}
-.tf-btn-s{background:#fff;color:#4B2D8F;border:1.5px solid #4B2D8F;padding:7px 16px;border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;transition:all .2s}
-.tf-btn-s:hover{background:#EDE8F8}
-/* GRÁFICO */
-.tf-chart-wrap{background:#fff;border-radius:8px;border:1px solid #E2DFF0;padding:14px;margin-bottom:14px}
-.tf-bars{display:flex;gap:12px;align-items:flex-end;height:140px}
-.tf-bar-g{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
-.tf-bar-s{width:100%;border-radius:3px 3px 0 0;min-height:2px;cursor:pointer;transition:opacity .15s}
-.tf-bar-s:hover{opacity:.8}
-.tf-bar-lbl{font-size:9px;color:#6B6080;font-weight:700}
-.tf-bar-v{font-size:8px;color:#9B94B0}
-.tf-leyenda{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
-.tf-ley-item{display:flex;align-items:center;gap:4px;font-size:10px;color:#6B6080}
-.tf-ley-box{width:9px;height:9px;border-radius:2px;flex-shrink:0}
-/* Ajustes */
-.tf-adj-card{background:#fff;border-radius:8px;border:1px solid #E2DFF0;padding:14px;margin-bottom:10px}
+:root{--tp:#4B2D8F;--tp2:#2D1860;--tp3:#7B5CC4;--tpl:#EDE8F8;--tg:#0D7A4E;--tgl:#E8F4F0;--tr:#B0190F;--trl:#FDE8E8;--tgo:#B07A00;--tgol:#FFF8E6;--taz:#1F497D;--tazl:#E8F0FB;--ty:#E5C229;--tbg:#F5F4F8;--tc:#FFFFFF;--tbd:#E2DFF0;--ttx:#1A1025;--ttx2:#6B6080;--ttx3:#9B94B0}
+.t2-nav{display:flex;background:var(--tp2);border-bottom:2px solid rgba(255,255,255,.08);padding:0 16px;gap:2px;flex-shrink:0}
+.t2-btn{padding:10px 16px;border:none;background:transparent;color:rgba(255,255,255,.55);cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;white-space:nowrap}
+.t2-btn:hover{color:#fff;background:rgba(255,255,255,.06)}
+.t2-btn.on{color:var(--ty);border-bottom-color:var(--ty)}
+.t2-pane{display:none;flex:1;overflow:hidden;flex-direction:column}
+.t2-pane.on{display:flex}
+.t2-scroll{flex:1;overflow-y:auto;padding:16px}
+.t2-bar{padding:9px 16px;background:var(--tp2);display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.07)}
+.t2-mes{padding:5px 13px;border:1.5px solid rgba(255,255,255,.2);border-radius:20px;background:transparent;cursor:pointer;font-size:11px;font-weight:600;color:rgba(255,255,255,.65);transition:all .2s}
+.t2-mes.on{background:var(--ty);color:var(--tp2);border-color:var(--ty);font-weight:800}
+.t2-mes:hover:not(.on){background:rgba(255,255,255,.1);color:#fff}
+.t2-bp{background:var(--tp);color:#fff;border:none;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;transition:all .2s}
+.t2-bp:hover{background:var(--tp2)}
+.t2-bs{background:#fff;color:var(--tp);border:1.5px solid var(--tp);padding:6px 14px;border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;transition:all .2s}
+.t2-bs:hover{background:var(--tpl)}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:14px;margin-bottom:20px}
+.kpi-ex{background:var(--tc);border-radius:12px;padding:16px 18px;box-shadow:0 2px 12px rgba(75,45,143,.1);border-top:4px solid var(--tp);position:relative;overflow:hidden}
+.kpi-ex.rojo{border-color:var(--tr)}.kpi-ex.verde{border-color:var(--tg)}.kpi-ex.dorado{border-color:var(--tgo)}.kpi-ex.azul{border-color:var(--taz)}
+.kpi-ex-icon{font-size:22px;margin-bottom:6px}.kpi-ex-lbl{font-size:10px;color:var(--ttx2);text-transform:uppercase;letter-spacing:.7px;font-weight:700}
+.kpi-ex-val{font-size:24px;font-weight:800;color:var(--tp2);line-height:1.1;margin:4px 0}.kpi-ex-sub{font-size:11px;color:var(--ttx3)}
+.kpi-ex-bar{height:4px;background:#EDE8F8;border-radius:2px;margin-top:10px;overflow:hidden}
+.kpi-ex-bar-fill{height:100%;background:var(--tp);border-radius:2px;transition:width .6s ease}
+.kpi-ex.rojo .kpi-ex-bar-fill{background:var(--tr)}.kpi-ex.verde .kpi-ex-bar-fill{background:var(--tg)}
+.kpi-ex.dorado .kpi-ex-bar-fill{background:var(--tgo)}.kpi-ex.azul .kpi-ex-bar-fill{background:var(--taz)}
+.sem{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}.sem.ok{background:#0D7A4E}.sem.warn{background:#B07A00}.sem.bad{background:#B0190F}
+.chart-card{background:var(--tc);border-radius:12px;padding:18px;box-shadow:0 2px 12px rgba(75,45,143,.08);margin-bottom:20px}
+.bars-wrap{display:flex;gap:10px;align-items:flex-end;height:160px}
+.bar-g{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+.bar-col{width:100%;display:flex;flex-direction:column-reverse;gap:1px;height:140px}
+.bar-seg{width:100%;border-radius:3px 3px 0 0;min-height:2px;transition:opacity .2s}
+.bar-seg:hover{opacity:.8}.bar-lbl{font-size:9px;color:var(--ttx2);font-weight:700}.bar-val{font-size:8px;color:var(--ttx3)}
+.ley-wrap{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.ley-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ttx2);cursor:pointer}
+.ley-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.fc-card{background:var(--tc);border-radius:12px;box-shadow:0 2px 12px rgba(75,45,143,.08);overflow:hidden;margin-bottom:14px}
+.fc-grp-hdr{padding:12px 16px;background:var(--tpl);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;transition:background .2s}
+.fc-grp-hdr:hover{background:#E0D8F5}.fc-grp-title{font-size:12px;font-weight:800;color:var(--tp);text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;gap:8px}
+.fc-grp-right{display:flex;align-items:center;gap:12px}.fc-grp-total{font-size:16px;font-weight:800;color:var(--tp2)}
+.fc-grp-arrow{font-size:11px;color:var(--tp);transition:transform .25s;display:inline-block}
+.fc-conc-list{display:none;border-top:1px solid var(--tbd)}.fc-conc-list.open{display:block}
+.fc-conc{border-bottom:1px solid #F0EDF8}.fc-conc:last-child{border-bottom:none}.fc-conc:hover>div{background:#FAFAFE}
+.fc-conc-hdr{padding:10px 16px 10px 28px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.fc-conc-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}.fc-conc-name{flex:1;font-size:12px;color:var(--ttx);font-weight:600}
+.fc-conc-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.fc-conc-usd{font-size:13px;font-weight:700;color:var(--tp2)}
+.fc-conc-pct-bar{width:55px;height:5px;background:#EDE8F8;border-radius:3px;overflow:hidden}
+.fc-conc-pct-fill{height:100%;border-radius:3px;transition:width .4s}
+.fc-det-list{display:none;background:#FAFAFE;border-top:1px solid #F0EDF8}.fc-det-list.open{display:block}
+.fc-sub-hdr{padding:7px 16px 7px 44px;display:flex;align-items:center;gap:10px;background:#F8F7FD;border-bottom:1px solid #F0EDF8;cursor:pointer}
+.fc-sub-hdr:hover{background:#EEEAF8}.fc-sub-regs{display:none}
+.fc-det-row{padding:6px 16px 6px 56px;display:grid;grid-template-columns:88px 1fr 2fr 1fr 100px;gap:8px;align-items:start;border-bottom:1px solid #F5F3FC;font-size:11px;transition:background .15s}
+.fc-det-row:hover{background:#F0EDF8}.fc-det-row:last-child{border-bottom:none}
+.fc-det-fecha{color:var(--ttx3);font-size:10px;white-space:nowrap}.fc-det-conc{color:var(--tp);font-weight:600;word-break:break-word}
+.fc-det-desc{color:var(--ttx);word-break:break-word;line-height:1.35}.fc-det-benef{color:var(--ttx2);font-size:10px;word-break:break-word}
+.fc-det-monto{text-align:right;font-weight:700;color:var(--tp2);font-family:"Courier New",monospace;white-space:nowrap}
+.fc-tot-row{padding:10px 16px;display:flex;align-items:center;justify-content:space-between;background:var(--tp2);color:#fff;font-weight:700;font-size:13px}
+.fc-gran-tot{padding:13px 18px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(90deg,var(--tp2),var(--tp));color:#fff;font-weight:800;font-size:15px;border-radius:8px;margin-top:10px}
+.fc-pres-hdr{background:var(--tgol)!important}.fc-pres-hdr .fc-grp-title{color:var(--tgo)!important}
+.fc-pres-tot{background:var(--tgo)!important;color:#fff!important;font-weight:700}
+.fc-gran-tot2{background:linear-gradient(90deg,#2D1860,#7B1FA2)!important}
+.t2-modal-ov{display:none;position:fixed;inset:0;background:rgba(15,10,30,.6);z-index:600;align-items:center;justify-content:center}
+.t2-modal-ov.open{display:flex}.t2-modal{background:#fff;border-radius:14px;width:94vw;max-width:1160px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(75,45,143,.3)}
+.t2-mhdr{background:linear-gradient(110deg,var(--tp2),var(--tp));color:#fff;padding:14px 18px;border-radius:14px 14px 0 0;display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0}
+.t2-mhdr h3{font-size:14px;font-weight:800;margin:0}.t2-mhdr .msub{font-size:10px;opacity:.7;margin-top:2px}
+.t2-mclose{background:rgba(255,255,255,.15);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.t2-mclose:hover{background:rgba(255,255,255,.3)}.t2-mbody{padding:14px 16px;overflow-y:auto;flex:1}
+.t2-mkpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.t2-mkpi{background:var(--tbg);border-radius:8px;padding:10px 12px;text-align:center}
+.t2-mkpi-l{font-size:9px;color:var(--ttx2);font-weight:700;text-transform:uppercase}.t2-mkpi-v{font-size:17px;font-weight:800;color:var(--tp2);margin-top:2px}
+.det-f{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+.det-f input,.det-f select{padding:6px 10px;border:1.5px solid var(--tbd);border-radius:20px;font-size:11px;background:#fff;outline:none;transition:border .2s}
+.det-f input:focus,.det-f select:focus{border-color:var(--tp)}.det-f input{flex:1;min-width:180px}
+.det-tbl{width:100%;border-collapse:collapse;font-size:11px}
+.det-tbl th{background:var(--tp);color:#fff;padding:7px 8px;text-align:left;white-space:nowrap;position:sticky;top:0;font-size:10px;font-weight:700}
+.det-tbl td{padding:6px 8px;border-bottom:1px solid var(--tbd);vertical-align:top}
+.det-tbl tr:hover td{background:#F9F8FC}
+.desc-cell{max-width:220px;white-space:normal;line-height:1.35;color:var(--ttx)}
+.conc-cell{font-weight:700;color:var(--tp);white-space:normal;max-width:160px}
+.monto-r{text-align:right;font-family:"Courier New",monospace;font-weight:700;white-space:nowrap}
+.usd-r{color:var(--tr);font-weight:800}
+.tbadge{display:inline-block;padding:2px 7px;border-radius:8px;font-size:9px;font-weight:700;text-transform:uppercase}
+.tbadge.core{background:var(--tpl);color:var(--tp)}.tbadge.mayor{background:var(--tgl);color:var(--tg)}.tbadge.divisas{background:var(--tgol);color:var(--tgo)}
+.pg-bar{display:flex;gap:4px;justify-content:center;margin-top:10px;flex-wrap:wrap;align-items:center}
+.pg-b{padding:4px 9px;border:1px solid var(--tbd);border-radius:5px;background:#fff;cursor:pointer;font-size:11px;transition:all .2s}
+.pg-b.on{background:var(--tp);color:#fff;border-color:var(--tp)}.pg-b:hover:not(.on){border-color:var(--tp)}
+.div-form{background:linear-gradient(135deg,#FFF9E6,#FFF3CD);border-radius:12px;padding:18px;margin-bottom:16px;border:1px solid var(--tgo)}
+.div-form h4{font-size:13px;font-weight:800;color:var(--tp2);margin-bottom:12px}
+.fld-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin-bottom:12px}
+.fld label{display:block;font-size:9px;font-weight:700;color:var(--ttx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.fld input,.fld select{width:100%;padding:7px 10px;border:1.5px solid var(--tbd);border-radius:7px;font-size:12px;background:#fff;outline:none;transition:border .2s}
+.fld input:focus,.fld select:focus{border-color:var(--tp)}
+.calc-box{background:#fff;border-radius:8px;padding:12px 14px;margin-bottom:12px;border:1px solid var(--tbd);display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.calc-item{text-align:center}.calc-item .cl{font-size:9px;color:var(--ttx2);font-weight:700;text-transform:uppercase}
+.calc-item .cv{font-size:15px;font-weight:800;color:var(--tp2);margin-top:2px}.calc-item.cost .cv{color:var(--tr)}
+.div-hist-tbl{width:100%;border-collapse:collapse;font-size:11px;background:#fff;border-radius:8px;overflow:hidden}
+.div-hist-tbl th{background:var(--tgo);color:#fff;padding:8px 10px;font-size:10px;font-weight:700;text-align:left}
+.div-hist-tbl td{padding:7px 10px;border-bottom:1px solid var(--tbd)}
+.div-hist-tbl tr:hover td{background:var(--tgol)}.div-hist-tbl .mr{text-align:right;font-family:monospace;font-weight:700}
+.div-tot-row{background:var(--tgo);color:#fff;font-weight:800}
+.carga-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:20px}
+.carga-card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 2px 12px rgba(75,45,143,.08);border-top:3px solid var(--tp)}
+.carga-card h4{font-size:13px;font-weight:800;color:var(--tp2);margin-bottom:4px}
+.carga-card p{font-size:11px;color:var(--ttx2);margin-bottom:12px;line-height:1.4}
+.drop-zone{border:2px dashed var(--tbd);border-radius:8px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--tbg)}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--tp);background:var(--tpl)}
+.dz-icon{font-size:32px;margin-bottom:6px}.dz-txt{font-size:12px;font-weight:600;color:var(--tp2)}.dz-sub{font-size:10px;color:var(--ttx3);margin-top:3px}
+.status-ok{color:var(--tg);font-weight:700;font-size:11px;margin-top:6px}
+.audit-banner{background:linear-gradient(135deg,var(--tazl),#EEF4FF);border-radius:10px;padding:14px 16px;margin-bottom:14px;border-left:4px solid var(--taz)}
+.audit-banner h4{font-size:12px;font-weight:800;color:var(--taz);margin-bottom:4px}
+.audit-banner p{font-size:11px;color:var(--ttx2);line-height:1.4}
+.audit-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.audit-s-card{background:#fff;border-radius:8px;padding:12px;text-align:center;box-shadow:0 1px 6px rgba(75,45,143,.08)}
+.audit-s-card .asl{font-size:9px;color:var(--ttx2);font-weight:700;text-transform:uppercase}.audit-s-card .asv{font-size:20px;font-weight:800;color:var(--tp2);margin-top:2px}
+.audit-row{padding:10px 14px;background:#fff;border-radius:8px;margin-bottom:6px;border:1px solid var(--tbd);display:grid;grid-template-columns:90px 1fr 1fr 100px 80px 130px;gap:8px;align-items:center;font-size:11px}
+.audit-row.aprobado{border-color:var(--tg);background:var(--tgl)}.audit-row.rechazado{opacity:.6}
+.audit-de{font-size:10px;color:var(--tr);font-weight:600}.audit-a{font-size:10px;color:var(--tg);font-weight:600}
+.audit-monto{text-align:right;font-weight:700;color:var(--tp2);font-family:monospace}
+.audit-razon{font-size:9px;color:var(--ttx3);line-height:1.3}
+.audit-actions{display:flex;gap:4px;justify-content:flex-end}
+.ab-ok{background:var(--tg);color:#fff;border:none;padding:3px 10px;border-radius:12px;cursor:pointer;font-size:10px;font-weight:700}
+.ab-no{background:#fff;color:var(--tr);border:1px solid var(--tr);padding:3px 10px;border-radius:12px;cursor:pointer;font-size:10px;font-weight:700}
 </style>
 
-<!-- KPI STRIP -->
-<div class="tf-strip" id="tf-kpi-strip">
-  <div class="tf-kpi rojo"><div class="tf-kpi-lbl">Total Egresos</div><div class="tf-kpi-val" id="tf-kpi-total">—</div><div class="tf-kpi-sub" id="tf-kpi-total-sub">Ene–May 2026</div></div>
-  <div class="tf-kpi rojo" onclick="tfAbrirModal('siniestros')"><div class="tf-kpi-lbl">Siniestros Incurridos</div><div class="tf-kpi-val" id="tf-kpi-sin">—</div><div class="tf-kpi-sub" id="tf-kpi-sin-pct">—</div></div>
-  <div class="tf-kpi" onclick="tfAbrirModal('gastos_adm')"><div class="tf-kpi-lbl">Gasto de Administración</div><div class="tf-kpi-val" id="tf-kpi-adm">—</div><div class="tf-kpi-sub" id="tf-kpi-adm-pct">—</div></div>
-  <div class="tf-kpi verde" onclick="tfAbrirModal('nomina_gerentes')"><div class="tf-kpi-lbl">Nómina Gerentes (Div.)</div><div class="tf-kpi-val" id="tf-kpi-ng">—</div><div class="tf-kpi-sub" id="tf-kpi-ng-sub">—</div></div>
-  <div class="tf-kpi" style="border-color:#6CA0DC" onclick="tfAbrirModal('costo_bancario')"><div class="tf-kpi-lbl">Costo Bancario</div><div class="tf-kpi-val" id="tf-kpi-ef">—</div><div class="tf-kpi-sub" id="tf-kpi-ef-pct">—</div></div>
-  <div class="tf-kpi" style="border-color:#B07A00" onclick="tfAbrirModal('presidencia')"><div class="tf-kpi-lbl">Gastos de Presidencia</div><div class="tf-kpi-val" id="tf-kpi-pres">—</div><div class="tf-kpi-sub" id="tf-kpi-pres-pct">—</div></div>
+<div class="t2-nav">
+  <button class="t2-btn on" onclick="t2Show('t2-dashboard',this)">📊 Dashboard</button>
+  <button class="t2-btn" onclick="t2Show('t2-flujo',this)">📋 Flujo de Caja</button>
+  <button class="t2-btn" onclick="t2Show('t2-divisas',this)">💵 Divisas</button>
+  <button class="t2-btn" onclick="t2Show('t2-carga',this)">📂 Carga + Auditoría</button>
 </div>
 
-<div class="tf-body">
-  <!-- CONTROLES -->
-  <div class="tf-controls">
-    <span style="font-size:9px;color:rgba(255,255,255,.5);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-right:4px">Período:</span>
-    <button class="tf-mes-btn on" onclick="tfSetMes(0,this)">Acumulado</button>
-    <button class="tf-mes-btn" onclick="tfSetMes(1,this)">Enero</button>
-    <button class="tf-mes-btn" onclick="tfSetMes(2,this)">Febrero</button>
-    <button class="tf-mes-btn" onclick="tfSetMes(3,this)">Marzo</button>
-    <button class="tf-mes-btn" onclick="tfSetMes(4,this)">Abril</button>
-    <button class="tf-mes-btn" onclick="tfSetMes(5,this)">Mayo</button>
+<!-- TAB A: DASHBOARD EJECUTIVO -->
+<div class="t2-pane on" id="t2-dashboard">
+  <div class="t2-bar">
+    <span style="font-size:9px;color:rgba(255,255,255,.5);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Período:</span>
+    <button class="t2-mes on" onclick="tfSetMes(0,this)">Acumulado</button>
+    <button class="t2-mes" onclick="tfSetMes(1,this)">Enero</button>
+    <button class="t2-mes" onclick="tfSetMes(2,this)">Febrero</button>
+    <button class="t2-mes" onclick="tfSetMes(3,this)">Marzo</button>
+    <button class="t2-mes" onclick="tfSetMes(4,this)">Abril</button>
+    <button class="t2-mes" onclick="tfSetMes(5,this)">Mayo</button>
+    <div style="margin-left:auto">
+      <button class="t2-bp" style="font-size:10px;padding:5px 12px" onclick="tfExportarCSV()">&#8659; Exportar FC</button>
+    </div>
+  </div>
+  <div class="t2-scroll">
+    <div class="kpi-grid" id="kpi-grid"></div>
+    <div class="chart-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div>
+          <div style="font-size:13px;font-weight:800;color:var(--tp2)">Composición de Egresos por Mes</div>
+          <div style="font-size:10px;color:var(--ttx3);margin-top:2px">En USD &middot; Seguros La Fe, C.A. &middot; Ene&ndash;May 2026</div>
+        </div>
+      </div>
+      <div class="bars-wrap" id="tf-bars"></div>
+      <div class="ley-wrap" id="tf-leyenda"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB B: FLUJO DE CAJA ARBOL -->
+<div class="t2-pane" id="t2-flujo">
+  <div class="t2-bar">
+    <span style="font-size:9px;color:rgba(255,255,255,.5);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Período:</span>
+    <button class="t2-mes on" onclick="tfSetMes2(0,this)">Acumulado</button>
+    <button class="t2-mes" onclick="tfSetMes2(1,this)">Enero</button>
+    <button class="t2-mes" onclick="tfSetMes2(2,this)">Febrero</button>
+    <button class="t2-mes" onclick="tfSetMes2(3,this)">Marzo</button>
+    <button class="t2-mes" onclick="tfSetMes2(4,this)">Abril</button>
+    <button class="t2-mes" onclick="tfSetMes2(5,this)">Mayo</button>
     <div style="margin-left:auto;display:flex;gap:6px">
-      <button class="tf-btn-s" style="padding:5px 12px;font-size:10px" onclick="tfAbrirDivisas()">💵 Divisas</button>
-      <button class="tf-btn-s" style="padding:5px 12px;font-size:10px" onclick="tfAbrirAjustes()">✏️ Ajustes FC</button>
-      <button class="tf-btn-p" style="padding:5px 12px;font-size:10px" onclick="tfExportarCSV()">⬇ Exportar</button>
+      <button class="t2-bs" style="font-size:10px;padding:5px 12px" onclick="tfExpandirTodo()">&#8862; Expandir todo</button>
+      <button class="t2-bp" style="font-size:10px;padding:5px 12px" onclick="tfExportarCSV()">&#8659; CSV</button>
     </div>
   </div>
+  <div class="t2-scroll">
+    <div id="fc-tree"></div>
+  </div>
+</div>
 
-  <div class="tf-scroll">
-    <!-- GRÁFICO -->
-    <div class="tf-chart-wrap">
-      <div style="font-size:11px;font-weight:700;color:#2D1860;margin-bottom:10px">Composición de Egresos por Mes (USD)</div>
-      <div class="tf-bars" id="tf-bars"></div>
-      <div class="tf-leyenda" id="tf-leyenda"></div>
+<!-- TAB C: DIVISAS -->
+<div class="t2-pane" id="t2-divisas">
+  <div class="t2-scroll">
+    <div class="div-form">
+      <h4>&#128181; Registrar Compra de Divisas</h4>
+      <div class="fld-grid">
+        <div class="fld"><label>Fecha de Compra</label><input type="date" id="dv-fecha"></div>
+        <div class="fld"><label>Mes a imputar</label>
+          <select id="dv-mes"><option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option><option value="4">Abril</option><option value="5">Mayo</option></select></div>
+        <div class="fld"><label>Monto USD Comprado</label><input type="number" id="dv-monto" placeholder="0.00" step="0.01" oninput="dvCalc()"></div>
+        <div class="fld"><label>Tasa Paralela (Bs./USD)</label><input type="number" id="dv-tpar" placeholder="0.0000" step="0.0001" oninput="dvCalc()"></div>
+        <div class="fld"><label>Tasa BCV Promedio del Mes</label><input type="number" id="dv-tbcv" placeholder="0.0000" step="0.0001" oninput="dvCalc()"></div>
+        <div class="fld"><label>Tipo de gasto a imputar</label>
+          <select id="dv-tipo"><option value="nomina_gerentes">Nomina Gerentes</option><option value="gastos_adm">Gastos Administrativos</option><option value="presidencia">Gastos Presidencia</option><option value="impuestos">Impuestos</option><option value="otro">Otro</option></select></div>
+        <div class="fld"><label>Descripcion / Concepto</label><input type="text" id="dv-desc" placeholder="Ej: Nomina gerencial enero..."></div>
+        <div class="fld"><label>Beneficiario</label><input type="text" id="dv-benef" placeholder="Nombre..."></div>
+      </div>
+      <div class="calc-box">
+        <div class="calc-item"><div class="cl">Monto Bs. (tasa paralela)</div><div class="cv" id="dvc-bs">&mdash;</div></div>
+        <div class="calc-item"><div class="cl">Equivalente a tasa BCV</div><div class="cv" id="dvc-bcv">&mdash;</div></div>
+        <div class="calc-item cost"><div class="cl">Costo adicional de adquisicion</div><div class="cv" id="dvc-costo">&mdash;</div></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="t2-bp" onclick="dvRegistrar()">Registrar Compra</button>
+        <button class="t2-bs" onclick="dvExportar()">&#8659; Exportar CSV</button>
+        <span style="font-size:10px;color:var(--ttx2);margin-left:8px" id="dv-msg"></span>
+      </div>
     </div>
-
-    <!-- TABLA FLUJO DE CAJA -->
-    <div style="background:#fff;border-radius:8px;border:1px solid #E2DFF0;overflow:hidden">
-      <table class="tf-tbl" id="tf-tbl"></table>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px" id="dv-resumen-mes"></div>
+    <div style="font-size:12px;font-weight:700;color:var(--tp2);margin-bottom:8px">Historial de Compras de Divisas</div>
+    <div style="overflow-x:auto">
+      <table class="div-hist-tbl">
+        <thead><tr><th>Fecha</th><th>Mes</th><th>Concepto</th><th>Beneficiario</th><th>Monto USD</th><th>T. Paralela</th><th>T. BCV</th><th>Monto Bs.</th><th>Costo Adq. USD</th><th>% Prima</th><th>Tipo Gasto</th><th></th></tr></thead>
+        <tbody id="dv-body"></tbody>
+        <tfoot><tr class="div-tot-row" id="dv-foot"></tr></tfoot>
+      </table>
     </div>
   </div>
 </div>
 
-<!-- ════ MODAL DETALLE ════ -->
-<div class="tf-modal-ov" id="tf-modal-ov">
-  <div class="tf-modal">
-    <div class="tf-modal-hdr">
-      <div><h3 id="tf-modal-titulo">Detalle</h3><div class="sub" id="tf-modal-sub"></div></div>
-      <button class="tf-modal-close" onclick="tfCerrarModal()">✕</button>
+<!-- TAB D: CARGA + AUDITORIA -->
+<div class="t2-pane" id="t2-carga">
+  <div class="t2-scroll">
+    <div class="carga-grid">
+      <div class="carga-card">
+        <h4>&#128219; Mayor Analitico</h4>
+        <p>Archivo XLS del Mayor Analitico de Egresos.<br>Cuentas 3 381 01 01 (Personal) y 3 381 02 (EF).<br>Formato fijo: CTA col.2, DEBITO col.13, CREDITO col.14</p>
+        <div class="drop-zone" id="dz-mayor" onclick="document.getElementById('fi-mayor').click()">
+          <div class="dz-icon">&#128193;</div>
+          <div class="dz-txt">Arrastrar o hacer clic</div>
+          <div class="dz-sub">Egresos.xls &middot; Formato Mayor Analitico</div>
+        </div>
+        <input type="file" id="fi-mayor" accept=".xls,.xlsx" style="display:none" onchange="cargarMayor(this)">
+        <div id="st-mayor" style="color:var(--ttx3);font-size:11px;margin-top:6px">Sin archivo cargado</div>
+      </div>
+      <div class="carga-card" style="border-color:var(--tg)">
+        <h4>&#128202; Extraccion de Egresos (CORE)</h4>
+        <p>Archivo XLSX de la Extraccion de Egresos del CORE.<br>Columnas: FECHA, TIPO_EGRESO, DESC_CONCEPTO_PAGO,<br>DESCRIPCION, MONTO, TASA, MONTO DOLARES, NM_BENEFICIARIO</p>
+        <div class="drop-zone" id="dz-core" onclick="document.getElementById('fi-core').click()">
+          <div class="dz-icon">&#128193;</div>
+          <div class="dz-txt">Arrastrar o hacer clic</div>
+          <div class="dz-sub">Extraccion_e_Egresos.xlsx &middot; CORE SIRWEB</div>
+        </div>
+        <input type="file" id="fi-core" accept=".xlsx,.xls,.csv" style="display:none" onchange="cargarCore(this)">
+        <div id="st-core" style="color:var(--ttx3);font-size:11px;margin-top:6px">Sin archivo cargado</div>
+      </div>
     </div>
-    <div class="tf-modal-body">
-      <div class="tf-mkpis" id="tf-mkpis"></div>
-      <div class="tf-det-filt">
-        <input type="text" id="tf-buscar" placeholder="Buscar descripción, beneficiario, N° documento…" oninput="tfFiltrar()">
-        <select id="tf-mes-fil" onchange="tfFiltrar()">
+    <div class="audit-banner" id="audit-banner" style="display:none">
+      <h4>&#128270; Motor de Auditoria Contable &mdash; Resultados</h4>
+      <p>El sistema reviso gasto a gasto contra las reglas de clasificacion. Revise y apruebe cada ajuste individualmente antes de aplicar al dashboard.</p>
+    </div>
+    <div class="audit-summary" id="audit-summary" style="display:none">
+      <div class="audit-s-card"><div class="asl">Total Revisados</div><div class="asv" id="aud-tot">0</div></div>
+      <div class="audit-s-card"><div class="asl">Con Observacion</div><div class="asv" style="color:var(--tr)" id="aud-obs">0</div></div>
+      <div class="audit-s-card"><div class="asl">Aprobados</div><div class="asv" style="color:var(--tg)" id="aud-apro">0</div></div>
+      <div class="audit-s-card"><div class="asl">Rechazados</div><div class="asv" style="color:var(--ttx3)" id="aud-rech">0</div></div>
+    </div>
+    <div style="display:none;gap:8px;margin-bottom:10px;align-items:center" id="audit-actions-bar">
+      <button class="t2-bp" style="font-size:10px;padding:5px 12px" onclick="audAprobarTodo()">&#10003; Aprobar todo</button>
+      <button class="t2-bs" style="font-size:10px;padding:5px 12px" onclick="audExportarInforme()">&#128196; Exportar Informe Contabilidad</button>
+      <button class="t2-bs" style="font-size:10px;padding:5px 12px" onclick="audAplicarAprobados()">&#9889; Aplicar aprobados al FC</button>
+    </div>
+    <div id="audit-list"></div>
+  </div>
+</div>
+
+<!-- MODAL DETALLE UNIVERSAL -->
+<div class="t2-modal-ov" id="t2-modal-ov">
+  <div class="t2-modal">
+    <div class="t2-mhdr">
+      <div><h3 id="t2-m-titulo">Detalle</h3><div class="msub" id="t2-m-sub"></div></div>
+      <button class="t2-mclose" onclick="t2CerrarModal()">&#10005;</button>
+    </div>
+    <div class="t2-mbody">
+      <div class="t2-mkpis" id="t2-mkpis"></div>
+      <div class="det-f">
+        <input type="text" id="t2-buscar" placeholder="Buscar en concepto, descripcion, beneficiario, N documento..." oninput="t2Filtrar()">
+        <select id="t2-mes-f" onchange="t2Filtrar()">
           <option value="">Todos los meses</option>
           <option value="1">Enero</option><option value="2">Febrero</option>
           <option value="3">Marzo</option><option value="4">Abril</option><option value="5">Mayo</option>
         </select>
-        <select id="tf-src-fil" onchange="tfFiltrar()">
+        <select id="t2-src-f" onchange="t2Filtrar()">
           <option value="">Todas las fuentes</option>
-          <option value="CORE">CORE</option>
-          <option value="MAYOR">Mayor Analítico</option>
-          <option value="DIVISAS">Divisas</option>
+          <option value="CORE">CORE</option><option value="MAYOR">Mayor Analitico</option><option value="DIVISAS">Divisas</option>
         </select>
-        <span id="tf-det-cnt" style="font-size:10px;color:#6B6080"></span>
+        <span id="t2-cnt" style="font-size:10px;color:var(--ttx2)"></span>
       </div>
       <div style="overflow-x:auto">
-        <table class="tf-det-tbl">
+        <table class="det-tbl">
           <thead><tr>
-            <th>Fecha</th><th>Mes</th><th>N° Egreso</th>
-            <th>Concepto / Tipo</th><th>Descripción</th><th>Beneficiario</th>
-            <th>Cta. Contable</th><th>TP Doc.</th><th>N° Documento</th>
-            <th>Monto Bs.</th><th>Tasa Día</th><th>Monto USD</th><th>Fuente</th>
+            <th>Fecha</th><th>Mes</th><th>N Egreso</th>
+            <th>Concepto de Pago / Cta. Contable</th>
+            <th>Descripcion del Gasto</th>
+            <th>Beneficiario</th>
+            <th>Cta. Contable</th><th>TP Doc.</th><th>N Documento</th>
+            <th>Monto Bs.</th><th>Tasa BCV</th><th>Monto USD</th><th>Fuente</th>
           </tr></thead>
-          <tbody id="tf-det-body"></tbody>
+          <tbody id="t2-det-body"></tbody>
         </table>
       </div>
-      <div class="tf-pag" id="tf-pag"></div>
+      <div class="pg-bar" id="t2-pag"></div>
       <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <button class="tf-btn-p" style="font-size:10px;padding:5px 12px" onclick="tfExportarDetalle()">⬇ Exportar CSV</button>
-        <div id="tf-det-tots" style="font-size:11px;color:#2D1860;font-weight:700;display:flex;gap:14px"></div>
+        <button class="t2-bp" style="font-size:10px;padding:5px 12px" onclick="t2ExportarDet()">&#8659; Exportar CSV</button>
+        <div id="t2-tots" style="font-size:11px;color:var(--tp2);font-weight:700;display:flex;gap:14px"></div>
       </div>
     </div>
   </div>
 </div>
-
-<!-- ════ MODAL DIVISAS ════ -->
-<div class="tf-modal-ov" id="tf-div-ov">
-  <div class="tf-modal">
-    <div class="tf-modal-hdr">
-      <div><h3>💵 Compra de Divisas</h3><div class="sub">Registro y diferencial cambiario</div></div>
-      <button class="tf-modal-close" onclick="document.getElementById('tf-div-ov').classList.remove('open')">✕</button>
-    </div>
-    <div class="tf-modal-body">
-      <div class="tf-div-form">
-        <h4>Registrar Compra de Divisas</h4>
-        <div class="tf-div-grid">
-          <div class="tf-fld"><label>Fecha</label><input type="date" id="dv-fecha"></div>
-          <div class="tf-fld"><label>Mes</label><select id="dv-mes"><option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option><option value="4">Abril</option><option value="5">Mayo</option></select></div>
-          <div class="tf-fld"><label>Monto USD</label><input type="number" id="dv-monto" placeholder="0.00" step="0.01"></div>
-          <div class="tf-fld"><label>Tasa Paralela</label><input type="number" id="dv-tpar" placeholder="0.0000" step="0.0001"></div>
-          <div class="tf-fld"><label>Tasa BCV del día</label><input type="number" id="dv-tbcv" placeholder="0.0000" step="0.0001"></div>
-          <div class="tf-fld"><label>Tipo de gasto</label>
-            <select id="dv-tipo">
-              <option value="nomina_gerentes">Nómina Gerentes</option>
-              <option value="gastos_adm">Gastos Administrativos</option>
-              <option value="presidencia">Gastos Presidencia</option>
-              <option value="impuestos">Impuestos</option>
-            </select>
-          </div>
-          <div class="tf-fld"><label>Descripción</label><input type="text" id="dv-desc" placeholder="Concepto del gasto…"></div>
-          <div class="tf-fld"><label>Beneficiario</label><input type="text" id="dv-benef" placeholder="Nombre…"></div>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button class="tf-btn-p" onclick="dvRegistrar()">Registrar</button>
-          <button class="tf-btn-s" onclick="dvExportar()">⬇ CSV</button>
-        </div>
-      </div>
-      <div style="overflow-x:auto">
-        <table class="tf-det-tbl">
-          <thead><tr><th>Fecha</th><th>Mes</th><th>Concepto</th><th>Monto USD</th><th>T.Paralela</th><th>T.BCV</th><th>Diferencial</th><th>Monto Bs.</th><th>Tipo Gasto</th><th></th></tr></thead>
-          <tbody id="dv-body"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ════ MODAL AJUSTES ════ -->
-<div class="tf-modal-ov" id="tf-adj-ov">
-  <div class="tf-modal">
-    <div class="tf-modal-hdr">
-      <div><h3>✏️ Ajustes del Flujo de Caja</h3><div class="sub">Reclasificación manual con trazabilidad</div></div>
-      <button class="tf-modal-close" onclick="document.getElementById('tf-adj-ov').classList.remove('open')">✕</button>
-    </div>
-    <div class="tf-modal-body">
-      <div class="tf-adj-card">
-        <div style="font-size:11px;font-weight:700;color:#2D1860;margin-bottom:10px">Nuevo Ajuste</div>
-        <div class="tf-div-grid">
-          <div class="tf-fld"><label>Mes</label><select id="aj-mes"><option value="0">Todos</option><option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option><option value="4">Abril</option><option value="5">Mayo</option></select></div>
-          <div class="tf-fld"><label>Buscar concepto</label><input type="text" id="aj-bus" placeholder="Texto en concepto/descripción…" oninput="ajPreview()"></div>
-          <div class="tf-fld"><label>Mover DESDE</label><select id="aj-desde" onchange="ajPreview()"><option value="">— Seleccionar —</option></select></div>
-          <div class="tf-fld"><label>Mover HACIA</label><select id="aj-hacia"><option value="">— Seleccionar —</option></select></div>
-          <div class="tf-fld"><label>Justificación</label><input type="text" id="aj-just" placeholder="Motivo del ajuste…"></div>
-        </div>
-        <div id="aj-preview" style="font-size:11px;color:#6B6080;margin:8px 0"></div>
-        <div style="display:flex;gap:8px">
-          <button class="tf-btn-p" onclick="ajAplicar()">Aplicar Ajuste</button>
-          <button class="tf-btn-s" onclick="ajExportar()">⬇ Exportar CSV</button>
-        </div>
-      </div>
-      <div style="font-size:11px;font-weight:700;color:#2D1860;margin-bottom:8px">Historial de Ajustes</div>
-      <div style="overflow-x:auto">
-        <table class="tf-det-tbl">
-          <thead><tr><th>Fecha/Hora</th><th>Concepto</th><th>Mes</th><th>Desde</th><th>Hacia</th><th>USD</th><th>Justificación</th></tr></thead>
-          <tbody id="aj-hist"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ════ JAVASCRIPT MÓDULO TESORERÍA ════ -->
 <script>
 (function(){
-// ── DATOS EMBEBIDOS ────────────────────────────────────────────────
-var TF_DATA = null; // se asigna en tfCargarTasasBCV al iniciarse
+'use strict';
+var ML=[1,2,3,4,5];
+var MN={1:"Enero",2:"Febrero",3:"Marzo",4:"Abril",5:"Mayo"};
+var CAT_COLS={siniestros:"#8B0000",telemedicina:"#2E7D32",promocion_venta:"#1F497D",nomina_personal:"#4B2D8F",nomina_gerentes:"#7B1FA2",difer_cambiario:"#E65100",gastos_adm:"#37474F",impuestos:"#5C3317",soporte_tecnico:"#1565C0",costo_bancario:"#00695C",presidencia:"#B07A00",devoluciones:"#78909C",beneficios_emp:"#2E7D32"};
+var CAT_LBL={siniestros:"Siniestros Pagados",telemedicina:"Gastos Gpo. Nueve Once (Telemedicina)",promocion_venta:"Gastos de Promocion y Venta",nomina_personal:"Nomina Personal (Mayor Analitico)",nomina_gerentes:"Nomina Gerentes (Divisas)",difer_cambiario:"Diferencial Cambiario Nomina",gastos_adm:"Gastos de Administracion",impuestos:"Impuestos y Contribuciones",soporte_tecnico:"Soporte Tecnico y Sistemas",costo_bancario:"Costo Bancario",presidencia:"Gastos de Presidencia",devoluciones:"Devoluciones / Reintegros",beneficios_emp:"Beneficios Empleados"};
+var CAT_ICONS={siniestros:"&#128128;",telemedicina:"&#127973;",promocion_venta:"&#128226;",nomina_personal:"&#128101;",nomina_gerentes:"&#128188;",difer_cambiario:"&#128201;",gastos_adm:"&#127970;",impuestos:"&#127963;",soporte_tecnico:"&#128187;",costo_bancario:"&#127974;",presidencia:"&#11088;",devoluciones:"&#8617;",beneficios_emp:"&#127873;"};
+var FC_BLOQUES=[{lbl:"1. Gastos de Siniestros",cats:["siniestros","telemedicina"],tot_lbl:"Total Siniestros Incurridos"},{lbl:"2. Gastos de Comisiones",cats:["promocion_venta"],tot_lbl:"Total Comisiones"},{lbl:"3. Gasto de Administracion",cats:["nomina_personal","nomina_gerentes","difer_cambiario","gastos_adm","soporte_tecnico","beneficios_emp","impuestos","devoluciones"],tot_lbl:"Total Gasto de Administracion"},{lbl:"4. Costo Bancario",cats:["costo_bancario"],tot_lbl:"Total Costo Bancario"}];
+var CAT_DIV_LBL={nomina_gerentes:"Nomina Gerentes",gastos_adm:"Gastos Administrativos",presidencia:"Gastos Presidencia",impuestos:"Impuestos",otro:"Otro"};
+var REGLAS_AUD={"kw":{"SINIESTRO":"siniestros","FUNERARIO":"siniestros","CEMENTERIO":"siniestros","PARCELA":"siniestros","VIDA IND":"siniestros","INDEMNIZACION":"siniestros","FUNEASISTENCIA":"siniestros","ASOPROINFU":"siniestros","TELEMEDICINA":"telemedicina","NUEVE ONCE":"telemedicina","PROMOCION":"promocion_venta","COMISION EJECUTIVO":"promocion_venta","SUDEASEG":"impuestos","SUPERINTENDENCIA":"impuestos","PATENTE":"impuestos","ISLR":"impuestos","SOPORTE TEC":"soporte_tecnico","MANTENIMIENTO APLIC":"soporte_tecnico","ORACLE":"soporte_tecnico","TKONEKTO":"soporte_tecnico","PRESIDENCIA":"presidencia","REINTEGRO":"devoluciones","DEVOLUCION":"devoluciones","COBROS NO APLIC":"devoluciones"},"cta":{"3381010101":"nomina_personal","3381010102":"nomina_personal","3381010103":"nomina_personal","3381010104":"nomina_personal","3381010105":"nomina_personal","3381010108":"nomina_personal","3381010805":"nomina_personal","3381010804":"nomina_personal","3381010809":"nomina_personal","338102":"costo_bancario"},"asientos":{"202604000007":"E6/E8 — Asiento mecanico nomina (haber interno)","202605000186":"E7 — Reintegro San German en Sueldos","202604000010":"E9 — Reclasificacion IVA en Valores","202601010076":"E5 — Utilidades Enero (verificar politica)","202605000152":"E5 — Reverso Utilidades Mayo","202605000118":"E3 — Posible duplicado HCM Mayo","202605000038":"E3 — Posible duplicado HCM Mayo"}};
+var TF_MES=0,TF_MES2=0,TF_DATA=null,TF_DIVISAS=[],AUDIT_ITEMS=[];
+var T2_MODAL_REGS=[],T2_PAG=1,T2_POR_PAG=50,T2_DET_CACHE=[],T2_MODAL_CAT=null;
 
-// ── CONSTANTES ─────────────────────────────────────────────────────
-var TF_ML=[1,2,3,4,5];
-var TF_MN={1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo'};
-var TF_MPAD={1:'01',2:'02',3:'03',4:'04',5:'05'};
-var TF_COLS={
-  siniestros:'#8B0000',telemedicina:'#2E7D32',promocion_venta:'#1F497D',
-  nomina_personal:'#4B2D8F',nomina_gerentes:'#7B1FA2',difer_cambiario:'#E65100',
-  gastos_adm:'#37474F',impuestos:'#5C3317',soporte_tecnico:'#1565C0',
-  costo_bancario:'#00695C',presidencia:'#B07A00',devoluciones:'#78909C',beneficios_emp:'#2E7D32'
-};
-var TF_LBLS={
-  siniestros:'Siniestros Pagados',telemedicina:'Gastos Gpo. Nueve Once',
-  promocion_venta:'Promoción y Venta',nomina_personal:'Nómina Personal',
-  nomina_gerentes:'Nómina Gerentes (Divisas)',difer_cambiario:'Diferencial Cambiario',
-  gastos_adm:'Gastos de Administración',impuestos:'Impuestos y Contribuciones',
-  soporte_tecnico:'Soporte Técnico y Sistemas',costo_bancario:'Costo Bancario',
-  presidencia:'Gastos de Presidencia',devoluciones:'Devoluciones / Reintegros',
-  beneficios_emp:'Beneficios Empleados'
-};
-var TF_FC_ESTRUCTURA=[
-  {t:'grp',lbl:'1. Gastos de Siniestros'},
-  {t:'lin',lbl:'Siniestros Pagados (Funerario + Vida Ind.)',cat:'siniestros'},
-  {t:'lin',lbl:'Gastos Grupo Nueve Once (Telemedicina)',cat:'telemedicina'},
-  {t:'tot',lbl:'Total Siniestros Incurridos',cats:['siniestros','telemedicina']},
-  {t:'grp',lbl:'2. Gastos de Comisiones'},
-  {t:'lin',lbl:'Gastos de Promoción y Venta',cat:'promocion_venta'},
-  {t:'tot',lbl:'Total Comisiones',cats:['promocion_venta']},
-  {t:'grp',lbl:'3. Gasto de Administración'},
-  {t:'lin',lbl:'Nómina Personal (Mayor Analítico)',cat:'nomina_personal'},
-  {t:'lin',lbl:'Nómina Gerentes (Divisas USD)',cat:'nomina_gerentes'},
-  {t:'lin',lbl:'Diferencial Cambiario Nómina',cat:'difer_cambiario'},
-  {t:'lin',lbl:'Gastos de Administración Operativos',cat:'gastos_adm'},
-  {t:'lin',lbl:'Soporte Técnico y Sistemas',cat:'soporte_tecnico'},
-  {t:'lin',lbl:'Beneficios Empleados (CORE)',cat:'beneficios_emp'},
-  {t:'lin',lbl:'Impuestos y Contribuciones',cat:'impuestos'},
-  {t:'lin',lbl:'Devoluciones / Reintegros',cat:'devoluciones'},
-  {t:'tot',lbl:'Total Gasto de Administración',cats:['nomina_personal','nomina_gerentes','difer_cambiario','gastos_adm','soporte_tecnico','beneficios_emp','impuestos','devoluciones']},
-  {t:'grp',lbl:'4. Costo Bancario'},
-  {t:'lin',lbl:'Comisiones Bancarias y Financieras',cat:'costo_bancario'},
-  {t:'tot',lbl:'Total Costo Bancario',cats:['costo_bancario']},
-  {t:'gtot',lbl:'TOTAL EGRESOS',cats:['siniestros','telemedicina','promocion_venta','nomina_personal','nomina_gerentes','difer_cambiario','gastos_adm','soporte_tecnico','beneficios_emp','impuestos','devoluciones','costo_bancario']},
-  {t:'pgrp',lbl:'Gastos de Presidencia'},
-  {t:'plin',lbl:'Gastos de Presidencia (Mayor Analítico + CORE)',cat:'presidencia'},
-  {t:'ptot',lbl:'Total Presidencia',cats:['presidencia']},
-  {t:'gtot2',lbl:'TOTAL EGRESOS + PRESIDENCIA',cats:['siniestros','telemedicina','promocion_venta','nomina_personal','nomina_gerentes','difer_cambiario','gastos_adm','soporte_tecnico','beneficios_emp','impuestos','devoluciones','costo_bancario','presidencia']}
-];
-
-// ── ESTADO ─────────────────────────────────────────────────────────
-var TF_MES=0; // 0=acumulado
-var TF_DIVISAS=[];
-var TF_AJUSTES=[];
-var TF_MODAL_CAT=null;
-var TF_MODAL_REGS=[];
-var TF_PAG=1;
-var TF_POR_PAG=50;
-var TF_DET_CACHE=[];
-
-// ── INICIALIZACIÓN ──────────────────────────────────────────────────
 window.renderTesoreriaFlujo=function(){
-  if(TF_DATA){tfRenderTodo();return;}
-  // Cargar datos embebidos
-  if(typeof window.__TF_RAW!=='undefined'){
-    TF_DATA=window.__TF_RAW;tfRenderTodo();
-  } else {
-    document.getElementById('tf-tbl').innerHTML='<tr><td colspan="8" style="text-align:center;padding:32px;color:#6B6080">Cargando datos…</td></tr>';
-  }
+  if(TF_DATA){t2RenderTodo();return;}
+  if(typeof window.__TF_RAW!=="undefined"){TF_DATA=window.__TF_RAW;t2RenderTodo();}
 };
 
-function tfRenderTodo(){
-  tfRenderKPIs();
-  tfRenderChart();
-  tfRenderTabla();
-  tfPoblarSelects();
-}
+function t2RenderTodo(){renderKPIs();renderChart();renderFCTree();dvRenderResumen();}
 
-// ── HELPERS ─────────────────────────────────────────────────────────
-function tfFmt(v){return(v||0).toLocaleString('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function tfFmtK(v){if(v>=1000)return(v/1000).toFixed(0)+'K';return(v||0).toFixed(0);}
-function tfUsd(v){return v>0?'$ '+tfFmt(v):'—';}
-function tfPct(a,b){return b>0?(a/b*100).toFixed(1)+'%':'—';}
-function tfEsc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+window.t2Show=function(id,btn){
+  document.querySelectorAll(".t2-pane").forEach(function(p){p.classList.remove("on");});
+  document.querySelectorAll(".t2-btn").forEach(function(b){b.classList.remove("on");});
+  document.getElementById(id).classList.add("on");btn.classList.add("on");
+  if(id==="t2-dashboard")renderKPIs();
+  if(id==="t2-flujo")renderFCTree();
+};
 
-function tfCatVal(cat,mes){
+function fmt(v,d){d=d||2;return(v||0).toLocaleString("es-VE",{minimumFractionDigits:d,maximumFractionDigits:d});}
+function fmtK(v){if(v>=1000000)return(v/1000000).toFixed(1)+"M";if(v>=1000)return(v/1000).toFixed(0)+"K";return(v||0).toFixed(0);}
+function pct(a,b){return b>0?(a/b*100).toFixed(1)+"%":"--";}
+function esc(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function fmtCta(s){return(s||"").replace(/(\d{4})(?=\d)/g,"$1 ").trim().substring(0,22);}
+
+function catVal(cat,mes){
   if(!TF_DATA)return 0;
-  var r=TF_DATA.resumen[cat];if(!r)return 0;
-  if(mes===0)return r.tot||0;
-  return r.m[mes]||0;
+  var base=(TF_DATA.resumen[cat]||{m:{},tot:0});
+  var rv=mes===0?base.tot:(base.m[mes]||0);
+  TF_DIVISAS.forEach(function(d){if(d.cat_fc===cat){if(mes===0)rv+=d.usd;else if(d.mes===mes)rv+=d.usd;}});
+  return rv;
 }
-function tfSumCats(cats,mes){return cats.reduce(function(s,c){return s+tfCatVal(c,mes);},0);}
-function tfGrandTotal(mes){
-  return Object.keys(TF_DATA.resumen).reduce(function(s,c){return s+tfCatVal(c,mes);},0);
-}
+function sumCats(cats,mes){return cats.reduce(function(s,c){return s+catVal(c,mes);},0);}
+function grandTotal(mes){return Object.keys(CAT_LBL).reduce(function(s,c){return s+catVal(c,mes);},0);}
 
-// ── KPIs ────────────────────────────────────────────────────────────
-function tfRenderKPIs(){
-  if(!TF_DATA)return;
-  var m=TF_MES;
-  var tot=tfGrandTotal(m);
-  var sin=tfCatVal('siniestros',m)+tfCatVal('telemedicina',m);
-  var adm=tfCatVal('gastos_adm',m)+tfCatVal('nomina_personal',m)+tfCatVal('nomina_gerentes',m)+tfCatVal('difer_cambiario',m);
-  var ng=tfCatVal('nomina_gerentes',m); var dif=tfCatVal('difer_cambiario',m);
-  var ef=tfCatVal('costo_bancario',m); var pres=tfCatVal('presidencia',m);
-  var mn=m===0?'Ene–May':TF_MN[m];
-  document.getElementById('tf-kpi-total').textContent='$ '+tfFmt(tot);
-  document.getElementById('tf-kpi-total-sub').textContent=mn+' 2026';
-  document.getElementById('tf-kpi-sin').textContent='$ '+tfFmt(sin);
-  document.getElementById('tf-kpi-sin-pct').textContent=tfPct(sin,tot)+' del total';
-  document.getElementById('tf-kpi-adm').textContent='$ '+tfFmt(adm);
-  document.getElementById('tf-kpi-adm-pct').textContent=tfPct(adm,tot)+' del total';
-  document.getElementById('tf-kpi-ng').textContent='$ '+tfFmt(ng);
-  document.getElementById('tf-kpi-ng-sub').textContent='+ Diferencial $ '+tfFmt(dif);
-  document.getElementById('tf-kpi-ef').textContent='$ '+tfFmt(ef);
-  document.getElementById('tf-kpi-ef-pct').textContent=tfPct(ef,tot)+' del total';
-  document.getElementById('tf-kpi-pres').textContent='$ '+tfFmt(pres);
-  document.getElementById('tf-kpi-pres-pct').textContent=tfPct(pres,tot)+' del total';
-}
-
-// ── SELECTOR MES ────────────────────────────────────────────────────
-window.tfSetMes=function(m,btn){
-  TF_MES=m;
-  document.querySelectorAll('.tf-mes-btn').forEach(function(b){b.classList.remove('on');});
-  btn.classList.add('on');
-  tfRenderKPIs();tfRenderChart();tfRenderTabla();
-};
-
-// ── GRÁFICO ─────────────────────────────────────────────────────────
-function tfRenderChart(){
-  if(!TF_DATA)return;
-  var CATS_G=['siniestros','telemedicina','promocion_venta','nomina_personal','nomina_gerentes','gastos_adm','impuestos','costo_bancario','presidencia'];
-  var meses=TF_MES===0?TF_ML:[TF_MES];
-  var maxV=0;
-  meses.forEach(function(mi){
-    var t=CATS_G.reduce(function(s,c){return s+tfCatVal(c,mi);},0);
-    if(t>maxV)maxV=t;
-  });
-  var barsH='';
-  meses.forEach(function(mi){
-    var tot=CATS_G.reduce(function(s,c){return s+tfCatVal(c,mi);},0);
-    var segs='';
-    CATS_G.forEach(function(c){
-      var v=tfCatVal(c,mi);if(v<1)return;
-      var h=maxV>0?Math.max(2,(v/maxV)*120):2;
-      segs+='<div class="tf-bar-s" style="height:'+h+'px;background:'+TF_COLS[c]+'" title="'+TF_LBLS[c]+': $'+tfFmt(v)+'"></div>';
-    });
-    barsH+='<div class="tf-bar-g"><div style="display:flex;flex-direction:column-reverse;height:120px;width:100%;gap:1px">'+segs+'</div>'
-          +'<div class="tf-bar-lbl">'+TF_MN[mi].substring(0,3)+'</div>'
-          +'<div class="tf-bar-v">$'+tfFmtK(tot)+'</div></div>';
-  });
-  document.getElementById('tf-bars').innerHTML=barsH;
-  var ley='';
-  CATS_G.forEach(function(c){ley+='<div class="tf-ley-item"><div class="tf-ley-box" style="background:'+TF_COLS[c]+'"></div>'+TF_LBLS[c]+'</div>';});
-  document.getElementById('tf-leyenda').innerHTML=ley;
-}
-
-// ── TABLA FLUJO DE CAJA ──────────────────────────────────────────────
-function tfRenderTabla(){
-  if(!TF_DATA){document.getElementById('tf-tbl').innerHTML='';return;}
-  var m=TF_MES;
-  var meses=m===0?TF_ML:[m];
-  var mHdrs=m===0?['Enero','Febrero','Marzo','Abril','Mayo']:[];
-  var gt=tfGrandTotal(m);
-  var cols=meses.length+(m===0?1:1);// meses + acum/mes + %
-  var hdr='<thead><tr><th style="text-align:left">CONCEPTO</th>';
-  if(m===0){meses.forEach(function(mi){hdr+='<th>'+TF_MN[mi]+'</th>';});}
-  hdr+='<th>'+(m===0?'Acumulado':'Total')+'</th><th>%</th><th>Detalle</th></tr></thead>';
-  var body='<tbody>';
-  TF_FC_ESTRUCTURA.forEach(function(row){
-    var cls='';
-    if(row.t==='grp')cls='tf-grp';
-    else if(row.t==='tot')cls='tf-sub tf-tot';
-    else if(row.t==='gtot'||row.t==='gtot2')cls='tf-gtot'+(row.t==='gtot2'?' tf-gtot2':'');
-    else if(row.t==='pgrp')cls='tf-pres-grp';
-    else if(row.t==='plin')cls='tf-sub';
-    else if(row.t==='ptot')cls='tf-pres-tot';
-    else cls='tf-sub';
-    if(row.t==='grp'||row.t==='pgrp'){
-      body+='<tr class="'+cls+'"><td colspan="'+(meses.length+3)+'">'+row.lbl+'</td></tr>';return;
-    }
-    var getV=function(mi){
-      if(row.cat)return tfCatVal(row.cat,mi);
-      if(row.cats)return tfSumCats(row.cats,mi);return 0;
-    };
-    var acum=m===0?meses.reduce(function(s,mi){return s+getV(mi);},0):getV(m);
-    var pct=gt>0?(acum/gt*100).toFixed(1)+'%':'—';
-    var isT=['tot','gtot','ptot','gtot2'].indexOf(row.t)>=0;
-    body+='<tr class="'+cls+'">';
-    body+='<td>'+row.lbl+'</td>';
-    if(m===0){meses.forEach(function(mi){body+='<td>'+tfUsd(getV(mi))+'</td>';});}
-    body+='<td>'+tfUsd(acum)+'</td>';
-    body+='<td>'+(isT?'<strong>'+pct+'</strong>':pct)+'</td>';
-    if(row.cat&&acum>0){
-      body+='<td><button class="tf-ver-btn" onclick="tfAbrirModal(\''+row.cat+'\')">Ver detalle</button></td>';
-    } else {body+='<td></td>';}
-    body+='</tr>';
-  });
-  body+='</tbody>';
-  document.getElementById('tf-tbl').innerHTML=hdr+body;
-}
-
-// ── MODAL DETALLE ────────────────────────────────────────────────────
-window.tfAbrirModal=function(cat){
-  TF_MODAL_CAT=cat;TF_PAG=1;
-  document.getElementById('tf-modal-titulo').textContent=TF_LBLS[cat]||cat;
-  document.getElementById('tf-modal-sub').textContent='Flujo de Caja — '+(TF_MES===0?'Enero–Mayo 2026':TF_MN[TF_MES]+' 2026')+' | Seguros La Fe, C.A.';
-  document.getElementById('tf-buscar').value='';
-  document.getElementById('tf-mes-fil').value=TF_MES===0?'':String(TF_MES);
-  document.getElementById('tf-src-fil').value='';
-  TF_MODAL_REGS=tfObtenerRegs(cat,TF_MES);
-  tfFiltrar();
-  document.getElementById('tf-modal-ov').classList.add('open');
-};
-window.tfCerrarModal=function(){document.getElementById('tf-modal-ov').classList.remove('open');};
-document.getElementById('tf-modal-ov').addEventListener('click',function(e){if(e.target===this)tfCerrarModal();});
-
-function tfObtenerRegs(cat,mes){
+function regsParaCat(cat,mes){
   if(!TF_DATA)return[];
   var r=TF_DATA.regs.filter(function(x){return x.cat===cat;});
-  TF_DIVISAS.forEach(function(d){if(d.cat===cat)r.push(d);});
+  TF_DIVISAS.forEach(function(d){if(d.cat_fc===cat)r.push(d);});
   if(mes>0)r=r.filter(function(x){return x.mes===mes;});
   return r;
 }
 
-window.tfFiltrar=function(){TF_PAG=1;tfRenderDet();};
+function getSubconceptos(cat,mes){
+  var regs=regsParaCat(cat,mes);
+  var grupos={};
+  regs.forEach(function(r){
+    var key=(r.conc&&r.conc!=="nan"&&r.conc!=="undefined")?r.conc:(fmtCta(r.cta)||r.tipo||"--");
+    if(!grupos[key])grupos[key]={usd:0,regs:[]};
+    grupos[key].usd+=r.usd;grupos[key].regs.push(r);
+  });
+  return Object.keys(grupos).map(function(k){return{lbl:k,usd:grupos[k].usd,regs:grupos[k].regs};}).sort(function(a,b){return b.usd-a.usd;});
+}
 
-function tfRenderDet(){
-  var bus=(document.getElementById('tf-buscar').value||'').toLowerCase();
-  var mf=parseInt(document.getElementById('tf-mes-fil').value)||0;
-  var sf=document.getElementById('tf-src-fil').value;
-  var r=TF_MODAL_REGS.slice();
+function renderKPIs(){
+  if(!TF_DATA)return;
+  var m=TF_MES;
+  var tot=grandTotal(m);
+  var sin=catVal("siniestros",m)+catVal("telemedicina",m);
+  var adm=sumCats(["gastos_adm","nomina_personal","nomina_gerentes","difer_cambiario","soporte_tecnico","beneficios_emp","impuestos","devoluciones"],m);
+  var ng=catVal("nomina_gerentes",m);var dif=catVal("difer_cambiario",m);
+  var ef=catVal("costo_bancario",m);var pres=catVal("presidencia",m);
+  var meses_n=m===0?5:1;
+  var sind=tot>0?sin/tot:0;
+  var html="";
+  html+=kpiCard("rojo","&#128128;","Siniestros Incurridos","$"+fmt(sin),"$"+fmt(sin/meses_n)+" prom/mes",(sin/tot*100).toFixed(1),sind>0.6?"bad":sind>0.4?"warn":"ok");
+  html+=kpiCard("","&#127970;","Gasto de Administracion","$"+fmt(adm),"$"+fmt(adm/meses_n)+" prom/mes",(adm/tot*100).toFixed(1),"ok");
+  html+=kpiCard("","&#128188;","Nomina Gerentes (Divisas)","$"+fmt(ng),"+ Diferencial $"+fmt(dif),(ng/tot*100).toFixed(1),"warn");
+  html+=kpiCard("azul","&#127974;","Costo Bancario","$"+fmt(ef),"Comisiones y financiero",(ef/tot*100).toFixed(1),"ok");
+  html+=kpiCard("dorado","&#11088;","Gastos de Presidencia","$"+fmt(pres),"Separado del total operacional",(pres/tot*100).toFixed(1),"warn");
+  html+=kpiCard("rojo","&#128202;","TOTAL EGRESOS","$"+fmt(tot),"Prom. mensual $"+fmt(tot/meses_n),100,"");
+  document.getElementById("kpi-grid").innerHTML=html;
+}
+
+function kpiCard(tipo,icon,lbl,val,sub,pctv,sem){
+  var pv=parseFloat(pctv)||0;
+  var sc=sem?("<span class="sem "+sem+""></span>"):"";
+  return "<div class="kpi-ex "+tipo+"">"
+    +"<div class="kpi-ex-icon">"+icon+"</div>"
+    +"<div class="kpi-ex-lbl">"+lbl+"</div>"
+    +"<div class="kpi-ex-val">"+val+"</div>"
+    +"<div class="kpi-ex-sub">"+sc+sub+"</div>"
+    +"<div class="kpi-ex-bar"><div class="kpi-ex-bar-fill" style="width:"+Math.min(pv,100)+"%"></div></div>"
+    +"</div>";
+}
+
+window.tfSetMes=function(m,btn){
+  TF_MES=m;
+  document.querySelectorAll("#t2-dashboard .t2-mes").forEach(function(b){b.classList.remove("on");});
+  btn.classList.add("on");renderKPIs();renderChart();
+};
+window.tfSetMes2=function(m,btn){
+  TF_MES2=m;
+  document.querySelectorAll("#t2-flujo .t2-mes").forEach(function(b){b.classList.remove("on");});
+  btn.classList.add("on");renderFCTree();
+};
+
+function renderChart(){
+  if(!TF_DATA)return;
+  var CATS_G=["siniestros","telemedicina","promocion_venta","nomina_personal","nomina_gerentes","gastos_adm","impuestos","costo_bancario","presidencia"];
+  var meses=TF_MES===0?ML:[TF_MES];
+  var maxV=0;
+  meses.forEach(function(mi){var t=CATS_G.reduce(function(s,c){return s+catVal(c,mi);},0);if(t>maxV)maxV=t;});
+  var html="";
+  meses.forEach(function(mi){
+    var tot=CATS_G.reduce(function(s,c){return s+catVal(c,mi);},0);
+    var segs="";
+    CATS_G.forEach(function(c){
+      var v=catVal(c,mi);if(v<1)return;
+      var h=maxV>0?Math.max(2,(v/maxV)*130):2;
+      segs+="<div class="bar-seg" style="height:"+h+"px;background:"+CAT_COLS[c]+"" title=""+CAT_LBL[c]+": $"+fmt(v)+""></div>";
+    });
+    html+="<div class="bar-g" onclick="t2AbrirModal(null,"+mi+")">"
+         +"<div class="bar-col">"+segs+"</div>"
+         +"<div class="bar-lbl">"+MN[mi].substring(0,3)+"</div>"
+         +"<div class="bar-val">$"+fmtK(tot)+"</div></div>";
+  });
+  document.getElementById("tf-bars").innerHTML=html;
+  var ley="";
+  CATS_G.forEach(function(c){
+    ley+="<div class="ley-item" onclick="t2AbrirModal('"+c+"',0)">"
+        +"<div class="ley-dot" style="background:"+CAT_COLS[c]+""></div>"+CAT_LBL[c]+"</div>";
+  });
+  document.getElementById("tf-leyenda").innerHTML=ley;
+}
+
+function renderFCTree(){
+  if(!TF_DATA){document.getElementById("fc-tree").innerHTML="";return;}
+  var m=TF_MES2,tot=grandTotal(m),html="";
+  FC_BLOQUES.forEach(function(bloque,bi){
+    var bloque_tot=sumCats(bloque.cats,m);
+    html+="<div class="fc-card">";
+    html+="<div class="fc-grp-hdr" onclick="fcToggleGrp("+bi+")">"
+         +"<div class="fc-grp-title"><span style="opacity:.4;margin-right:4px">"+String(bi+1).padStart(2,"0")+"</span>"+bloque.lbl+"</div>"
+         +"<div class="fc-grp-right">"
+         +"<div style="text-align:right"><div style="font-size:9px;color:var(--ttx2)">"+pct(bloque_tot,tot)+"</div>"
+         +"<div class="fc-grp-total">$ "+fmt(bloque_tot)+"</div></div>"
+         +"<span class="fc-grp-arrow" id="fc-arr-"+bi+"" style="transform:rotate(90deg)">&#9658;</span>"
+         +"</div></div>";
+    html+="<div class="fc-conc-list open" id="fc-cl-"+bi+"">";
+    bloque.cats.forEach(function(cat,cidx){
+      var cat_tot=catVal(cat,m);
+      if(cat_tot<0.01)return;
+      var subconcs=getSubconceptos(cat,m);
+      var cat_pct=bloque_tot>0?(cat_tot/bloque_tot*100):0;
+      html+="<div class="fc-conc">";
+      html+="<div class="fc-conc-hdr" onclick="fcToggleConc('"+bi+"_"+cidx+"',event)">"
+           +"<div class="fc-conc-dot" style="background:"+CAT_COLS[cat]+""></div>"
+           +"<div class="fc-conc-name">"+CAT_ICONS[cat]+" "+CAT_LBL[cat]+"</div>"
+           +"<div class="fc-conc-right">"
+           +"<div class="fc-conc-pct-bar"><div class="fc-conc-pct-fill" style="width:"+cat_pct.toFixed(0)+"%;background:"+CAT_COLS[cat]+""></div></div>"
+           +"<span style="font-size:10px;color:var(--ttx2)">"+cat_pct.toFixed(1)+"%</span>"
+           +"<div class="fc-conc-usd">$ "+fmt(cat_tot)+"</div>"
+           +"<button class="t2-bp" style="font-size:9px;padding:3px 9px" onclick="t2AbrirModal('"+cat+"',"+m+");event.stopPropagation()">Ver detalle</button>"
+           +"<span class="fc-grp-arrow" id="fca-"+bi+"_"+cidx+"">&#9658;</span>"
+           +"</div></div>";
+      html+="<div class="fc-det-list" id="fcd-"+bi+"_"+cidx+"">";
+      subconcs.slice(0,25).forEach(function(sc,si){
+        var sc_id="sc_"+bi+"_"+cidx+"_"+si;
+        var sc_pct=cat_tot>0?(sc.usd/cat_tot*100):0;
+        html+="<div class="fc-sub-hdr" onclick="fcToggleSub('"+sc_id+"')">"
+             +"<div style="width:4px;height:4px;border-radius:50%;background:"+CAT_COLS[cat]+";opacity:.4;flex-shrink:0"></div>"
+             +"<div style="flex:1;font-size:11px;font-weight:600;color:var(--ttx);word-break:break-word">"+esc(sc.lbl)+"</div>"
+             +"<span style="font-size:10px;color:var(--ttx3);flex-shrink:0">"+sc.regs.length+" pag.</span>"
+             +"<span style="font-size:10px;color:var(--ttx2);flex-shrink:0">"+sc_pct.toFixed(1)+"%</span>"
+             +"<div style="font-size:12px;font-weight:700;color:var(--tp2);font-family:monospace;flex-shrink:0">$ "+fmt(sc.usd)+"</div>"
+             +"<span style="font-size:9px;color:var(--ttx3);flex-shrink:0">&#9658;</span>"
+             +"</div>";
+        html+="<div id=""+sc_id+"" class="fc-sub-regs">";
+        html+="<div style="display:grid;grid-template-columns:88px 1fr 2fr 1fr 100px;gap:6px;padding:5px 16px 5px 56px;background:#F0EDF8;font-size:9px;font-weight:700;color:var(--ttx3);text-transform:uppercase;letter-spacing:.4px">"
+             +"<div>Fecha</div><div>Concepto / Cta.</div><div>Descripcion del Gasto</div><div>Beneficiario</div><div style="text-align:right">USD</div></div>";
+        sc.regs.forEach(function(r){
+          var conc_lbl=(r.conc&&r.conc!=="nan"&&r.conc!=="undefined")?esc(r.conc):"<em style="color:var(--ttx3)">"+esc(fmtCta(r.cta))+"</em>";
+          var desc_lbl=(r.desc&&r.desc!=="nan"&&r.desc!=="undefined"&&r.desc!==r.conc)?esc(r.desc):"<span style="color:var(--ttx3)">--</span>";
+          html+="<div class="fc-det-row">"
+               +"<div class="fc-det-fecha">"+r.fecha+"</div>"
+               +"<div class="fc-det-conc" title=""+esc(r.conc)+"">"+conc_lbl+"</div>"
+               +"<div class="fc-det-desc" title=""+esc(r.desc)+"">"+desc_lbl+"</div>"
+               +"<div class="fc-det-benef" title=""+esc(r.benef)+"">"+esc(r.benef)+"</div>"
+               +"<div class="fc-det-monto">$ "+fmt(r.usd)+"</div>"
+               +"</div>";
+        });
+        html+="</div>";
+      });
+      if(subconcs.length>25)html+="<div style="padding:8px 44px;font-size:10px;color:var(--ttx3)">... y "+(subconcs.length-25)+" subconceptos mas. <button class="t2-bp" style="font-size:9px;padding:2px 8px" onclick="t2AbrirModal('"+cat+"',"+m+")">Ver todos</button></div>";
+      html+="</div></div>";
+    });
+    html+="<div class="fc-tot-row"><span>"+bloque.tot_lbl+"</span><span>$ "+fmt(bloque_tot)+"</span></div>";
+    html+="</div></div>";
+  });
+  var op_cats=FC_BLOQUES.reduce(function(a,b){return a.concat(b.cats);},[]);
+  var op_tot=sumCats(op_cats,m);
+  html+="<div class="fc-gran-tot"><span>TOTAL EGRESOS</span><span style="display:flex;align-items:center;gap:10px">$ "+fmt(op_tot)+"<span style="font-size:11px;opacity:.7">"+pct(op_tot,op_tot+catVal("presidencia",m))+" del total</span></span></div>";
+  var pres_tot=catVal("presidencia",m);
+  var subp=getSubconceptos("presidencia",m);
+  html+="<div class="fc-card" style="margin-top:12px"><div class="fc-grp-hdr fc-pres-hdr" onclick="fcToggleGrp('pres')">"
+       +"<div class="fc-grp-title">&#11088; Gastos de Presidencia</div>"
+       +"<div class="fc-grp-right">"
+       +"<div style="text-align:right"><div style="font-size:9px;color:var(--ttx2)">"+pct(pres_tot,grandTotal(m))+"</div>"
+       +"<div class="fc-grp-total" style="color:var(--tgo)">$ "+fmt(pres_tot)+"</div></div>"
+       +"<span class="fc-grp-arrow" id="fc-arr-pres" style="transform:rotate(90deg)">&#9658;</span>"
+       +"</div></div>";
+  html+="<div class="fc-conc-list open" id="fc-cl-pres">";
+  subp.forEach(function(sc,si){
+    var sc_id="sc_pres_"+si;
+    html+="<div class="fc-sub-hdr" onclick="fcToggleSub('"+sc_id+"')">"
+         +"<div style="width:4px;height:4px;border-radius:50%;background:var(--tgo);opacity:.4;flex-shrink:0"></div>"
+         +"<div style="flex:1;font-size:11px;font-weight:600;color:var(--ttx)">"+esc(sc.lbl)+"</div>"
+         +"<span style="font-size:10px;color:var(--ttx3)">"+sc.regs.length+" pag.</span>"
+         +"<div style="font-size:12px;font-weight:700;color:var(--tp2);font-family:monospace">$ "+fmt(sc.usd)+"</div>"
+         +"<span style="font-size:9px;color:var(--ttx3)">&#9658;</span></div>";
+    html+="<div id=""+sc_id+"" class="fc-sub-regs">";
+    html+="<div style="display:grid;grid-template-columns:88px 1fr 2fr 1fr 100px;gap:6px;padding:5px 16px 5px 56px;background:#F0EDF8;font-size:9px;font-weight:700;color:var(--ttx3);text-transform:uppercase;letter-spacing:.4px"><div>Fecha</div><div>Concepto</div><div>Descripcion</div><div>Beneficiario</div><div style="text-align:right">USD</div></div>";
+    sc.regs.forEach(function(r){
+      var conc_lbl=(r.conc&&r.conc!=="nan")?esc(r.conc):"<em style="color:var(--ttx3)">"+esc(fmtCta(r.cta))+"</em>";
+      var desc_lbl=(r.desc&&r.desc!=="nan"&&r.desc!==r.conc)?esc(r.desc):"<span style="color:var(--ttx3)">--</span>";
+      html+="<div class="fc-det-row"><div class="fc-det-fecha">"+r.fecha+"</div><div class="fc-det-conc">"+conc_lbl+"</div><div class="fc-det-desc">"+desc_lbl+"</div><div class="fc-det-benef">"+esc(r.benef)+"</div><div class="fc-det-monto">$ "+fmt(r.usd)+"</div></div>";
+    });
+    html+="</div>";
+  });
+  html+="<div class="fc-tot-row fc-pres-tot"><span>Total Presidencia</span><span>$ "+fmt(pres_tot)+"</span></div>";
+  html+="</div></div>";
+  html+="<div class="fc-gran-tot fc-gran-tot2" style="margin-top:6px"><span>TOTAL EGRESOS + PRESIDENCIA</span><span>$ "+fmt(op_tot+pres_tot)+"</span></div>";
+  document.getElementById("fc-tree").innerHTML=html;
+}
+
+window.fcToggleGrp=function(id){
+  var cl=document.getElementById("fc-cl-"+id);var ar=document.getElementById("fc-arr-"+id);
+  if(!cl)return;
+  var open=cl.classList.toggle("open");
+  if(ar)ar.style.transform=open?"rotate(90deg)":"rotate(0deg)";
+};
+window.fcToggleConc=function(id,e){
+  if(e)e.stopPropagation();
+  var det=document.getElementById("fcd-"+id);var ar=document.getElementById("fca-"+id);
+  if(!det)return;
+  var open=det.classList.toggle("open");
+  if(ar)ar.style.transform=open?"rotate(90deg)":"rotate(0deg)";
+};
+window.fcToggleSub=function(id){
+  var el=document.getElementById(id);
+  if(!el)return;
+  el.style.display=el.style.display==="block"?"none":"block";
+};
+window.tfExpandirTodo=function(){
+  document.querySelectorAll(".fc-conc-list").forEach(function(el){el.classList.add("open");});
+  document.querySelectorAll(".fc-det-list").forEach(function(el){el.classList.add("open");});
+  document.querySelectorAll(".fc-sub-regs").forEach(function(el){el.style.display="block";});
+  document.querySelectorAll(".fc-grp-arrow").forEach(function(el){el.style.transform="rotate(90deg)";});
+};
+
+window.t2AbrirModal=function(cat,mes){
+  T2_MODAL_CAT=cat;T2_PAG=1;
+  var titulo=cat?CAT_LBL[cat]:"Todos los Egresos";
+  document.getElementById("t2-m-titulo").textContent=titulo;
+  document.getElementById("t2-m-sub").textContent="Flujo de Caja -- "+(mes===0?"Enero-Mayo 2026":MN[mes]+" 2026")+" | Seguros La Fe, C.A.";
+  document.getElementById("t2-buscar").value="";
+  document.getElementById("t2-mes-f").value=mes>0?String(mes):"";
+  document.getElementById("t2-src-f").value="";
+  T2_MODAL_REGS=cat?regsParaCat(cat,mes):(TF_DATA?TF_DATA.regs.filter(function(r){return mes===0||r.mes===mes;}):[]);
+  t2Filtrar();
+  document.getElementById("t2-modal-ov").classList.add("open");
+};
+window.t2CerrarModal=function(){document.getElementById("t2-modal-ov").classList.remove("open");};
+document.getElementById("t2-modal-ov").addEventListener("click",function(e){if(e.target===this)t2CerrarModal();});
+window.t2Filtrar=function(){T2_PAG=1;t2RenderDet();};
+
+function t2RenderDet(){
+  var bus=(document.getElementById("t2-buscar").value||"").toLowerCase();
+  var mf=parseInt(document.getElementById("t2-mes-f").value)||0;
+  var sf=document.getElementById("t2-src-f").value;
+  var r=T2_MODAL_REGS.slice();
   if(mf)r=r.filter(function(x){return x.mes===mf;});
   if(sf)r=r.filter(function(x){return x.src===sf;});
   if(bus)r=r.filter(function(x){
-    return (x.desc||'').toLowerCase().indexOf(bus)>=0||(x.benef||'').toLowerCase().indexOf(bus)>=0||(x.conc||'').toLowerCase().indexOf(bus)>=0||(x.nu||'').toLowerCase().indexOf(bus)>=0;
+    return(x.desc||"").toLowerCase().indexOf(bus)>=0||(x.benef||"").toLowerCase().indexOf(bus)>=0||(x.conc||"").toLowerCase().indexOf(bus)>=0||(x.nu||"").toLowerCase().indexOf(bus)>=0;
   });
-  TF_DET_CACHE=r;
-  var tot=r.length; var totUSD=r.reduce(function(s,x){return s+x.usd;},0); var totBS=r.reduce(function(s,x){return s+x.bs;},0);
-  document.getElementById('tf-det-cnt').textContent=tot+' registros';
-  document.getElementById('tf-det-tots').innerHTML='<span>Total USD: <strong>$'+tfFmt(totUSD)+'</strong></span><span>Total Bs.: <strong>'+tfFmt(totBS)+'</strong></span>';
-  // KPIs modal
-  var por_mes={};TF_ML.forEach(function(mi){
-    var v=r.filter(function(x){return x.mes===mi;}).reduce(function(s,x){return s+x.usd;},0);
-    if(v>0)por_mes[TF_MN[mi]]=v;
+  T2_DET_CACHE=r;
+  var tot=r.length,totUSD=r.reduce(function(s,x){return s+x.usd;},0),totBS=r.reduce(function(s,x){return s+x.bs;},0);
+  document.getElementById("t2-cnt").textContent=tot+" registros";
+  document.getElementById("t2-tots").innerHTML="<span>Total USD: <strong>$"+fmt(totUSD)+"</strong></span><span>Total Bs.: <strong>"+fmt(totBS)+"</strong></span>";
+  document.getElementById("t2-mkpis").innerHTML=
+    "<div class="t2-mkpi"><div class="t2-mkpi-l">Total USD</div><div class="t2-mkpi-v">$"+fmt(totUSD)+"</div></div>"
+   +"<div class="t2-mkpi"><div class="t2-mkpi-l">Total Bs.</div><div class="t2-mkpi-v">"+fmt(totBS)+"</div></div>"
+   +"<div class="t2-mkpi"><div class="t2-mkpi-l">N Registros</div><div class="t2-mkpi-v">"+tot+"</div></div>"
+   +"<div class="t2-mkpi"><div class="t2-mkpi-l">Prom. por Reg.</div><div class="t2-mkpi-v">$"+fmt(tot>0?totUSD/tot:0)+"</div></div>";
+  var ini=(T2_PAG-1)*T2_POR_PAG,pg=r.slice(ini,ini+T2_POR_PAG),bd="";
+  pg.forEach(function(x){
+    var conc_lbl=(x.conc&&x.conc!=="nan"&&x.conc!=="undefined")?esc(x.conc):"<em style="color:var(--ttx3)">"+esc(fmtCta(x.cta))+"</em>";
+    var desc_lbl=(x.desc&&x.desc!=="nan"&&x.desc!=="undefined")?esc(x.desc):"<span style="color:var(--ttx3)">--</span>";
+    var badge="<span class="tbadge "+(x.src||"").toLowerCase()+"">"+(x.src||"--")+"</span>";
+    bd+="<tr>"
+      +"<td style="white-space:nowrap;font-size:10px">"+x.fecha+"</td>"
+      +"<td style="white-space:nowrap">"+x.mn+"</td>"
+      +"<td style="font-size:9px;color:var(--ttx3);font-family:monospace">"+esc(x.id)+"</td>"
+      +"<td class="conc-cell" title=""+esc(x.conc)+"">"+conc_lbl+"</td>"
+      +"<td class="desc-cell" title=""+esc(x.desc)+"">"+desc_lbl+"</td>"
+      +"<td style="font-size:10px;max-width:130px;white-space:normal">"+esc(x.benef)+"</td>"
+      +"<td style="font-size:9px;font-family:monospace;max-width:140px;white-space:normal">"+esc(x.cta)+"</td>"
+      +"<td>"+esc(x.tp)+"</td>"
+      +"<td style="font-family:monospace;font-size:10px">"+esc(x.nu)+"</td>"
+      +"<td class="monto-r">"+fmt(x.bs)+"</td>"
+      +"<td class="monto-r" style="font-size:10px">"+fmt(x.tasa,4)+"</td>"
+      +"<td class="monto-r usd-r">$"+fmt(x.usd)+"</td>"
+      +"<td>"+badge+"</td></tr>";
   });
-  document.getElementById('tf-mkpis').innerHTML=
-    '<div class="tf-mkpi"><div class="tf-mkpi-lbl">Total USD</div><div class="tf-mkpi-val">$'+tfFmt(totUSD)+'</div></div>'
-   +'<div class="tf-mkpi"><div class="tf-mkpi-lbl">Total Bs.</div><div class="tf-mkpi-val">'+tfFmt(totBS)+'</div></div>'
-   +'<div class="tf-mkpi"><div class="tf-mkpi-lbl">N° Registros</div><div class="tf-mkpi-val">'+tot+'</div></div>'
-   +'<div class="tf-mkpi"><div class="tf-mkpi-lbl">Prom. por Reg.</div><div class="tf-mkpi-val">$'+tfFmt(tot>0?totUSD/tot:0)+'</div></div>';
-  // Tabla
-  var ini=(TF_PAG-1)*TF_POR_PAG; var pag=r.slice(ini,ini+TF_POR_PAG);
-  var bd='';
-  pag.forEach(function(x){
-    var badge='<span class="tf-badge '+(x.src||'').toLowerCase()+'">'+x.src+'</span>';
-    bd+='<tr><td>'+x.fecha+'</td><td>'+x.mn+'</td><td style="font-size:9px;color:#9B94B0">'+tfEsc(x.id)+'</td>'
-       +'<td><strong>'+tfEsc(x.conc)+'</strong><div style="font-size:9px;color:#9B94B0">'+tfEsc(x.tipo)+'</div></td>'
-       +'<td style="max-width:180px;white-space:normal">'+tfEsc(x.desc)+'</td>'
-       +'<td>'+tfEsc(x.benef)+'</td>'
-       +'<td style="font-size:9px;font-family:monospace">'+tfEsc(x.cta)+'</td>'
-       +'<td>'+tfEsc(x.tp)+'</td><td>'+tfEsc(x.nu)+'</td>'
-       +'<td class="tf-monto">'+tfFmt(x.bs)+'</td>'
-       +'<td class="tf-monto" style="font-size:9px">'+x.tasa+'</td>'
-       +'<td class="tf-monto tf-usd">$'+tfFmt(x.usd)+'</td>'
-       +'<td>'+badge+'</td></tr>';
-  });
-  document.getElementById('tf-det-body').innerHTML=bd||'<tr><td colspan="13" style="text-align:center;padding:24px;color:#9B94B0">Sin registros</td></tr>';
-  // Paginación
-  var tpag=Math.ceil(tot/TF_POR_PAG)||1;
-  var pg='';
-  var st=Math.max(1,TF_PAG-2); var en=Math.min(tpag,TF_PAG+2);
-  if(st>1)pg+='<button class="tf-pg-btn" onclick="tfIrPag(1)">«</button>';
-  for(var p=st;p<=en;p++){pg+='<button class="tf-pg-btn'+(p===TF_PAG?' on':'')+'" onclick="tfIrPag('+p+')">'+p+'</button>';}
-  if(en<tpag)pg+='<button class="tf-pg-btn" onclick="tfIrPag('+tpag+')">»</button>';
-  pg+='<span style="font-size:10px;color:#6B6080;padding:0 6px">'+tot+' reg · pág '+TF_PAG+'/'+tpag+'</span>';
-  document.getElementById('tf-pag').innerHTML=pg;
+  document.getElementById("t2-det-body").innerHTML=bd||"<tr><td colspan="13" style="text-align:center;padding:24px;color:var(--ttx3)">Sin registros</td></tr>";
+  var tpag=Math.ceil(tot/T2_POR_PAG)||1;
+  var pgh="",st=Math.max(1,T2_PAG-2),en=Math.min(tpag,T2_PAG+2);
+  if(st>1)pgh+="<button class="pg-b" onclick="t2IrPag(1)">&#171;</button>";
+  for(var p=st;p<=en;p++)pgh+="<button class="pg-b"+(p===T2_PAG?" on":"")+"" onclick="t2IrPag("+p+")">"+p+"</button>";
+  if(en<tpag)pgh+="<button class="pg-b" onclick="t2IrPag("+tpag+")">&#187;</button>";
+  pgh+="<span style="font-size:10px;color:var(--ttx2);padding:0 6px">"+tot+" reg &middot; pag "+T2_PAG+"/"+tpag+"</span>";
+  document.getElementById("t2-pag").innerHTML=pgh;
 }
-window.tfIrPag=function(p){TF_PAG=p;tfRenderDet();};
+window.t2IrPag=function(p){T2_PAG=p;t2RenderDet();};
 
-// ── DIVISAS ──────────────────────────────────────────────────────────
-window.tfAbrirDivisas=function(){document.getElementById('tf-div-ov').classList.add('open');dvRender();};
-document.getElementById('tf-div-ov').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+window.dvCalc=function(){
+  var monto=parseFloat(document.getElementById("dv-monto").value)||0;
+  var tpar=parseFloat(document.getElementById("dv-tpar").value)||0;
+  var tbcv=parseFloat(document.getElementById("dv-tbcv").value)||0;
+  if(!monto||!tpar||!tbcv){
+    ["dvc-bs","dvc-bcv","dvc-costo"].forEach(function(id){document.getElementById(id).textContent="--";});return;
+  }
+  var monto_bs=monto*tpar;var equiv_bcv=monto_bs/tbcv;var costo_adq=equiv_bcv-monto;
+  document.getElementById("dvc-bs").textContent="Bs. "+fmt(monto_bs);
+  document.getElementById("dvc-bcv").textContent="$ "+fmt(equiv_bcv);
+  document.getElementById("dvc-costo").textContent="$ "+fmt(costo_adq)+" ("+((costo_adq/monto)*100).toFixed(1)+"%)";
+};
 
-function dvRender(){
-  var b='';
-  TF_DIVISAS.forEach(function(d,i){
-    b+='<tr><td>'+d.fecha+'</td><td>'+TF_MN[d.mes]+'</td><td>'+tfEsc(d.desc)+'</td>'
-      +'<td class="tf-monto">$'+tfFmt(d.usd)+'</td>'
-      +'<td class="tf-monto">'+d.tpar.toFixed(4)+'</td>'
-      +'<td class="tf-monto">'+d.tbcv.toFixed(4)+'</td>'
-      +'<td class="tf-monto" style="color:#B0190F">$'+tfFmt(d.dif)+'</td>'
-      +'<td class="tf-monto">'+tfFmt(d.bs)+'</td>'
-      +'<td>'+TF_LBLS[d.cat]+'</td>'
-      +'<td><button class="tf-ver-btn" style="border-color:#B0190F;color:#B0190F" onclick="dvElim('+i+')">✕</button></td></tr>';
-  });
-  document.getElementById('dv-body').innerHTML=b||'<tr><td colspan="10" style="text-align:center;padding:18px;color:#9B94B0">Sin compras registradas</td></tr>';
-}
 window.dvRegistrar=function(){
-  var fecha=document.getElementById('dv-fecha').value;
-  var mes=parseInt(document.getElementById('dv-mes').value);
-  var monto=parseFloat(document.getElementById('dv-monto').value)||0;
-  var tpar=parseFloat(document.getElementById('dv-tpar').value)||0;
-  var tbcv=parseFloat(document.getElementById('dv-tbcv').value)||0;
-  var cat=document.getElementById('dv-tipo').value;
-  var desc=document.getElementById('dv-desc').value;
-  var benef=document.getElementById('dv-benef').value;
-  if(!fecha||!monto||!tpar||!tbcv||!desc){alert('Complete todos los campos obligatorios');return;}
-  var dif=monto*(tpar-tbcv)/tbcv;
-  var reg={id:'DIV_'+Date.now(),fecha:fecha,mes:mes,mn:TF_MN[mes],
-    tipo:'Compra Divisas',conc:desc,desc:desc,benef:benef,
-    cta:'',tp:'COMPRA DIVISAS',nu:'',
-    bs:Math.round(monto*tpar*100)/100,tasa:tpar,usd:monto,
-    cat:cat,src:'DIVISAS',
-    tpar:tpar,tbcv:tbcv,dif:Math.round(dif*100)/100};
-  TF_DIVISAS.push(reg);dvRender();tfRenderKPIs();tfRenderChart();tfRenderTabla();
-  ['dv-monto','dv-tpar','dv-tbcv','dv-desc','dv-benef'].forEach(function(id){document.getElementById(id).value='';});
+  var fecha=document.getElementById("dv-fecha").value;
+  var mes=parseInt(document.getElementById("dv-mes").value);
+  var monto=parseFloat(document.getElementById("dv-monto").value)||0;
+  var tpar=parseFloat(document.getElementById("dv-tpar").value)||0;
+  var tbcv=parseFloat(document.getElementById("dv-tbcv").value)||0;
+  var tipo=document.getElementById("dv-tipo").value;
+  var desc=document.getElementById("dv-desc").value;
+  var benef=document.getElementById("dv-benef").value;
+  if(!fecha||!monto||!tpar||!tbcv||!desc){document.getElementById("dv-msg").textContent="Complete todos los campos.";return;}
+  var monto_bs=monto*tpar;var equiv_bcv=monto_bs/tbcv;var costo_adq=equiv_bcv-monto;
+  var prima_pct=monto>0?(costo_adq/monto*100).toFixed(2):0;
+  var reg={id:"DIV_"+Date.now(),fecha:fecha,mes:mes,mn:MN[mes],tipo:"Compra Divisas",conc:desc,desc:desc,benef:benef,cta:"",tp:"COMPRA DIVISAS",nu:"",bs:Math.round(monto_bs*100)/100,tasa:tpar,usd:monto,cat:"difer_cambiario",cat_fc:tipo,src:"DIVISAS",tpar:tpar,tbcv:tbcv,costo_adq:Math.round(costo_adq*100)/100,equiv_bcv:Math.round(equiv_bcv*100)/100,prima_pct:prima_pct};
+  TF_DIVISAS.push(reg);dvRenderHistorial();dvRenderResumen();
+  if(TF_DATA)renderKPIs();
+  document.getElementById("dv-msg").textContent="Registrado correctamente.";
+  setTimeout(function(){document.getElementById("dv-msg").textContent="";},3000);
+  ["dv-monto","dv-tpar","dv-tbcv","dv-desc","dv-benef"].forEach(function(id){document.getElementById(id).value="";});
+  dvCalc();
 };
-window.dvElim=function(i){if(confirm('¿Eliminar esta compra?')){TF_DIVISAS.splice(i,1);dvRender();}};
+
+function dvRenderHistorial(){
+  var b="",tot_usd=0,tot_bs=0,tot_costo=0;
+  TF_DIVISAS.forEach(function(d,i){
+    tot_usd+=d.usd;tot_bs+=d.bs;tot_costo+=d.costo_adq;
+    b+="<tr><td>"+d.fecha+"</td><td>"+MN[d.mes]+"</td><td>"+esc(d.conc)+"</td><td>"+esc(d.benef)+"</td>"
+      +"<td class="mr">$"+fmt(d.usd)+"</td><td class="mr">"+fmt(d.tpar,4)+"</td><td class="mr">"+fmt(d.tbcv,4)+"</td>"
+      +"<td class="mr">"+fmt(d.bs)+"</td><td class="mr" style="color:var(--tr)">$"+fmt(d.costo_adq)+"</td>"
+      +"<td class="mr">"+d.prima_pct+"%</td><td>"+CAT_DIV_LBL[d.cat_fc]+"</td>"
+      +"<td><button style="background:none;border:1px solid var(--tr);color:var(--tr);padding:2px 8px;border-radius:10px;cursor:pointer;font-size:10px" onclick="dvElim("+i+")">X</button></td></tr>";
+  });
+  document.getElementById("dv-body").innerHTML=b||"<tr><td colspan="12" style="text-align:center;padding:20px;color:var(--ttx3)">Sin compras registradas</td></tr>";
+  document.getElementById("dv-foot").innerHTML=TF_DIVISAS.length?"<td colspan="4"><strong>TOTALES</strong></td><td class="mr"><strong>$"+fmt(tot_usd)+"</strong></td><td colspan="2"></td><td class="mr"><strong>"+fmt(tot_bs)+"</strong></td><td class="mr" style="color:#FFCCCC"><strong>$"+fmt(tot_costo)+"</strong></td><td colspan="3"></td>":"";
+}
+
+function dvRenderResumen(){
+  var h="";
+  ML.forEach(function(mi){
+    var regs=TF_DIVISAS.filter(function(d){return d.mes===mi;});
+    var tot=regs.reduce(function(s,d){return s+d.usd;},0);
+    var costo=regs.reduce(function(s,d){return s+d.costo_adq;},0);
+    h+="<div style="background:#fff;border-radius:10px;padding:12px;text-align:center;border-top:3px solid "+(tot>0?"var(--tgo)":"var(--tbd)")+""><div style="font-size:9px;color:var(--ttx2);font-weight:700;text-transform:uppercase">"+MN[mi]+"</div><div style="font-size:17px;font-weight:800;color:var(--tp2);margin:4px 0">$"+fmt(tot)+"</div><div style="font-size:9px;color:var(--tr)">Costo: $"+fmt(costo)+"</div></div>";
+  });
+  document.getElementById("dv-resumen-mes").innerHTML=h;
+}
+window.dvElim=function(i){if(confirm("Eliminar esta compra?")){TF_DIVISAS.splice(i,1);dvRenderHistorial();dvRenderResumen();if(TF_DATA)renderKPIs();}};
 window.dvExportar=function(){
-  var csv='Fecha,Mes,Concepto,Beneficiario,Monto USD,Tasa Paralela,Tasa BCV,Diferencial USD,Monto Bs.,Tipo Gasto\n';
-  TF_DIVISAS.forEach(function(d){csv+=d.fecha+','+TF_MN[d.mes]+',"'+d.desc+'","'+(d.benef||'')+'",'+d.usd+','+d.tpar+','+d.tbcv+','+d.dif+','+d.bs+','+TF_LBLS[d.cat]+'\n';});
-  tfDownload(csv,'SLF_Compras_Divisas.csv');
+  var csv="Fecha,Mes,Concepto,Beneficiario,Monto USD,Tasa Paralela,Tasa BCV,Monto Bs.,Equiv. BCV USD,Costo Adq. USD,% Prima,Tipo Gasto\n";
+  TF_DIVISAS.forEach(function(d){csv+='"'+d.fecha+'","'+MN[d.mes]+'","'+d.conc+'","'+(d.benef||"")+'",'+d.usd+","+d.tpar+","+d.tbcv+","+d.bs+","+d.equiv_bcv+","+d.costo_adq+","+d.prima_pct+'%,"'+CAT_DIV_LBL[d.cat_fc]+'"\n';});
+  t2DL(csv,"SLF_Compras_Divisas.csv");
 };
 
-// ── AJUSTES ──────────────────────────────────────────────────────────
-window.tfAbrirAjustes=function(){document.getElementById('tf-adj-ov').classList.add('open');ajRender();};
-document.getElementById('tf-adj-ov').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
-
-function tfPoblarSelects(){
-  var cats=Object.keys(TF_LBLS);
-  var opts='<option value="">— Seleccionar —</option>'+cats.map(function(c){return'<option value="'+c+'">'+TF_LBLS[c]+'</option>';}).join('');
-  document.getElementById('aj-desde').innerHTML=opts;
-  document.getElementById('aj-hacia').innerHTML=opts;
-}
-window.ajPreview=function(){
-  if(!TF_DATA){document.getElementById('aj-preview').innerHTML='';return;}
-  var bus=(document.getElementById('aj-bus').value||'').toLowerCase();
-  var desde=document.getElementById('aj-desde').value;
-  var mes=parseInt(document.getElementById('aj-mes').value)||0;
-  if(!bus&&!desde){document.getElementById('aj-preview').innerHTML='';return;}
-  var r=TF_DATA.regs.filter(function(x){
-    return(!desde||x.cat===desde)&&(!mes||x.mes===mes)&&(!bus||(x.conc||'').toLowerCase().indexOf(bus)>=0||(x.desc||'').toLowerCase().indexOf(bus)>=0);
-  });
-  var t=r.reduce(function(s,x){return s+x.usd;},0);
-  document.getElementById('aj-preview').textContent=r.length+' registros · Total: $'+tfFmt(t);
-};
-window.ajAplicar=function(){
-  if(!TF_DATA){alert('Sin datos cargados');return;}
-  var bus=(document.getElementById('aj-bus').value||'').toLowerCase();
-  var desde=document.getElementById('aj-desde').value;
-  var hacia=document.getElementById('aj-hacia').value;
-  var mes=parseInt(document.getElementById('aj-mes').value)||0;
-  var just=document.getElementById('aj-just').value;
-  if(!desde||!hacia){alert('Seleccione origen y destino');return;}
-  if(desde===hacia){alert('Origen y destino deben ser distintos');return;}
-  if(!just){alert('Ingrese una justificación');return;}
-  var r=TF_DATA.regs.filter(function(x){
-    return x.cat===desde&&(!mes||x.mes===mes)&&(!bus||(x.conc||'').toLowerCase().indexOf(bus)>=0||(x.desc||'').toLowerCase().indexOf(bus)>=0);
-  });
-  if(!r.length){alert('Sin registros que coincidan');return;}
-  var t=r.reduce(function(s,x){return s+x.usd;},0);
-  if(!confirm('¿Mover '+r.length+' registros ($'+tfFmt(t)+') de "'+TF_LBLS[desde]+'" a "'+TF_LBLS[hacia]+'"?'))return;
-  r.forEach(function(x){var o=TF_DATA.regs.find(function(y){return y.id===x.id;});if(o)o.cat=hacia;});
-  // Recalcular resumen
-  Object.keys(TF_DATA.resumen).forEach(function(cat){
-    TF_ML.forEach(function(mi){
-      TF_DATA.resumen[cat].m[mi]=Math.round(TF_DATA.regs.filter(function(x){return x.cat===cat&&x.mes===mi;}).reduce(function(s,x){return s+x.usd;},0)*100)/100;
+function auditar(regs){
+  AUDIT_ITEMS=[];
+  regs.forEach(function(r){
+    var cat_actual=r.cat,cat_sug=null,razon=null;
+    var desc_up=((r.desc||"")+" "+(r.conc||"")).toUpperCase();
+    Object.keys(REGLAS_AUD.kw).forEach(function(kw){
+      if(!cat_sug&&desc_up.indexOf(kw)>=0&&REGLAS_AUD.kw[kw]!==cat_actual){cat_sug=REGLAS_AUD.kw[kw];razon='Descripcion contiene "'+kw+'"';}
     });
-    TF_DATA.resumen[cat].tot=Object.values(TF_DATA.resumen[cat].m).reduce(function(s,v){return s+v;},0);
+    if(!cat_sug){
+      var cta_l=(r.cta||"").replace(/\D/g,"");
+      Object.keys(REGLAS_AUD.cta).forEach(function(pref){
+        if(!cat_sug&&cta_l.startsWith(pref)&&REGLAS_AUD.cta[pref]!==cat_actual){cat_sug=REGLAS_AUD.cta[pref];razon="Cta. "+r.cta+" -> "+REGLAS_AUD.cta[pref];}
+      });
+    }
+    var asiento_flag=REGLAS_AUD.asientos[r.nu||""];
+    if(asiento_flag&&!cat_sug){cat_sug=cat_actual;razon=asiento_flag;}
+    if((cat_sug&&cat_sug!==cat_actual)||asiento_flag){
+      AUDIT_ITEMS.push({r:r,cat_actual:cat_actual,cat_sug:cat_sug||cat_actual,razon:razon||asiento_flag,estado:"PENDIENTE"});
+    }
   });
-  TF_AJUSTES.unshift({ts:new Date().toLocaleString('es-VE'),conc:bus||'(todos)',mes:mes===0?'Todos':TF_MN[mes],desde:TF_LBLS[desde],hacia:TF_LBLS[hacia],n:r.length,usd:t,just:just});
-  ajRender();tfRenderTodo();
-  alert('✅ '+r.length+' registros reclasificados');
-};
-function ajRender(){
-  var b='';
-  TF_AJUSTES.forEach(function(a){
-    b+='<tr><td style="font-size:9px">'+tfEsc(a.ts)+'</td><td>'+tfEsc(a.conc)+'</td><td>'+a.mes+'</td><td style="font-size:10px">'+tfEsc(a.desde)+'</td><td style="font-size:10px">'+tfEsc(a.hacia)+'</td><td class="tf-monto">$'+tfFmt(a.usd)+'</td><td style="font-size:10px">'+tfEsc(a.just)+'</td></tr>';
-  });
-  document.getElementById('aj-hist').innerHTML=b||'<tr><td colspan="7" style="text-align:center;padding:18px;color:#9B94B0">Sin ajustes registrados</td></tr>';
+  renderAudit();
 }
-window.ajExportar=function(){
-  var csv='Fecha/Hora,Concepto,Mes,Desde,Hacia,N Regs,Total USD,Justificación\n';
-  TF_AJUSTES.forEach(function(a){csv+='"'+a.ts+'","'+a.conc+'","'+a.mes+'","'+a.desde+'","'+a.hacia+'",'+a.n+','+a.usd.toFixed(2)+',"'+a.just+'"\n';});
-  tfDownload(csv,'SLF_Ajustes_FC.csv');
-};
 
-// ── EXPORTAR ─────────────────────────────────────────────────────────
+function renderAudit(){
+  var pend=AUDIT_ITEMS.filter(function(a){return a.estado==="PENDIENTE";}).length;
+  var apro=AUDIT_ITEMS.filter(function(a){return a.estado==="APROBADO";}).length;
+  var rech=AUDIT_ITEMS.filter(function(a){return a.estado==="RECHAZADO";}).length;
+  document.getElementById("audit-banner").style.display=AUDIT_ITEMS.length?"":"none";
+  document.getElementById("audit-summary").style.display=AUDIT_ITEMS.length?"":"none";
+  document.getElementById("audit-actions-bar").style.display=AUDIT_ITEMS.length?"flex":"none";
+  if(!AUDIT_ITEMS.length)return;
+  document.getElementById("aud-tot").textContent=TF_DATA?TF_DATA.regs.length:0;
+  document.getElementById("aud-obs").textContent=AUDIT_ITEMS.length;
+  document.getElementById("aud-apro").textContent=apro;
+  document.getElementById("aud-rech").textContent=rech;
+  var html="";
+  AUDIT_ITEMS.forEach(function(a,i){
+    var cls=a.estado==="APROBADO"?"aprobado":a.estado==="RECHAZADO"?"rechazado":"";
+    html+="<div class="audit-row "+cls+"">"
+      +"<div style="font-size:9px;font-family:monospace;color:var(--ttx3)">"+esc(a.r.id)+"</div>"
+      +"<div style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title=""+esc(a.r.conc)+"">"+esc(a.r.conc)+"</div>"
+      +"<div style="font-size:10px;color:var(--ttx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title=""+esc(a.r.desc)+"">"+esc(a.r.desc)+"</div>"
+      +"<div><div class="audit-de">"+CAT_LBL[a.cat_actual]+"</div>"+(a.cat_sug!==a.cat_actual?"<div class="audit-a">&rarr; "+CAT_LBL[a.cat_sug]+"</div>":"<div style="font-size:9px;color:var(--ttx3)">&#9873; Revisar</div>")+"</div>"
+      +"<div class="audit-monto">$"+fmt(a.r.usd)+"</div>"
+      +"<div class="audit-razon">"+esc(a.razon||"")+"</div>"
+      +"<div class="audit-actions">"+(a.estado==="PENDIENTE"?"<button class="ab-ok" onclick="audAprobar("+i+")">&#10003;</button><button class="ab-no" onclick="audRechazar("+i+")">&#10005;</button>":(a.estado==="APROBADO"?"<span style="color:var(--tg);font-size:10px;font-weight:700">&#10003; Aprobado</span>":"<span style="color:var(--ttx3);font-size:10px">Rechazado</span>"))+"</div></div>";
+  });
+  document.getElementById("audit-list").innerHTML=html||"<div style="text-align:center;padding:24px;color:var(--ttx3)">Sin observaciones detectadas</div>";
+}
+window.audAprobar=function(i){AUDIT_ITEMS[i].estado="APROBADO";renderAudit();};
+window.audRechazar=function(i){AUDIT_ITEMS[i].estado="RECHAZADO";renderAudit();};
+window.audAprobarTodo=function(){AUDIT_ITEMS.forEach(function(a){if(a.estado==="PENDIENTE")a.estado="APROBADO";});renderAudit();};
+window.audAplicarAprobados=function(){
+  var apro=AUDIT_ITEMS.filter(function(a){return a.estado==="APROBADO"&&a.cat_sug!==a.cat_actual;});
+  if(!apro.length){alert("No hay ajustes aprobados pendientes.");return;}
+  apro.forEach(function(a){var orig=TF_DATA.regs.find(function(r){return r.id===a.r.id;});if(orig)orig.cat=a.cat_sug;});
+  Object.keys(TF_DATA.resumen).forEach(function(cat){
+    ML.forEach(function(mi){TF_DATA.resumen[cat].m[mi]=Math.round(TF_DATA.regs.filter(function(r){return r.cat===cat&&r.mes===mi;}).reduce(function(s,r){return s+r.usd;},0)*100)/100;});
+    TF_DATA.resumen[cat].tot=ML.reduce(function(s,mi){return s+TF_DATA.resumen[cat].m[mi];},0);
+  });
+  alert(apro.length+" reclasificaciones aplicadas al Dashboard.");
+  t2RenderTodo();
+};
+window.audExportarInforme=function(){
+  var fd=new Date().toLocaleDateString("es-VE");
+  var csv="INFORME DE AUDITORIA CONTABLE -- SEGUROS LA FE C.A.\nFecha: "+fd+"\nTotal revisados: "+(TF_DATA?TF_DATA.regs.length:0)+"\nObservaciones: "+AUDIT_ITEMS.length+"\n\n";
+  csv+='"N Egreso","Fecha","Concepto","Descripcion","Beneficiario","Cuenta Contable","Categoria Actual","Categoria Sugerida","Monto USD","Razon Auditoria","Estado"\n';
+  AUDIT_ITEMS.forEach(function(a){csv+='"'+a.r.id+'","'+a.r.fecha+'","'+a.r.conc+'","'+a.r.desc+'","'+a.r.benef+'","'+a.r.cta+'","'+CAT_LBL[a.cat_actual]+'","'+CAT_LBL[a.cat_sug]+'",'+a.r.usd.toFixed(2)+',"'+a.razon+'","'+a.estado+'"\n';});
+  t2DL(csv,"SLF_Informe_Auditoria_"+fd.replace(/\//g,"-")+".csv");
+};
+window.cargarCore=function(input){
+  if(!input.files[0])return;
+  document.getElementById("st-core").innerHTML="<span class="status-ok">Archivo "+input.files[0].name+" seleccionado. Auditando datos actuales...</span>";
+  if(TF_DATA){auditar(TF_DATA.regs.filter(function(r){return r.src==="CORE";}));}
+};
+window.cargarMayor=function(input){
+  if(!input.files[0])return;
+  document.getElementById("st-mayor").innerHTML="<span class="status-ok">Archivo "+input.files[0].name+" seleccionado. Auditando Mayor Analitico...</span>";
+  if(TF_DATA){auditar(TF_DATA.regs.filter(function(r){return r.src==="MAYOR";}));}
+};
+["dz-mayor","dz-core"].forEach(function(id){
+  var z=document.getElementById(id);if(!z)return;
+  z.addEventListener("dragover",function(e){e.preventDefault();z.classList.add("drag");});
+  z.addEventListener("dragleave",function(){z.classList.remove("drag");});
+  z.addEventListener("drop",function(e){e.preventDefault();z.classList.remove("drag");});
+});
 window.tfExportarCSV=function(){
-  if(!TF_DATA){alert('Sin datos');return;}
-  var r=TF_DATA.regs.filter(function(x){return TF_MES===0||x.mes===TF_MES;});
-  var csv='Fecha,Mes,N° Egreso,Concepto,Tipo,Descripción,Beneficiario,Cta. Contable,TP Doc.,N° Documento,Monto Bs.,Tasa Día,Monto USD,Categoría FC,Fuente\n';
-  r.forEach(function(x){csv+='"'+x.fecha+'","'+x.mn+'","'+x.id+'","'+x.conc+'","'+x.tipo+'","'+x.desc+'","'+x.benef+'","'+x.cta+'","'+x.tp+'","'+x.nu+'",'+x.bs+','+x.tasa+','+x.usd+',"'+(TF_LBLS[x.cat]||x.cat)+'","'+x.src+'"\n';});
-  tfDownload(csv,'SLF_FlujoCaja_'+(TF_MES===0?'AcumEneMay':TF_MN[TF_MES])+'.csv');
+  if(!TF_DATA){alert("Sin datos");return;}
+  var csv="Fecha,Mes,N Egreso,Concepto,Tipo,Descripcion,Beneficiario,Cta. Contable,TP Doc.,N Documento,Monto Bs.,Tasa,Monto USD,Categoria FC,Fuente\n";
+  TF_DATA.regs.forEach(function(x){csv+='"'+x.fecha+'","'+x.mn+'","'+x.id+'","'+x.conc+'","'+x.tipo+'","'+x.desc+'","'+x.benef+'","'+x.cta+'","'+x.tp+'","'+x.nu+'",'+x.bs+","+x.tasa+","+x.usd+',"'+(CAT_LBL[x.cat]||x.cat)+'","'+x.src+'"\n';});
+  t2DL(csv,"SLF_FlujoCaja.csv");
 };
-window.tfExportarDetalle=function(){
-  if(!TF_DET_CACHE.length){alert('Sin datos para exportar');return;}
-  var csv='Fecha,Mes,N° Egreso,Concepto,Tipo,Descripción,Beneficiario,Cta. Contable,TP Doc.,N° Documento,Monto Bs.,Tasa Día,Monto USD,Categoría FC,Fuente\n';
-  TF_DET_CACHE.forEach(function(x){csv+='"'+x.fecha+'","'+x.mn+'","'+x.id+'","'+x.conc+'","'+x.tipo+'","'+x.desc+'","'+x.benef+'","'+x.cta+'","'+x.tp+'","'+x.nu+'",'+x.bs+','+x.tasa+','+x.usd+',"'+(TF_LBLS[x.cat]||x.cat)+'","'+x.src+'"\n';});
-  tfDownload(csv,'SLF_Detalle_'+(TF_MODAL_CAT||'FC')+'.csv');
+window.t2ExportarDet=function(){
+  if(!T2_DET_CACHE.length){alert("Sin datos");return;}
+  var csv="Fecha,Mes,N Egreso,Concepto de Pago / Cta,Descripcion del Gasto,Beneficiario,Cta. Contable,TP Doc.,N Documento,Monto Bs.,Tasa BCV,Monto USD,Fuente\n";
+  T2_DET_CACHE.forEach(function(x){csv+='"'+x.fecha+'","'+x.mn+'","'+x.id+'","'+x.conc+'","'+x.desc+'","'+x.benef+'","'+x.cta+'","'+x.tp+'","'+x.nu+'",'+x.bs+","+x.tasa+","+x.usd+',"'+x.src+'"\n';});
+  t2DL(csv,"SLF_Detalle_FC.csv");
 };
-function tfDownload(content,filename){
-  var blob=new Blob(['\ufeff'+content],{type:'text/csv;charset=utf-8'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);
+function t2DL(content,filename){
+  var blob=new Blob(["\ufeff"+content],{type:"text/csv;charset=utf-8"});
+  var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);
 }
 })();
 </script>
