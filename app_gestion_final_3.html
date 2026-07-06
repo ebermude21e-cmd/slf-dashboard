@@ -972,27 +972,16 @@ table.mcc-tbl tbody tr.certificada{background:rgba(13,122,78,.04)}
 <!-- TAB A: DASHBOARD EJECUTIVO (versión aprobada) -->
 <div class="t2-pane on" id="t2-dashboard">
 <style>
-.tfd-bar{background:var(--tp2);padding:10px 20px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0}
+.tfd-bar-wrap{background:linear-gradient(90deg,var(--tp2),var(--tp));padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;flex-shrink:0}
+.tfd-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .tfd-par-btn{padding:6px 14px;border:1.5px solid rgba(255,255,255,.2);border-radius:20px;background:transparent;cursor:pointer;font-size:11px;font-weight:700;color:rgba(255,255,255,.65)}
 .tfd-par-btn.on{background:var(--ty);color:var(--tp2);border-color:var(--ty)}
-.tfd-strip{background:linear-gradient(90deg,var(--tp2),var(--tp));padding:14px 20px;display:flex;align-items:stretch;overflow-x:auto;flex-shrink:0}
-.tfd-item{flex:1;min-width:88px;text-align:center;padding:8px 10px;border-right:1px solid rgba(255,255,255,.12)}
-.tfd-item:last-of-type{border-right:none}
-.tfd-item .mes{font-size:8.5px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase}
-.tfd-item .val{font-size:16px;font-weight:800;color:#fff}
-.tfd-item .delta{font-size:8.5px;font-weight:700;color:#FF9B9B;margin-top:2px}
-.tfd-item.activo{background:rgba(255,255,255,.09);border-radius:8px}
-.tfd-item.activo .val{color:var(--ty)}
-.tfd-resumen{flex:0 0 auto;min-width:190px;background:rgba(0,0,0,.18);border-radius:8px;padding:8px 16px;display:flex;flex-direction:column;justify-content:center;margin-left:12px}
-.tfd-resumen .lbl{font-size:8px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase}
-.tfd-resumen .val{font-size:16px;font-weight:900;color:var(--ty)}
-#tfd-deval-card{background:linear-gradient(135deg,var(--tp2),var(--tp));margin:0 20px 16px;border-radius:12px;padding:16px 20px;color:#fff}
-.tfd-deval-hdr{font-size:10px;font-weight:800;letter-spacing:.08em;color:rgba(255,255,255,.7)}
-.tfd-deval-sub{font-size:11px;color:rgba(255,255,255,.55);margin-top:2px}
-.tfd-deval-pct{font-size:34px;font-weight:900;color:var(--ty);margin:8px 0}
-.tfd-deval-row{display:flex;justify-content:space-between;font-size:11.5px;padding:4px 0;border-top:1px solid rgba(255,255,255,.12)}
-.tfd-deval-row b{font-weight:800}
-.tfd-deval-row b.hi{color:var(--ty)}
+.tfd-bar-stats{display:flex;align-items:center;gap:10px}
+.tfd-stat{background:rgba(0,0,0,.18);border-radius:8px;padding:7px 14px;text-align:right}
+.tfd-stat .lbl{font-size:8px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;white-space:nowrap}
+.tfd-stat .val{font-size:15px;font-weight:900;color:#fff}
+.tfd-stat.hi .val{color:var(--ty)}
+.tfd-stat .val .sub{display:block;font-size:8.5px;font-weight:600;color:rgba(255,255,255,.55);margin-top:1px}
 .tfd-scroll{flex:1;overflow-y:auto;padding:16px 20px 70px}
 .tfd-sec-title{font-size:12.5px;font-weight:800;color:var(--tp2);margin:18px 0 10px;display:flex;align-items:center;gap:8px}
 .tfd-sec-title .lbl{font-size:9px;color:var(--ttx3);font-weight:600}
@@ -1104,9 +1093,10 @@ tr.tfd-en-revision{background:var(--tgol)!important;font-weight:700}
 .tfd-reporte-item{background:var(--tbg);border-left:3px solid var(--tgo);border-radius:7px;padding:9px 12px;margin-bottom:7px;font-size:10.5px}
 </style>
 
-  <div class="tfd-bar" id="tfd-bar"></div>
-  <div class="tfd-strip" id="tfd-strip"></div>
-  <div id="tfd-deval-card"></div>
+  <div class="tfd-bar-wrap">
+    <div class="tfd-bar" id="tfd-bar"></div>
+    <div class="tfd-bar-stats" id="tfd-bar-stats"></div>
+  </div>
   <div class="tfd-report-bar" id="tfd-report-bar">
     <div><span class="n" id="tfd-report-count">0</span>registro(s) marcados para revisión del accionista</div>
     <button class="tfd-btn-report" onclick="tfdAbrirReporte()">📊 Generar reporte y exportar a Excel</button>
@@ -1308,36 +1298,21 @@ window.tfdToggleMes = function(i){
 };
 
 function tfdRenderStrip(){
-  var sel = TFD_SELECCION; var html = "";
+  var sel = TFD_SELECCION;
   var mIdx = sel[sel.length-1], bIdx = sel.length>1 ? sel[sel.length-2] : mIdx;
   var esSolo = (sel.length===1);
-  TFD_MESES.forEach(function(m,i){
-    var activo = sel.indexOf(i)>=0;
-    var delta = i>0 ? ((TFD_BCV[i]-TFD_BCV[i-1])/TFD_BCV[i-1]*100).toFixed(2) : null;
-    html += '<div class="tfd-item'+(activo?' activo':'')+'"><div class="mes">'+m+'</div><div class="val">'+TFD_BCV[i].toFixed(2)+'</div>'
-      + (delta!==null?'<div class="delta">▲ +'+delta+'%</div>':'<div class="delta" style="opacity:0">—</div>') + '</div>';
-  });
+  var ultimoIdx = TFD_BCV.length-1;
+  var pctAcum = ((TFD_BCV[ultimoIdx]-TFD_BCV[0])/TFD_BCV[0]*100);
+
+  var html = '';
   if (esSolo){
-    html += '<div class="tfd-resumen"><div class="lbl">'+TFD_MESES[mIdx]+' — mes base</div><div class="val">Sin mes anterior</div></div>';
+    html += '<div class="tfd-stat"><div class="lbl">'+TFD_MESES[mIdx]+'</div><div class="val">Mes base — sin comparación</div></div>';
   } else {
     var varPar = ((TFD_BCV[mIdx]-TFD_BCV[bIdx])/TFD_BCV[bIdx]*100).toFixed(2);
-    html += '<div class="tfd-resumen"><div class="lbl">Var. BCV — '+TFD_MESES[mIdx]+' vs '+TFD_MESES[bIdx]+'</div><div class="val">+'+varPar+'%</div></div>';
+    html += '<div class="tfd-stat"><div class="lbl">Var. BCV — '+TFD_MESES[mIdx]+' vs '+TFD_MESES[bIdx]+'</div><div class="val">+'+varPar+'%</div></div>';
   }
-  document.getElementById("tfd-strip").innerHTML = html;
-}
-
-function tfdRenderDeval(){
-  var ultimoIdx = TFD_BCV.length - 1; // se extiende solo cuando se agreguen más meses a TFD_MESES/TFD_BCV
-  var base = TFD_BCV[0], ultimo = TFD_BCV[ultimoIdx];
-  var pctAcum = ((ultimo-base)/base*100);
-  var absAcum = ultimo-base;
-  var html = '<div class="tfd-deval-hdr">📉 DEPRECIACIÓN BCV OFICIAL</div>'
-    + '<div class="tfd-deval-sub">'+TFD_MESES[0]+' → '+TFD_MESES[ultimoIdx]+' · Venta ASK promedio</div>'
-    + '<div class="tfd-deval-pct">+'+pctAcum.toFixed(2)+'%</div>'
-    + '<div class="tfd-deval-row"><span>'+TFD_MESES[0]+'</span><b>Bs. '+base.toFixed(2)+'</b></div>'
-    + '<div class="tfd-deval-row"><span>'+TFD_MESES[ultimoIdx]+'</span><b class="hi">Bs. '+ultimo.toFixed(2)+'</b></div>'
-    + '<div class="tfd-deval-row"><span>Δ absoluto</span><b class="hi">+Bs. '+absAcum.toFixed(2)+'/USD</b></div>';
-  document.getElementById("tfd-deval-card").innerHTML = html;
+  html += '<div class="tfd-stat hi"><div class="lbl">Depreciación acumulada '+TFD_MESES[0]+' → '+TFD_MESES[ultimoIdx]+'</div><div class="val">+'+pctAcum.toFixed(2)+'%<span class="sub">Bs. '+TFD_BCV[0].toFixed(2)+' → Bs. '+TFD_BCV[ultimoIdx].toFixed(2)+'</span></div></div>';
+  document.getElementById("tfd-bar-stats").innerHTML = html;
 }
 
 function tfdRenderIngresos(){
@@ -1596,7 +1571,7 @@ window.tfdExportarExcel = function(){
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 };
 
-window.tfdRenderAll = function(){ TFD_DETALLES=[]; tfdRenderBar(); tfdRenderStrip(); tfdRenderDeval(); tfdRenderIngresos(); tfdRenderKPIs(); tfdRenderFC(); tfdActualizarReportBar(); };
+window.tfdRenderAll = function(){ TFD_DETALLES=[]; tfdRenderBar(); tfdRenderStrip(); tfdRenderIngresos(); tfdRenderKPIs(); tfdRenderFC(); tfdActualizarReportBar(); };
 })();
 function esc(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function fmtCta(s){
