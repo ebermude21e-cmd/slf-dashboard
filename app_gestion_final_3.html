@@ -299,7 +299,6 @@ table.diff td.new{background:#DCFCE7;color:var(--g);font-weight:700}
     <button class="sb-main" onclick="toggleSbGroup('sb-gerencial')">🎓 Gerencial<span class="sb-arrow">▸</span></button>
     <div class="sb-sub" id="sb-gerencial">
       <button class="sb-item" onclick="showTab('gerencial-mantenimiento',this)">🛠️ Mantenimiento y Análisis FC</button>
-      <button class="sb-item" onclick="showTab('gerencial-historico',this)">🗄️ Carga de Datos Históricos</button>
       <button class="sb-item" onclick="showTab('gerencial-cierre',this)">✅ Cierre y Aprobación</button>
       <button class="sb-item" onclick="showTab('gerencial-exportar',this)">📊 Exportar Reporte a Excel</button>
     </div>
@@ -987,6 +986,13 @@ table.mcc-tbl tbody tr.certificada{background:rgba(13,122,78,.04)}
 .tfd-resumen{flex:0 0 auto;min-width:190px;background:rgba(0,0,0,.18);border-radius:8px;padding:8px 16px;display:flex;flex-direction:column;justify-content:center;margin-left:12px}
 .tfd-resumen .lbl{font-size:8px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase}
 .tfd-resumen .val{font-size:16px;font-weight:900;color:var(--ty)}
+#tfd-deval-card{background:linear-gradient(135deg,var(--tp2),var(--tp));margin:0 20px 16px;border-radius:12px;padding:16px 20px;color:#fff}
+.tfd-deval-hdr{font-size:10px;font-weight:800;letter-spacing:.08em;color:rgba(255,255,255,.7)}
+.tfd-deval-sub{font-size:11px;color:rgba(255,255,255,.55);margin-top:2px}
+.tfd-deval-pct{font-size:34px;font-weight:900;color:var(--ty);margin:8px 0}
+.tfd-deval-row{display:flex;justify-content:space-between;font-size:11.5px;padding:4px 0;border-top:1px solid rgba(255,255,255,.12)}
+.tfd-deval-row b{font-weight:800}
+.tfd-deval-row b.hi{color:var(--ty)}
 .tfd-scroll{flex:1;overflow-y:auto;padding:16px 20px 70px}
 .tfd-sec-title{font-size:12.5px;font-weight:800;color:var(--tp2);margin:18px 0 10px;display:flex;align-items:center;gap:8px}
 .tfd-sec-title .lbl{font-size:9px;color:var(--ttx3);font-weight:600}
@@ -1026,6 +1032,36 @@ table.mcc-tbl tbody tr.certificada{background:rgba(13,122,78,.04)}
 .tfd-fc-sub-row .v:hover{background:var(--tpl);text-decoration:underline}
 .tfd-fc-tot-row{padding:9px 16px;background:var(--tp2);color:#fff;display:flex;justify-content:space-between;font-weight:800;font-size:11px}
 .tfd-fc-tot-row.gran{background:linear-gradient(90deg,var(--tp2),var(--tp));font-size:12.5px}
+table.tfd-fc-tabla{width:100%;border-collapse:collapse;font-size:11px}
+table.tfd-fc-tabla thead th{background:var(--tpl);color:var(--tp);padding:9px 10px;font-size:9px;font-weight:800;text-transform:uppercase;text-align:right;white-space:nowrap}
+table.tfd-fc-tabla thead th.tfd-fc-th-concepto{text-align:left}
+table.tfd-fc-tabla tbody td{padding:9px 10px;border-bottom:1px solid #F0EDF8;text-align:right;white-space:nowrap}
+.tfd-fc-td-concepto{text-align:left!important;font-weight:700;color:var(--ttx);cursor:pointer;white-space:normal!important}
+.tfd-fc-td-concepto .tfd-fc-arrow{font-size:9px;color:var(--ttx3);margin-right:6px;transition:.2s}
+.tfd-fc-td-concepto.open .tfd-fc-arrow{transform:rotate(90deg)}
+.tfd-fc-grp-pct{display:block;font-size:9px;font-weight:600;color:var(--ttx3);margin-top:2px}
+.tfd-fc-td-monto{font-weight:800;color:var(--tp2);cursor:pointer}
+.tfd-fc-td-monto:hover{text-decoration:underline}
+.tfd-fc-td-delta{background:#FAFAFE}
+.tfd-fc-var{font-size:9.5px;font-weight:700;padding:3px 8px;border-radius:8px;display:inline-block;line-height:1.4}
+.tfd-fc-var.up{background:var(--trl);color:var(--tr)}
+.tfd-fc-var.down{background:var(--tgl);color:var(--tg)}
+tr.tfd-fc-row-total td{background:var(--tp2);color:#fff;font-weight:800;font-size:11.5px}
+tr.tfd-fc-row-total.gran td{background:linear-gradient(90deg,var(--tp2),var(--tp));font-size:12.5px}
+tr.tfd-fc-row-total .tfd-fc-td-concepto{color:#fff!important;cursor:default}
+tr.tfd-fc-row-total .tfd-fc-var.up{background:rgba(255,255,255,.18);color:#FF9B9B}
+tr.tfd-fc-row-total .tfd-fc-var.down{background:rgba(255,255,255,.18);color:#8AEFB8}
+.tfd-fc-nota-solo{padding:11px 16px;font-size:10.5px;color:var(--ttx3);font-style:italic;background:#FAFAFE}
+.tfd-fc-grp-varfila{padding:4px 16px 8px 34px;background:#fff}
+.tfd-fc-tot-varfila{padding:5px 16px;background:var(--tpl);text-align:right}
+.tfd-fc-tot-varfila.gran{background:rgba(255,255,255,.12)}
+.tfd-fc-var{font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:8px;display:inline-block}
+.tfd-fc-var.up{background:var(--trl);color:var(--tr)}
+.tfd-fc-var.down{background:var(--tgl);color:var(--tg)}
+.tfd-fc-var.na{background:var(--tbg);color:var(--ttx3);font-weight:600;font-style:italic}
+.tfd-fc-tot-varfila .tfd-fc-var.up{background:rgba(176,25,15,.15);color:#FF8888}
+.tfd-fc-tot-varfila .tfd-fc-var.down{background:rgba(13,122,78,.2);color:#8AEFB8}
+.tfd-fc-tot-varfila.gran .tfd-fc-var{background:rgba(255,255,255,.15);color:var(--ty)}
 .tfd-modal-ov{display:none;position:fixed;inset:0;background:rgba(15,10,30,.55);z-index:400;align-items:center;justify-content:center}
 .tfd-modal-ov.open{display:flex}
 .tfd-modal{background:#fff;border-radius:12px;width:940px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)}
@@ -1070,6 +1106,7 @@ tr.tfd-en-revision{background:var(--tgol)!important;font-weight:700}
 
   <div class="tfd-bar" id="tfd-bar"></div>
   <div class="tfd-strip" id="tfd-strip"></div>
+  <div id="tfd-deval-card"></div>
   <div class="tfd-report-bar" id="tfd-report-bar">
     <div><span class="n" id="tfd-report-count">0</span>registro(s) marcados para revisión del accionista</div>
     <button class="tfd-btn-report" onclick="tfdAbrirReporte()">📊 Generar reporte y exportar a Excel</button>
@@ -1119,6 +1156,7 @@ tr.tfd-en-revision{background:var(--tgol)!important;font-weight:700}
     </div>
   </div>
   <div class="t2-scroll">
+    <div id="fc-ingresos"></div>
     <div id="fc-tree"></div>
   </div>
 </div>
@@ -1177,8 +1215,8 @@ var MN={1:"Enero",2:"Febrero",3:"Marzo",4:"Abril",5:"Mayo"};
 var TA_BCV={"01": 341.6031, "02": 392.7643, "03": 446.6732, "04": 479.967, "05": 515.7295};
 var CAT_COLS={siniestros:"#8B0000",telemedicina:"#2E7D32",promocion_venta:"#1F497D",nomina_personal:"#4B2D8F",nomina_gerentes:"#7B1FA2",difer_cambiario:"#E65100",gastos_adm:"#37474F",impuestos:"#5C3317",soporte_tecnico:"#1565C0",costo_bancario:"#00695C",presidencia:"#B07A00",devoluciones:"#78909C",beneficios_emp:"#2E7D32"};
 var CAT_LBL={siniestros:"Siniestros Pagados",telemedicina:"Gastos Gpo. Nueve Once (Telemedicina)",promocion_venta:"Gastos de Promoción y Venta",nomina_personal:"Nómina Personal (Mayor Analítico)",nomina_gerentes:"Nómina Gerentes (Divisas)",difer_cambiario:"Diferencial Cambiario Nómina",gastos_adm:"Gastos de Administración",impuestos:"Impuestos y Contribuciones",soporte_tecnico:"Soporte Técnico y Sistemas",costo_bancario:"Costo Bancario",presidencia:"Gastos de Presidencia",devoluciones:"Devoluciones / Reintegros",beneficios_emp:"Beneficios Empleados"};
-var CAT_ICONS={siniestros:"&#128128;",telemedicina:"&#127973;",promocion_venta:"&#128226;",nomina_personal:"&#128101;",nomina_gerentes:"&#128188;",difer_cambiario:"&#128201;",gastos_adm:"&#127970;",impuestos:"&#127963;",soporte_tecnico:"&#128187;",costo_bancario:"&#127974;",presidencia:"&#11088;",devoluciones:"&#8617;",beneficios_emp:"&#127873;"};
-var FC_BLOQUES=[{lbl:"1. Gastos de Siniestros",cats:["siniestros","telemedicina"],tot_lbl:"Total Siniestros Incurridos"},{lbl:"2. Gastos de Comisiones",cats:["promocion_venta"],tot_lbl:"Total Comisiones"},{lbl:"3. Gasto de Administración",cats:["nomina_personal","nomina_gerentes","difer_cambiario","gastos_adm","soporte_tecnico","beneficios_emp","impuestos","devoluciones"],tot_lbl:"Total Gasto de Administración"},{lbl:"4. Costo Bancario",cats:["costo_bancario"],tot_lbl:"Total Costo Bancario"}];
+var CAT_ICONS={siniestros:"",telemedicina:"",promocion_venta:"",nomina_personal:"",nomina_gerentes:"",difer_cambiario:"",gastos_adm:"",impuestos:"",soporte_tecnico:"",costo_bancario:"",presidencia:"",devoluciones:"",beneficios_emp:""};
+var FC_BLOQUES=[{lbl:"1. Gastos de Siniestros",cats:["siniestros","telemedicina"],tot_lbl:"Total Siniestros Incurridos"},{lbl:"2. Gastos de Comisiones",cats:["promocion_venta"],tot_lbl:"Total Comisiones"},{lbl:"3. Gasto de Administración",cats:["nomina_personal","nomina_gerentes","difer_cambiario","gastos_adm","soporte_tecnico","beneficios_emp","impuestos"],tot_lbl:"Total Gasto de Administración"},{lbl:"4. Costo Bancario",cats:["costo_bancario"],tot_lbl:"Total Costo Bancario"}];
 var TF_MES=0,TF_MES2=0,TF_DATA=null,TF_DIVISAS_EXT=[];
 var T2_MODAL_REGS=[],T2_PAG=1,T2_POR_PAG=50,T2_DET_CACHE=[],T2_MODAL_CAT=null;
 
@@ -1214,6 +1252,12 @@ function pct(a,b){return b>0?(a/b*100).toFixed(1)+"%":"--";}
 var TFD_MESES = ["Enero","Febrero","Marzo","Abril","Mayo"];
 var TFD_BCV = [341.6031,392.7643,446.6732,479.9670,515.7295];
 var TFD_DEVOLUCIONES = [344.19,205.44,191.77,130.80,127.26];
+// Prima Cobrada certificada — FLUJO_DE_CAJA_LA_FE_al_31-05-2026.xlsx, hoja 'FLUJO DE CAJA $', filas 11-13
+// (Primas Cobradas Cartera Individual + Prima Cobrada Grupo Polar). Verificado: reproduce
+// exactamente los % ya certificados en TFD_TOT.pctTotalEgresos (diferencia 0.000000 en los 5 meses).
+var TFD_PRIMA_INDIVIDUAL = [207108.007683,199068.565763,230436.439238,202548.174358,211662.898939];
+var TFD_PRIMA_POLAR = [51418.6,51418.6,51418.6,58273.67,58619.979283];
+var TFD_PRIMA = [258526.607683,250487.165763,281855.039238,260821.844358,270282.878222];
 
 var TFD_SIN = {segurosLaFe:[85521.496671,31801.486557,41329.517884,51824.682697,48134.457728],
   grupoPolar:[39379.619604,24723.710911,23538.616117,32305.661473,27528.578343],
@@ -1237,8 +1281,7 @@ var TFD_PRES = {gastosPresidencia:[9151.763079,9385.164228,14136.222659,11684.00
 var TFD_TOT = {totalEgresos:[287448.210624,187322.05762,206914.054388,259795.413247,209187.248654], pctTotalEgresos:[1.111871,.747831,.734115,.996065,.773957],
   totalEgresosMasPresidencia:[298714.571631,197453.735947,221745.639548,271990.360574,223235.715433]};
 
-var TFD_PAR = 3;
-var TFD_PARES = [[0,1],[1,2],[2,3],[3,4]];
+var TFD_SELECCION = [3,4]; // Abril, Mayo — por defecto (equivalente al "Mayo vs Abril" que ya existía). Multi-selección en cadena.
 var TFD_NOTAS = {}; // key: nombreLinea__mes__idx -> {texto,fecha,registro,linea,mes}
 var TFD_MODAL_ACTUAL = null;
 
@@ -1246,35 +1289,71 @@ function tfdFmt(v){ return "$"+(v||0).toLocaleString("es-VE",{minimumFractionDig
 function tfdPctf(v){ return (v*100).toFixed(1)+"%"; }
 
 function tfdRenderBar(){
-  var html = '<span style="font-size:9px;color:rgba(255,255,255,.45);font-weight:700;text-transform:uppercase;margin-right:4px">Comparativo:</span>';
-  TFD_PARES.forEach(function(p,i){ html += '<button class="tfd-par-btn'+(i===TFD_PAR?' on':'')+'" onclick="tfdSetPar('+i+')">'+TFD_MESES[p[1]]+' vs '+TFD_MESES[p[0]]+'</button>'; });
+  var html = '<span style="font-size:9px;color:rgba(255,255,255,.45);font-weight:700;text-transform:uppercase;margin-right:4px">Comparar meses:</span>';
+  TFD_MESES.forEach(function(m,i){
+    html += '<button class="tfd-par-btn'+(TFD_SELECCION.indexOf(i)>=0?' on':'')+'" onclick="tfdToggleMes('+i+')">'+m+'</button>';
+  });
   document.getElementById("tfd-bar").innerHTML = html;
 }
-window.tfdSetPar = function(i){ TFD_PAR=i; tfdRenderAll(); };
+window.tfdToggleMes = function(i){
+  var idx = TFD_SELECCION.indexOf(i);
+  if (idx>=0){
+    if (TFD_SELECCION.length===1) return; // debe quedar al menos 1 mes seleccionado
+    TFD_SELECCION.splice(idx,1);
+  } else {
+    TFD_SELECCION.push(i);
+  }
+  TFD_SELECCION.sort(function(a,b){return a-b;});
+  tfdRenderAll();
+};
 
 function tfdRenderStrip(){
-  var par = TFD_PARES[TFD_PAR]; var html = "";
+  var sel = TFD_SELECCION; var html = "";
+  var mIdx = sel[sel.length-1], bIdx = sel.length>1 ? sel[sel.length-2] : mIdx;
+  var esSolo = (sel.length===1);
   TFD_MESES.forEach(function(m,i){
-    var activo = (i===par[0]||i===par[1]);
+    var activo = sel.indexOf(i)>=0;
     var delta = i>0 ? ((TFD_BCV[i]-TFD_BCV[i-1])/TFD_BCV[i-1]*100).toFixed(2) : null;
     html += '<div class="tfd-item'+(activo?' activo':'')+'"><div class="mes">'+m+'</div><div class="val">'+TFD_BCV[i].toFixed(2)+'</div>'
       + (delta!==null?'<div class="delta">▲ +'+delta+'%</div>':'<div class="delta" style="opacity:0">—</div>') + '</div>';
   });
-  var varPar = ((TFD_BCV[par[1]]-TFD_BCV[par[0]])/TFD_BCV[par[0]]*100).toFixed(2);
-  html += '<div class="tfd-resumen"><div class="lbl">Var. BCV — '+TFD_MESES[par[1]]+' vs '+TFD_MESES[par[0]]+'</div><div class="val">+'+varPar+'%</div></div>';
+  if (esSolo){
+    html += '<div class="tfd-resumen"><div class="lbl">'+TFD_MESES[mIdx]+' — mes base</div><div class="val">Sin mes anterior</div></div>';
+  } else {
+    var varPar = ((TFD_BCV[mIdx]-TFD_BCV[bIdx])/TFD_BCV[bIdx]*100).toFixed(2);
+    html += '<div class="tfd-resumen"><div class="lbl">Var. BCV — '+TFD_MESES[mIdx]+' vs '+TFD_MESES[bIdx]+'</div><div class="val">+'+varPar+'%</div></div>';
+  }
   document.getElementById("tfd-strip").innerHTML = html;
 }
 
+function tfdRenderDeval(){
+  var ultimoIdx = TFD_BCV.length - 1; // se extiende solo cuando se agreguen más meses a TFD_MESES/TFD_BCV
+  var base = TFD_BCV[0], ultimo = TFD_BCV[ultimoIdx];
+  var pctAcum = ((ultimo-base)/base*100);
+  var absAcum = ultimo-base;
+  var html = '<div class="tfd-deval-hdr">📉 DEPRECIACIÓN BCV OFICIAL</div>'
+    + '<div class="tfd-deval-sub">'+TFD_MESES[0]+' → '+TFD_MESES[ultimoIdx]+' · Venta ASK promedio</div>'
+    + '<div class="tfd-deval-pct">+'+pctAcum.toFixed(2)+'%</div>'
+    + '<div class="tfd-deval-row"><span>'+TFD_MESES[0]+'</span><b>Bs. '+base.toFixed(2)+'</b></div>'
+    + '<div class="tfd-deval-row"><span>'+TFD_MESES[ultimoIdx]+'</span><b class="hi">Bs. '+ultimo.toFixed(2)+'</b></div>'
+    + '<div class="tfd-deval-row"><span>Δ absoluto</span><b class="hi">+Bs. '+absAcum.toFixed(2)+'/USD</b></div>';
+  document.getElementById("tfd-deval-card").innerHTML = html;
+}
+
 function tfdRenderIngresos(){
-  var mIdx = TFD_PARES[TFD_PAR][1];
-  var html = '<div class="tfd-ing-row"><span class="n">Prima Cobrada (Individual + Grupo Polar)</span><span class="v">Pendiente de carga</span></div>'
-    + '<div class="tfd-ing-row resta"><span class="n">Devoluciones de Prima</span><span class="v">'+tfdFmt(TFD_DEVOLUCIONES[mIdx])+'</span></div>'
-    + '<div class="tfd-ing-row total"><span class="n">Total Ingresos</span><span class="v">Pendiente</span></div>';
+  var mIdx = TFD_SELECCION[TFD_SELECCION.length-1];
+  var prima = TFD_PRIMA[mIdx];
+  var devol = TFD_DEVOLUCIONES[mIdx];
+  var html = '<div class="tfd-ing-row resta"><span class="n">Devoluciones de Prima <span style="font-weight:400;color:var(--ttx3);font-size:9.5px">(certificado, Mayor Analítico)</span></span><span class="v">'+tfdFmt(devol)+'</span></div>'
+    + '<div class="tfd-ing-row"><span class="n">Prima Cobrada <span style="font-weight:400;color:var(--ttx3);font-size:9.5px">(Individual + Grupo Polar — certificado)</span></span><span class="v">'+tfdFmt(prima)+'</span></div>'
+    + '<div class="tfd-ing-row total"><span class="n">Total Ingresos</span><span class="v">'+tfdFmt(prima-devol)+'</span></div>';
   document.getElementById("tfd-ing").innerHTML = html;
 }
 
 function tfdRenderKPIs(){
-  var par = TFD_PARES[TFD_PAR], b=par[0], c=par[1];
+  var sel = TFD_SELECCION;
+  var c = sel[sel.length-1], b = sel.length>1 ? sel[sel.length-2] : c;
+  var esSolo = (b===c);
   var items = [
     {lbl:"a) Siniestralidad", vB:TFD_SIN.pct[b], vC:TFD_SIN.pct[c]},
     {lbl:"b) % Comisiones / Prima", vB:TFD_COM.pct[b], vC:TFD_COM.pct[c]},
@@ -1287,7 +1366,7 @@ function tfdRenderKPIs(){
   items.forEach(function(it){
     var delta=(it.vC-it.vB)*100, up=delta>=0;
     html += '<div class="tfd-kpi-c"><div class="lbl">'+it.lbl+'</div><div class="val">'+tfdPctf(it.vC)+'</div>'
-      + '<div class="cmp '+(up?'up':'down')+'">'+(up?'▲':'▼')+' '+Math.abs(delta).toFixed(1)+' pp vs '+TFD_MESES[b]+'</div>'
+      + (esSolo ? '<div class="cmp" style="background:var(--tpl);color:var(--tp)">Mes base — sin comparación</div>' : '<div class="cmp '+(up?'up':'down')+'">'+(up?'▲':'▼')+' '+Math.abs(delta).toFixed(1)+' pp vs '+TFD_MESES[b]+'</div>')
       + '<div class="bar"><div class="bar-f" style="width:'+Math.min(it.vC*100,100)+'%;background:var(--tp)"></div></div></div>';
   });
   document.getElementById("tfd-kpis").innerHTML = html;
@@ -1304,43 +1383,90 @@ function tfdGrpUsd(id,nombre,total,fuente,formula){
   return '<span class="tfd-fc-grp-usd" onclick="event.stopPropagation();tfdAbrirModal('+d+')">'+tfdFmt(total)+'</span>';
 }
 function tfdRenderFC(){
-  var mIdx = TFD_PARES[TFD_PAR][1];
+  var sel = TFD_SELECCION;
+  var mIdx = sel[sel.length-1]; // mes más reciente seleccionado — usado para el detalle/drill-down
   TFD_DETALLES = [];
-  var mes = TFD_MESES[mIdx];
-  var html = '<div class="tfd-fc-card"><div class="tfd-fc-sec-hdr"><span>Concepto</span><span>% s/ Prima · Monto USD ('+mes+')</span></div>';
+  var esSolo = (sel.length===1);
   var FSRC = "FLUJO_DE_CAJA_LA_FE_al_31-05-2026.xlsx · hoja 'FLUJO DE CAJA $'";
-  function grp(id,nombre,pct,total,fuenteB,formulaB,subrows){
-    return '<div class="tfd-fc-grp"><div class="tfd-fc-grp-hdr" onclick="tfdToggleGrp(\''+id+'\')">'
-      + '<span class="tfd-fc-arrow" id="tfd-arr-'+id+'">▶</span><span class="tfd-fc-grp-name">'+nombre+'</span>'
-      + '<span class="tfd-fc-grp-pct">'+tfdPctf(pct)+'</span>'+tfdGrpUsd(id,nombre,total,fuenteB,formulaB)+'</div>'
-      + '<div class="tfd-fc-sub-list" id="tfd-sub-'+id+'">'+subrows+'</div></div>';
+
+  // Construir encabezado en cadena: Mar | Abr | Δ | May | Δ  (para sel=[2,3,4])
+  var thead = '<th class="tfd-fc-th-concepto">Concepto</th>';
+  sel.forEach(function(idx, i){
+    thead += '<th class="tfd-fc-th-mes">'+TFD_MESES[idx]+'</th>';
+    if (i < sel.length-1) thead += '<th class="tfd-fc-th-delta">Variación</th>';
+  });
+
+  function celdaVariacion(actual, base, mesBaseIdx){
+    var deltaAbs = actual - base;
+    var deltaPct = base ? (deltaAbs/base*100) : 0;
+    var sube = deltaAbs >= 0;
+    return '<td class="tfd-fc-td-delta"><span class="tfd-fc-var '+(sube?'up':'down')+'">'+(sube?'▲':'▼')+' '+tfdFmt(Math.abs(deltaAbs))+'<br>('+(sube?'+':'')+deltaPct.toFixed(1)+'%)</span></td>';
   }
-  html += grp('sin','1. Gastos de Siniestros', TFD_SIN.pct[mIdx], TFD_SIN.total[mIdx], FSRC, "=SUM(D18:D21)",
+  function filaBloque(id, nombre, arr, pctArr, fuenteB, formulaB){
+    var d = tfdRegistrar({nombre:nombre+' (bloque completo)', monto:arr[mIdx], fuente:fuenteB, formula:formulaB});
+    var fila = '<td class="tfd-fc-td-concepto" onclick="tfdToggleGrp(\''+id+'\')"><span class="tfd-fc-arrow" id="tfd-arr-'+id+'">▶</span>'+nombre+'<span class="tfd-fc-grp-pct">'+tfdPctf(pctArr[mIdx])+' s/Prima ('+TFD_MESES[mIdx]+')</span></td>';
+    sel.forEach(function(idx, i){
+      fila += '<td class="tfd-fc-td-monto" onclick="event.stopPropagation();tfdAbrirModal('+tfdRegistrar({nombre:nombre+' — '+TFD_MESES[idx], monto:arr[idx], fuente:fuenteB, formula:formulaB})+')">'+tfdFmt(arr[idx])+'</td>';
+      if (i < sel.length-1) fila += celdaVariacion(arr[sel[i+1]], arr[idx]);
+    });
+    return '<tr class="tfd-fc-row-bloque">'+fila+'</tr>';
+  }
+
+  var html = '<div class="tfd-fc-card" style="overflow-x:auto">'
+    + '<table class="tfd-fc-tabla"><thead><tr>'+thead+'</tr></thead><tbody>';
+  html += filaBloque('sin','1. Gastos de Siniestros', TFD_SIN.total, TFD_SIN.pct, FSRC, "=SUM(D18:D21)");
+  html += filaBloque('com','2. Gastos de Comisiones', TFD_COM.total, TFD_COM.pct, FSRC, "=SUM(D26:D28)");
+  html += filaBloque('adm','3. Gasto de Administración', TFD_ADM.total, TFD_ADM.pct, FSRC, "=D29+D33+D34+D52+D54+D61+D62+D53");
+  html += filaBloque('trib','4. Costos Tributarios', TFD_TRIB.total, TFD_TRIB.pct, FSRC, "=SUM(D67)");
+  html += filaBloque('ban','5. Costo Bancario', TFD_BAN.total, TFD_BAN.pct, FSRC, "=SUM(D72:D73)");
+  // Total Egresos (fila destacada)
+  var filaTotEg = '<td class="tfd-fc-td-concepto tot">Total Egresos</td>';
+  sel.forEach(function(idx, i){
+    filaTotEg += '<td class="tfd-fc-td-monto tot" onclick="tfdAbrirModal('+tfdRegistrar({nombre:'Total Egresos — '+TFD_MESES[idx], monto:TFD_TOT.totalEgresos[idx], fuente:FSRC, formula:"=D74+D68+D63+D22"})+')">'+tfdFmt(TFD_TOT.totalEgresos[idx])+'</td>';
+    if (i < sel.length-1) filaTotEg += celdaVariacion(TFD_TOT.totalEgresos[sel[i+1]], TFD_TOT.totalEgresos[idx]);
+  });
+  html += '<tr class="tfd-fc-row-total">'+filaTotEg+'</tr>';
+  html += filaBloque('pres','6. Presidencia', TFD_PRES.total, TFD_PRES.pct, FSRC, "=D83+D89+D90+D88");
+  // Gran total
+  var filaGran = '<td class="tfd-fc-td-concepto tot gran">Total Egresos + Presidencia</td>';
+  sel.forEach(function(idx, i){
+    filaGran += '<td class="tfd-fc-td-monto tot gran" onclick="tfdAbrirModal('+tfdRegistrar({nombre:'Total Egresos + Presidencia — '+TFD_MESES[idx], monto:TFD_TOT.totalEgresosMasPresidencia[idx], fuente:FSRC, formula:"=D77+D91"})+')">'+tfdFmt(TFD_TOT.totalEgresosMasPresidencia[idx])+'</td>';
+    if (i < sel.length-1) filaGran += celdaVariacion(TFD_TOT.totalEgresosMasPresidencia[sel[i+1]], TFD_TOT.totalEgresosMasPresidencia[idx]);
+  });
+  html += '<tr class="tfd-fc-row-total gran">'+filaGran+'</tr>';
+  html += '</tbody></table>';
+  if (esSolo) html += '<p class="tfd-fc-nota-solo">📌 Solo hay un mes seleccionado ('+TFD_MESES[mIdx]+') — toca otro mes arriba para ver su variación.</p>';
+  html += '</div>';
+
+  // ══ Detalle / drill-down — siempre del mes más reciente seleccionado ══
+  html += '<div class="tfd-fc-card" style="margin-top:10px"><div class="tfd-fc-sec-hdr"><span>Detalle de conceptos — '+TFD_MESES[mIdx]+'</span><span>clic para ver trazabilidad</span></div>';
+  function grpDetalle(id,subrows){
+    return '<div class="tfd-fc-sub-list" id="tfd-sub-'+id+'">'+subrows+'</div>';
+  }
+  html += grpDetalle('sin',
       tfdSubRow('Siniestros Pagados (Seguros La Fe + Grupo Polar)', TFD_SIN.segurosLaFe[mIdx]+TFD_SIN.grupoPolar[mIdx], FSRC, 'Suma filas 17+18 (unificado)')
     + tfdSubRow('Siniestros Pagados por Anticipado', TFD_SIN.anticipados[mIdx], FSRC, 'Celda directa, fila 19')
     + tfdSubRow('Gastos Grupo Nueve Once', TFD_SIN.grupoNueveOnce[mIdx], FSRC, 'Celda directa, fila 20'));
-  html += grp('com','2. Gastos de Comisiones', TFD_COM.pct[mIdx], TFD_COM.total[mIdx], FSRC, "=SUM(D26:D28)",
+  html += grpDetalle('com',
       tfdSubRow('Coordinación Funeasistencia', TFD_COM.funeasistencia[mIdx], FSRC, 'Celda directa, fila 25')
     + tfdSubRow('Comisiones Call Center', TFD_COM.callCenter[mIdx], FSRC, 'Celda directa, fila 26')
     + tfdSubRow('Gastos de Promoción y Venta', TFD_COM.promocionVenta[mIdx], FSRC, 'Celda directa, fila 27')
     + '<div class="tfd-fc-sub-row nested"><span class="n">⚠ Este total se contabiliza dentro de "Gasto de Administración" en la fórmula oficial — se muestra aparte solo para visibilidad.</span><span></span></div>');
-  html += grp('adm','3. Gasto de Administración', TFD_ADM.pct[mIdx], TFD_ADM.total[mIdx], FSRC, "=D29+D33+D34+D52+D54+D61+D62+D53",
+  html += grpDetalle('adm',
       tfdSubRow('Gastos de Administración (honorarios, servicios, varios)', TFD_ADM.gastosAdministracion[mIdx], FSRC, 'Celda directa, fila 32')
-    + tfdSubRow('Total Comisiones (nested — ver bloque 2)', TFD_COM.total[mIdx], FSRC, 'Referencia a fila 28')
     + tfdSubRow('Anticipo a Proveedores', TFD_ADM.anticipoProveedores[mIdx], FSRC, 'Celda directa, fila 33')
     + tfdSubRow('Nómina Gerentes', TFD_ADM.nominaGerentes[mIdx], FSRC, 'Celda directa, fila 51')
     + tfdSubRow('Diferencial Cambiario Nómina Gerentes', TFD_ADM.diferencialNomina[mIdx], FSRC, 'Celda directa, fila 52')
     + tfdSubRow('Gastos Extraordinarios', TFD_ADM.gastosExtraordinarios[mIdx], FSRC, 'Celda directa, fila 53')
     + tfdSubRow('Impuestos (IVA, ISLR, SUDEASEG, Patente, IGTF, Otras)', TFD_ADM.impuestosVarios[mIdx], FSRC, 'Celda directa, fila 60')
-    + tfdSubRow('ISLR Anual', TFD_ADM.islrAnual[mIdx], FSRC, 'Celda directa, fila 61'));
-  html += grp('trib','4. Costos Tributarios', TFD_TRIB.pct[mIdx], TFD_TRIB.total[mIdx], FSRC, "=SUM(D67)",
+    + tfdSubRow('ISLR Anual', TFD_ADM.islrAnual[mIdx], FSRC, 'Celda directa, fila 61')
+    + '<div class="tfd-fc-sub-row nested"><span class="n">ℹ️ El total de este bloque ya incluye "Total Comisiones" por fórmula (=D29+D33+...) aunque no aparece como fila aquí — así está en el Excel original.</span><span></span></div>');
+  html += grpDetalle('trib',
       tfdSubRow('Retenciones de IVA, ISLR e IAE', TFD_TRIB.retenciones[mIdx], FSRC, 'Celda directa, fila 66'));
-  html += grp('ban','5. Costo Bancario', TFD_BAN.pct[mIdx], TFD_BAN.total[mIdx], FSRC, "=SUM(D72:D73)",
+  html += grpDetalle('ban',
       tfdSubRow('Comisión Bancaria por Domiciliación en Cobranza', TFD_BAN.domiciliacion[mIdx], FSRC, 'Celda directa, fila 71')
     + tfdSubRow('Comisión Bancaria por Mantenimiento de Cuenta', TFD_BAN.mantenimiento[mIdx], FSRC, 'Celda directa, fila 72'));
-  var dTot = tfdRegistrar({nombre:'Total Egresos', monto:TFD_TOT.totalEgresos[mIdx], fuente:FSRC, formula:"=D74+D68+D63+D22 — verificado: cuadra exacto en los 5 meses"});
-  html += '<div class="tfd-fc-tot-row">Total Egresos ('+mes+')<span onclick="tfdAbrirModal('+dTot+')" style="cursor:pointer">'+tfdFmt(TFD_TOT.totalEgresos[mIdx])+'</span></div>';
-  html += grp('pres','6. Presidencia', TFD_PRES.pct[mIdx], TFD_PRES.total[mIdx], FSRC, "=D83+D89+D90+D88",
+  html += grpDetalle('pres',
       tfdSubRow('Gastos de Presidencia (incluye Condominios+Servicios+Diversos+Grupo Valles)', TFD_PRES.gastosPresidencia[mIdx], FSRC, 'Fila 82 — subtotal anidado verificado')
     + tfdSubRow('Condominios', TFD_PRES.condominios[mIdx], FSRC, 'Fila 83', true)
     + tfdSubRow('Servicios Básicos', TFD_PRES.serviciosBasicos[mIdx], FSRC, 'Fila 84', true)
@@ -1348,13 +1474,13 @@ function tfdRenderFC(){
     + tfdSubRow('Gastos Grupo Valles', TFD_PRES.grupoValles[mIdx], FSRC, 'Fila 87', true)
     + tfdSubRow('Líneas de Crédito', TFD_PRES.lineasCredito[mIdx], FSRC, 'Fila 88')
     + tfdSubRow('Zelle', TFD_PRES.zelle[mIdx], FSRC, 'Fila 89'));
-  var dGran = tfdRegistrar({nombre:'Total Egresos + Gasto de Presidencia', monto:TFD_TOT.totalEgresosMasPresidencia[mIdx], fuente:FSRC, formula:"=D77+D91"});
-  html += '<div class="tfd-fc-tot-row gran">Total Egresos + Gasto de Presidencia ('+mes+')<span onclick="tfdAbrirModal('+dGran+')" style="cursor:pointer">'+tfdFmt(TFD_TOT.totalEgresosMasPresidencia[mIdx])+'</span></div></div>';
+  html += '</div>';
   document.getElementById("tfd-fc-tree").innerHTML = html;
 }
 window.tfdToggleGrp = function(id){
   var el=document.getElementById("tfd-sub-"+id), arr=document.getElementById("tfd-arr-"+id);
-  var open=el.classList.toggle("open"); arr.style.transform = open?"rotate(90deg)":"rotate(0deg)";
+  var open = el ? el.classList.toggle("open") : false;
+  if (arr) arr.style.transform = open ? "rotate(90deg)" : "rotate(0deg)";
 };
 
 /* Mapeo de líneas de árbol -> categoría real en window.__TF_RAW.regs, para trazabilidad */
@@ -1366,7 +1492,7 @@ var TFD_CORE_MAP = {
 };
 window.tfdAbrirModal = function(idx){
   var d = TFD_DETALLES[idx];
-  var mIdx = TFD_PARES[TFD_PAR][1];
+  var mIdx = TFD_SELECCION[TFD_SELECCION.length-1];
   TFD_MODAL_ACTUAL = {idx:idx, mIdx:mIdx};
   document.getElementById("tfd-modal-title").textContent = d.nombre;
   document.getElementById("tfd-modal-sub").textContent = TFD_MESES[mIdx]+" 2026";
@@ -1470,7 +1596,7 @@ window.tfdExportarExcel = function(){
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 };
 
-window.tfdRenderAll = function(){ TFD_DETALLES=[]; tfdRenderBar(); tfdRenderStrip(); tfdRenderIngresos(); tfdRenderKPIs(); tfdRenderFC(); tfdActualizarReportBar(); };
+window.tfdRenderAll = function(){ TFD_DETALLES=[]; tfdRenderBar(); tfdRenderStrip(); tfdRenderDeval(); tfdRenderIngresos(); tfdRenderKPIs(); tfdRenderFC(); tfdActualizarReportBar(); };
 })();
 function esc(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function fmtCta(s){
@@ -1490,7 +1616,7 @@ function catVal(cat,mes){
   return rv;
 }
 function sumCats(cats,mes){return cats.reduce(function(s,c){return s+catVal(c,mes);},0);}
-function grandTotal(mes){return Object.keys(CAT_LBL).reduce(function(s,c){return s+catVal(c,mes);},0);}
+function grandTotal(mes){return Object.keys(CAT_LBL).filter(function(c){return c!=='devoluciones';}).reduce(function(s,c){return s+catVal(c,mes);},0);}
 function regsParaCat(cat,mes){
   if(!TF_DATA)return[];
   var r=TF_DATA.regs.filter(function(x){return x.cat===cat;});
@@ -1505,6 +1631,15 @@ function getSubconceptos(cat,mes){
     var key=(r.conc&&r.conc!=="nan"&&r.conc!=="undefined"&&r.conc.trim())?r.conc:(r.cta?("Cta. "+r.cta.substring(0,20)):r.tipo||"--");
     if(!grupos[key])grupos[key]={usd:0,regs:[]};
     grupos[key].usd+=r.usd;grupos[key].regs.push(r);
+  });
+  function parseFechaDDMMYYYY(f){
+    if(!f) return 0;
+    var p=f.split('/');
+    if(p.length!==3) return 0;
+    return new Date(p[2],p[1]-1,p[0]).getTime();
+  }
+  Object.keys(grupos).forEach(function(k){
+    grupos[k].regs.sort(function(a,b){ return parseFechaDDMMYYYY(a.fecha)-parseFechaDDMMYYYY(b.fecha); });
   });
   return Object.keys(grupos).map(function(k){return{lbl:k,usd:grupos[k].usd,regs:grupos[k].regs};}).sort(function(a,b){return b.usd-a.usd;});
 }
@@ -1615,7 +1750,53 @@ function renderChart(){
 }
 
 // ÁRBOL FC JERÁRQUICO
+/* Trae la Prima Cobrada REAL ya cargada en Contabilidad (STATE.months), no un valor inventado.
+   Devuelve {bs, usd} o null si ese mes todavía no se ha cargado en Contabilidad. */
+function getPrimaCobradaReal(mesIdx){
+  var meses = STATE.months || [];
+  if (!meses.length) return null;
+  if (mesIdx === 0){
+    var totalBs = 0, huboAlguno = false;
+    [1,2,3,4,5].forEach(function(mi){
+      var md = meses.find(function(m){ return (m.month||'').indexOf(MN[mi]) === 0; });
+      if (md && md.totals){ totalBs += (md.totals.a||0); huboAlguno = true; }
+    });
+    if (!huboAlguno) return null;
+    // Para el acumulado, convertir a USD mes a mes con la tasa de cada mes (más exacto que una tasa promedio única)
+    var totalUsd = 0;
+    [1,2,3,4,5].forEach(function(mi){
+      var md = meses.find(function(m){ return (m.month||'').indexOf(MN[mi]) === 0; });
+      if (md && md.totals && md.bcv && md.bcv.avg>1){ totalUsd += (md.totals.a||0)/md.bcv.avg; }
+    });
+    return {bs: totalBs, usd: totalUsd};
+  }
+  var md = meses.find(function(m){ return (m.month||'').indexOf(MN[mesIdx]) === 0; });
+  if (!md || !md.totals) return null;
+  var bs = md.totals.a || 0;
+  var usd = (md.bcv && md.bcv.avg>1) ? bs/md.bcv.avg : 0;
+  return {bs: bs, usd: usd};
+}
+
+function renderFCIngresos(){
+  var mes = TF_MES2;
+  var prima = getPrimaCobradaReal(mes);
+  var devolUsd = catVal('devoluciones', mes);
+  var html = '<div class="fc-card" style="margin-bottom:10px">'
+    + '<div class="fc-grp-hdr" style="cursor:default"><div class="fc-grp-title">&#128176; Ingresos</div></div>'
+    + '<div class="fc-tot-row" style="background:transparent;color:var(--ttx);border-bottom:1px solid var(--tbd)">'
+      + '<span>&#8722; Devoluciones de Prima <span style="font-weight:400;color:var(--ttx3);font-size:10px">(certificado, Mayor Anal&#237;tico)</span></span>'
+      + '<span style="color:var(--tr)">$ '+fmt(devolUsd)+'</span></div>'
+    + '<div class="fc-tot-row" style="background:transparent;color:var(--ttx);border-bottom:1px solid var(--tbd)">'
+      + '<span>Prima Cobrada <span style="font-weight:400;color:var(--ttx3);font-size:10px">(desde Contabilidad)</span></span>'
+      + '<span>'+(prima ? '$ '+fmt(prima.usd) : '<span style="color:var(--ttx3);font-style:italic;font-size:11px">Pendiente de carga en Contabilidad</span>')+'</span></div>'
+    + '<div class="fc-tot-row"><span>Total Ingresos</span>'
+      + '<span>'+(prima ? '$ '+fmt(prima.usd-devolUsd) : 'Pendiente')+'</span></div>'
+    + '</div>';
+  document.getElementById('fc-ingresos').innerHTML = html;
+}
+
 function renderFCTree(){
+  renderFCIngresos();
   if(!TF_DATA){document.getElementById("fc-tree").innerHTML="";return;}
   var m=TF_MES2,tot=grandTotal(m),html="";
   FC_BLOQUES.forEach(function(bloque,bi){
@@ -1637,7 +1818,7 @@ function renderFCTree(){
       html+="<div class=\"fc-conc\">";
       html+="<div class=\"fc-conc-hdr\" onclick=\"fcToggleConc('"+bi+"_"+cidx+"',event)\">"
            +"<div class=\"fc-conc-dot\" style=\"background:"+CAT_COLS[cat]+"\"></div>"
-           +"<div class=\"fc-conc-name\">"+CAT_ICONS[cat]+" "+CAT_LBL[cat]+"</div>"
+           +"<div class=\"fc-conc-name\">"+(CAT_ICONS[cat]?CAT_ICONS[cat]+" ":"")+CAT_LBL[cat]+"</div>"
            +"<div class=\"fc-conc-right\">"
            +"<div class=\"fc-conc-pct-bar\"><div class=\"fc-conc-pct-fill\" style=\"width:"+cat_pct.toFixed(0)+"%;background:"+CAT_COLS[cat]+"\"></div></div>"
            +"<span style=\"font-size:10px;color:var(--ttx2)\">"+cat_pct.toFixed(1)+"%</span>"
@@ -1692,7 +1873,7 @@ function renderFCTree(){
   var pres_subs=getSubconceptos("presidencia",m);
   html+="<div class=\"fc-card\" style=\"margin-top:12px\">"
       +"<div class=\"fc-grp-hdr fc-pres-hdr\" onclick=\"fcToggleGrp('pres')\">"
-      +"<div class=\"fc-grp-title\">&#11088; Gastos de Presidencia</div>"
+      +"<div class=\"fc-grp-title\">🏛️ Gastos de Presidencia</div>"
       +"<div class=\"fc-grp-right\">"
       +"<span class=\"fc-grp-pct\">"+pct(pres_tot,op_tot+pres_tot)+"</span>"
       +"<div class=\"fc-grp-total\" style=\"color:var(--tgo)\">$ "+fmt(pres_tot)+"</div>"
@@ -2462,15 +2643,7 @@ table.gm-mov tbody td.r{text-align:right;font-weight:700;color:var(--ink2);white
 </div>
 
 <!-- ══ TAB: GERENCIAL · CARGA DE DATOS HISTÓRICOS ══ -->
-<div class="pane" id="pane-gerencial-historico" style="padding:0;flex-direction:column;overflow:hidden">
-  <div class="gm-wrap">
-    <div class="gm-hdr">
-      <h1>🗄️ Carga de Datos Históricos</h1>
-      <p>Módulo de inicialización del sistema — pendiente de construir. Se activa cuando se carguen los Mayores Analíticos históricos que sustentan la trazabilidad completa de los meses ya certificados que ven los accionistas.</p>
-    </div>
-    <div class="gm-tip">📌 Este módulo procesará los históricos con el mismo script de auditoría ya validado (detección por patrón de reclasificaciones: HCM mal contabilizado, uniformes/bordados, mobiliario, asientos mecánicos de nómina), cruzándolos contra el CORE para completar la trazabilidad transaccional de Grupo Polar, Anticipos y Presidencia.</div>
-  </div>
-</div>
+
 
 <!-- ══ TAB: GERENCIAL · CIERRE Y APROBACIÓN ══ -->
 <div class="pane" id="pane-gerencial-cierre" style="padding:0;flex-direction:column;overflow:hidden">
