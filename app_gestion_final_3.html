@@ -289,9 +289,19 @@ table.diff td.new{background:#DCFCE7;color:var(--g);font-weight:700}
   <div class="sb-group">
     <button class="sb-main" onclick="toggleSbGroup('sb-tesoreria')">🏦 Tesorería<span class="sb-arrow">▸</span></button>
     <div class="sb-sub" id="sb-tesoreria">
-      <button class="sb-item" onclick="showTab('tesoreria-flujo',this)">📊 Dashboard / Flujo de Caja</button>
-      <button class="sb-item" onclick="showTab('tesoreria-divisas',this)">💵 Compra de Divisas</button>
+      <button class="sb-item" onclick="showTab('tesoreria-flujo',this)">📊 Dashboard Flujo de Caja</button>
       <button class="sb-item" onclick="showTab('tesoreria-carga',this)">📂 Carga de Datos + Auditoría</button>
+      <button class="sb-item" onclick="showTab('tesoreria-divisas',this)">💵 Compra de Divisas</button>
+    </div>
+  </div>
+
+  <div class="sb-group">
+    <button class="sb-main" onclick="toggleSbGroup('sb-gerencial')">🎓 Gerencial<span class="sb-arrow">▸</span></button>
+    <div class="sb-sub" id="sb-gerencial">
+      <button class="sb-item" onclick="showTab('gerencial-mantenimiento',this)">🛠️ Mantenimiento y Análisis FC</button>
+      <button class="sb-item" onclick="showTab('gerencial-historico',this)">🗄️ Carga de Datos Históricos</button>
+      <button class="sb-item" onclick="showTab('gerencial-cierre',this)">✅ Cierre y Aprobación</button>
+      <button class="sb-item" onclick="showTab('gerencial-exportar',this)">📊 Exportar Reporte a Excel</button>
     </div>
   </div>
 
@@ -860,31 +870,135 @@ table.diff td.new{background:#DCFCE7;color:var(--g);font-weight:700}
 <!-- CHIPS DE TASAS BCV -->
 <div class="tasa-chips" id="tasa-chips-bar"></div>
 
-<!-- TAB A: DASHBOARD EJECUTIVO -->
+<!-- TAB A: DASHBOARD EJECUTIVO (versión aprobada) -->
 <div class="t2-pane on" id="t2-dashboard">
-  <div class="t2-bar">
-    <span style="font-size:9px;color:rgba(255,255,255,.45);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Per&#237;odo:</span>
-    <button class="t2-mes on" onclick="tfSetMes(0,this)">Acumulado</button>
-    <button class="t2-mes" onclick="tfSetMes(1,this)">Enero</button>
-    <button class="t2-mes" onclick="tfSetMes(2,this)">Febrero</button>
-    <button class="t2-mes" onclick="tfSetMes(3,this)">Marzo</button>
-    <button class="t2-mes" onclick="tfSetMes(4,this)">Abril</button>
-    <button class="t2-mes" onclick="tfSetMes(5,this)">Mayo</button>
-    <div style="margin-left:auto">
-      <button class="t2-bp" style="font-size:10px;padding:5px 12px" onclick="tfExportarCSV()">&#8659; Exportar FC</button>
-    </div>
+<style>
+.tfd-bar{background:var(--tp2);padding:10px 20px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0}
+.tfd-par-btn{padding:6px 14px;border:1.5px solid rgba(255,255,255,.2);border-radius:20px;background:transparent;cursor:pointer;font-size:11px;font-weight:700;color:rgba(255,255,255,.65)}
+.tfd-par-btn.on{background:var(--ty);color:var(--tp2);border-color:var(--ty)}
+.tfd-strip{background:linear-gradient(90deg,var(--tp2),var(--tp));padding:14px 20px;display:flex;align-items:stretch;overflow-x:auto;flex-shrink:0}
+.tfd-item{flex:1;min-width:88px;text-align:center;padding:8px 10px;border-right:1px solid rgba(255,255,255,.12)}
+.tfd-item:last-of-type{border-right:none}
+.tfd-item .mes{font-size:8.5px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase}
+.tfd-item .val{font-size:16px;font-weight:800;color:#fff}
+.tfd-item .delta{font-size:8.5px;font-weight:700;color:#FF9B9B;margin-top:2px}
+.tfd-item.activo{background:rgba(255,255,255,.09);border-radius:8px}
+.tfd-item.activo .val{color:var(--ty)}
+.tfd-resumen{flex:0 0 auto;min-width:190px;background:rgba(0,0,0,.18);border-radius:8px;padding:8px 16px;display:flex;flex-direction:column;justify-content:center;margin-left:12px}
+.tfd-resumen .lbl{font-size:8px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase}
+.tfd-resumen .val{font-size:16px;font-weight:900;color:var(--ty)}
+.tfd-scroll{flex:1;overflow-y:auto;padding:16px 20px 70px}
+.tfd-sec-title{font-size:12.5px;font-weight:800;color:var(--tp2);margin:18px 0 10px;display:flex;align-items:center;gap:8px}
+.tfd-sec-title .lbl{font-size:9px;color:var(--ttx3);font-weight:600}
+.tfd-ing-card{background:var(--tc);border-radius:10px;box-shadow:0 2px 10px rgba(75,45,143,.08);overflow:hidden;margin-bottom:8px}
+.tfd-ing-row{display:flex;justify-content:space-between;align-items:center;padding:9px 16px;font-size:11px;border-bottom:1px solid #F0EDF8}
+.tfd-ing-row .n{font-weight:700;color:var(--ttx)}
+.tfd-ing-row .v{font-weight:800;color:var(--tp2)}
+.tfd-ing-row.resta .n::before{content:"(–) ";color:var(--tr)}
+.tfd-ing-row.total{background:var(--tp2);color:#fff}
+.tfd-ing-row.total .n,.tfd-ing-row.total .v{color:#fff}
+.tfd-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:6px}
+.tfd-kpi-c{background:var(--tc);border-radius:10px;padding:12px 14px;box-shadow:0 2px 10px rgba(75,45,143,.08);border-top:4px solid var(--tp)}
+.tfd-kpi-c .lbl{font-size:8.5px;color:var(--ttx2);text-transform:uppercase;font-weight:700;line-height:1.3}
+.tfd-kpi-c .val{font-size:19px;font-weight:800;color:var(--tp2);margin:4px 0 2px}
+.tfd-kpi-c .cmp{font-size:9px;font-weight:700;display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:8px}
+.tfd-kpi-c .cmp.up{background:var(--trl);color:var(--tr)}
+.tfd-kpi-c .cmp.down{background:var(--tgl);color:var(--tg)}
+.tfd-kpi-c .bar{height:4px;background:var(--tpl);border-radius:2px;margin-top:7px;overflow:hidden}
+.tfd-kpi-c .bar-f{height:100%;border-radius:2px}
+.tfd-fc-card{background:var(--tc);border-radius:10px;box-shadow:0 2px 10px rgba(75,45,143,.08);overflow:hidden;margin-bottom:10px}
+.tfd-fc-sec-hdr{padding:9px 16px;background:var(--tpl);display:flex;justify-content:space-between;font-size:10px;font-weight:800;color:var(--tp);text-transform:uppercase}
+.tfd-fc-grp{border-bottom:1px solid #F0EDF8}
+.tfd-fc-grp:last-child{border-bottom:none}
+.tfd-fc-grp-hdr{padding:9px 16px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.tfd-fc-grp-hdr:hover{background:#FAFAFE}
+.tfd-fc-grp-name{flex:1;font-size:11px;font-weight:700;color:var(--ttx)}
+.tfd-fc-grp-pct{font-size:9px;color:var(--ttx3);width:50px;text-align:right}
+.tfd-fc-grp-usd{font-size:12px;font-weight:800;color:var(--tp2);width:105px;text-align:right;cursor:pointer;border-radius:5px}
+.tfd-fc-grp-usd:hover{background:var(--tpl);text-decoration:underline}
+.tfd-fc-arrow{font-size:9px;color:var(--ttx3);width:14px;text-align:center;transition:transform .2s}
+.tfd-fc-sub-list{display:none;background:#FAFAFE}
+.tfd-fc-sub-list.open{display:block}
+.tfd-fc-sub-row{display:flex;align-items:center;gap:8px;padding:6px 16px 6px 34px;font-size:10.5px;border-top:1px solid #F0EDF8}
+.tfd-fc-sub-row.nested{padding-left:52px;font-size:10px;color:var(--ttx3)}
+.tfd-fc-sub-row .n{flex:1;color:var(--ttx2)}
+.tfd-fc-sub-row .v{font-weight:700;color:var(--tp2);cursor:pointer;border-radius:5px;padding:1px 5px}
+.tfd-fc-sub-row .v:hover{background:var(--tpl);text-decoration:underline}
+.tfd-fc-tot-row{padding:9px 16px;background:var(--tp2);color:#fff;display:flex;justify-content:space-between;font-weight:800;font-size:11px}
+.tfd-fc-tot-row.gran{background:linear-gradient(90deg,var(--tp2),var(--tp));font-size:12.5px}
+.tfd-modal-ov{display:none;position:fixed;inset:0;background:rgba(15,10,30,.55);z-index:400;align-items:center;justify-content:center}
+.tfd-modal-ov.open{display:flex}
+.tfd-modal{background:#fff;border-radius:12px;width:940px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.tfd-modal .hdr{background:var(--tp2);color:#fff;padding:14px 18px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between}
+.tfd-modal .hdr h4{font-size:13px;font-weight:800}
+.tfd-modal .hdr .sub{font-size:9.5px;color:rgba(255,255,255,.6)}
+.tfd-modal .hdr .x{cursor:pointer;font-size:18px;opacity:.75}
+.tfd-modal .body{padding:16px 18px;overflow-y:auto}
+.tfd-mb-big{font-size:24px;font-weight:900;color:var(--tp2);margin-bottom:4px}
+.tfd-mb-sec{font-size:9.5px;font-weight:800;color:var(--ttx3);text-transform:uppercase;margin:14px 0 6px;padding-top:10px;border-top:1px solid var(--tbd)}
+.tfd-mb-sec:first-child{border-top:none;padding-top:0;margin-top:0}
+.tfd-mb-row{display:flex;justify-content:space-between;font-size:10.5px;padding:4px 0;color:var(--ttx2)}
+.tfd-mb-row b{color:var(--ttx)}
+.tfd-mb-pendiente{background:var(--tgol);border:1px dashed var(--tgo);border-radius:8px;padding:10px 12px;font-size:9.5px;color:#7A5900;margin-top:8px}
+.tfd-det-tbl{width:100%;border-collapse:collapse;font-size:9.5px;margin-top:4px}
+.tfd-det-tbl thead th{background:var(--tp2);color:#fff;padding:7px 8px;font-size:8px;font-weight:800;text-transform:uppercase}
+.tfd-det-tbl thead th.r{text-align:right}
+.tfd-det-tbl tbody td{padding:6px 8px;border-bottom:1px solid var(--tbd);vertical-align:top;color:var(--ttx2);position:relative}
+.tfd-det-tbl tbody td.r{text-align:right;font-weight:700;color:var(--tp2);white-space:nowrap}
+.tfd-det-tbl tbody tr:nth-child(even){background:#FAFAFE}
+.tfd-nota-ic{margin-left:5px;cursor:pointer;font-size:11px;opacity:.35}
+.tfd-nota-ic:hover{opacity:1}
+.tfd-nota-ic.activa{opacity:1;color:var(--tgo)}
+tr.tfd-en-revision{background:var(--tgol)!important;font-weight:700}
+.tfd-chip-rev{display:inline-flex;background:var(--tgo);color:#fff;font-size:8px;font-weight:800;padding:1px 6px;border-radius:8px;margin-left:6px}
+.tfd-nota-pop{display:none;position:absolute;top:100%;left:0;z-index:50;background:#fff;border:1.5px solid var(--tp3);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:11px;width:270px}
+.tfd-nota-pop.open{display:block}
+.tfd-nota-pop textarea{width:100%;min-height:54px;border:1.5px solid var(--tbd);border-radius:7px;padding:7px 9px;font-size:10px;font-family:inherit}
+.tfd-nota-pop .ac{display:flex;gap:6px;margin-top:8px;justify-content:flex-end}
+.tfd-mini-btn{padding:5px 10px;border-radius:6px;border:none;font-size:10px;font-weight:700;cursor:pointer}
+.tfd-mini-btn.g{background:var(--tp);color:#fff}
+.tfd-mini-btn.c{background:var(--tbg);color:var(--ttx2)}
+.tfd-report-bar{position:fixed;bottom:0;left:0;right:0;background:var(--tp2);color:#fff;padding:10px 24px;display:none;align-items:center;justify-content:space-between;z-index:150;box-shadow:0 -4px 16px rgba(0,0,0,.2)}
+.tfd-report-bar.show{display:flex}
+.tfd-report-bar .n{background:var(--tgo);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;margin-right:6px}
+.tfd-btn-report{background:var(--ty);color:var(--tp2);border:none;padding:8px 16px;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer}
+.tfd-btn{padding:8px 15px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:none}
+.tfd-btn-p{background:var(--tp);color:#fff}
+.tfd-btn-g{background:transparent;color:var(--tp);border:1.5px solid var(--tp3)}
+.tfd-reporte-item{background:var(--tbg);border-left:3px solid var(--tgo);border-radius:7px;padding:9px 12px;margin-bottom:7px;font-size:10.5px}
+</style>
+
+  <div class="tfd-bar" id="tfd-bar"></div>
+  <div class="tfd-strip" id="tfd-strip"></div>
+  <div class="tfd-report-bar" id="tfd-report-bar">
+    <div><span class="n" id="tfd-report-count">0</span>registro(s) marcados para revisión del accionista</div>
+    <button class="tfd-btn-report" onclick="tfdAbrirReporte()">📊 Generar reporte y exportar a Excel</button>
   </div>
-  <div class="t2-scroll">
-    <div class="kpi-grid" id="kpi-grid"></div>
-    <div class="chart-card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div>
-          <div style="font-size:13px;font-weight:800;color:var(--tp2)">Composici&#243;n de Egresos por Mes</div>
-          <div style="font-size:10px;color:var(--ttx3);margin-top:2px">En USD &#183; Seguros La Fe, C.A. &#183; Ene&#8211;May 2026</div>
-        </div>
-      </div>
-      <div class="bars-wrap" id="tf-bars"></div>
-      <div class="ley-wrap" id="tf-leyenda"></div>
+  <div class="tfd-scroll">
+    <div class="tfd-sec-title">💰 Ingresos <span class="lbl">— Prima Cobrada pendiente de carga · Devoluciones certificadas</span></div>
+    <div class="tfd-ing-card" id="tfd-ing"></div>
+
+    <div class="tfd-sec-title">📈 KPIs de Comportamiento del Gasto <span class="lbl">— % certificados del modelo oficial</span></div>
+    <div class="tfd-kpi-grid" id="tfd-kpis"></div>
+
+    <div class="tfd-sec-title">🌳 Flujo de Caja — Estructura Oficial <span class="lbl">verificada por fórmula · clic en cualquier cifra para ver trazabilidad</span></div>
+    <div id="tfd-fc-tree"></div>
+  </div>
+</div>
+
+<div class="tfd-modal-ov" id="tfd-modal">
+  <div class="tfd-modal">
+    <div class="hdr"><div><h4 id="tfd-modal-title">Detalle</h4><div class="sub" id="tfd-modal-sub"></div></div><span class="x" onclick="tfdCerrarModal()">✕</span></div>
+    <div class="body" id="tfd-modal-body"></div>
+  </div>
+</div>
+<div class="tfd-modal-ov" id="tfd-reporte-modal">
+  <div class="tfd-modal">
+    <div class="hdr"><div><h4>📋 Reporte de Cierre de Presentación de Cifras</h4><div class="sub"><span id="tfd-reporte-count">0</span> registro(s)</div></div><span class="x" onclick="tfdCerrarReporte()">✕</span></div>
+    <div class="body" id="tfd-reporte-lista"></div>
+    <div style="padding:13px 18px;background:var(--tbg);display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--tbd)">
+      <button class="tfd-btn tfd-btn-g" onclick="tfdCerrarReporte()">Cerrar</button>
+      <button class="tfd-btn tfd-btn-p" onclick="tfdExportarExcel()">📊 Exportar a Excel</button>
     </div>
   </div>
 </div>
@@ -980,7 +1094,7 @@ window.t2Show=function(id,btn){
   document.querySelectorAll(".t2-pane").forEach(function(p){p.classList.remove("on");});
   document.querySelectorAll(".t2-btn").forEach(function(b){b.classList.remove("on");});
   document.getElementById(id).classList.add("on");btn.classList.add("on");
-  if(id==="t2-dashboard"){renderKPIs();renderChart();}
+  if(id==="t2-dashboard"){tfdRenderAll();}
   if(id==="t2-flujo")renderFCTree();
 };
 
@@ -988,6 +1102,276 @@ window.t2Show=function(id,btn){
 function fmt(v,d){d=d||2;return(v||0).toLocaleString("es-VE",{minimumFractionDigits:d,maximumFractionDigits:d});}
 function fmtK(v){if(v>=1000000)return(v/1000000).toFixed(1)+"M";if(v>=1000)return(v/1000).toFixed(0)+"K";return(v||0).toFixed(0);}
 function pct(a,b){return b>0?(a/b*100).toFixed(1)+"%":"--";}
+
+/* ══════════════════════════════════════════════════════════════════
+   DASHBOARD EJECUTIVO — versión aprobada
+   Cifras: modelo oficial certificado (verificado por fórmula contra
+   FLUJO_DE_CAJA_LA_FE, exacto al centavo: Siniestros+Administración+
+   Tributarios+Bancario = Total Egresos, en los 5 meses).
+   Trazabilidad transaccional: window.__TF_RAW.regs (CORE real, ya cargado).
+   ══════════════════════════════════════════════════════════════════ */
+(function(){
+var TFD_MESES = ["Enero","Febrero","Marzo","Abril","Mayo"];
+var TFD_BCV = [341.6031,392.7643,446.6732,479.9670,515.7295];
+var TFD_DEVOLUCIONES = [344.19,205.44,191.77,130.80,127.26];
+
+var TFD_SIN = {segurosLaFe:[85521.496671,31801.486557,41329.517884,51824.682697,48134.457728],
+  grupoPolar:[39379.619604,24723.710911,23538.616117,32305.661473,27528.578343],
+  anticipados:[0,0,105.081598,865.055785,0],
+  grupoNueveOnce:[7480.868801,4616.227398,3150.857775,19859.540864,2794.785587],
+  total:[132381.985076,61141.424867,68124.073374,104854.940819,78457.821658], pct:[.512063,.24409,.241699,.402017,.29028]};
+var TFD_COM = {funeasistencia:[0,1731.857423,0,1465.332283,0], callCenter:[1238.840812,1100.404987,691.720016,1036.782945,989.727417],
+  promocionVenta:[6270.137025,13206.248387,20399.159273,24242.511277,17701.292433],
+  total:[7508.977837,16038.510797,21090.879289,26744.626506,18691.01985], pct:[.029045,.064029,.074829,.10254,.069154]};
+var TFD_ADM = {gastosAdministracion:[59320.288572,43034.329816,53640.890069,55913.775322,44235.328334], anticipoProveedores:[9173.60047,9173.60047,9173.60047,16958.396973,8739.242424],
+  nominaGerentes:[16630,12440,19640,16120,15380], diferencialNomina:[13796.390157,5613.576665,7840.943374,5206.88289,2957.186232],
+  gastosExtraordinarios:[0,377.325557,1539.156706,2265.280592,0], impuestosVarios:[13437.223012,19004.249196,11517.372799,15115.361514,21674.889938],
+  islrAnual:[14193.663567,0,0,0,123.134227], total:[134060.143614,105681.592501,124442.842708,138324.323797,111800.801005], pct:[.518555,.421904,.441514,.53034,.413644]};
+var TFD_TRIB = {retenciones:[15211.074811,14922.942542,7942.458322,10985.731477,12686.005675], total:[15211.074811,14922.942542,7942.458322,10985.731477,12686.005675], pct:[.058838,.059576,.028179,.04212,.046936]};
+var TFD_BAN = {domiciliacion:[4257.813755,4160.423471,5118.077222,4137.745553,4535.140358], mantenimiento:[1537.193367,1415.674239,1286.602762,1492.6716,1707.479958],
+  total:[5795.007122,5576.09771,6404.679984,5630.417154,6242.620316], pct:[.01654,.022261,.022723,.021587,.023097]};
+var TFD_PRES = {gastosPresidencia:[9151.763079,9385.164228,14136.222659,11684.00115,13974.143243], condominios:[3957.344254,3016.26005,7113.611421,3020.121321,3789.151948],
+  serviciosBasicos:[530.121319,414.15243,551.44696,573.102797,486.988378], gastosDiversos:[4664.297506,5954.751749,6471.164278,8090.777033,9698.002917],
+  grupoValles:[0,636.514098,0,389.846177,58.383535], lineasCredito:[2010.517929,0,608.682501,0,0], zelle:[104.08,110,86.68,121.1,15.94],
+  total:[11266.361008,10131.678326,14831.58516,12194.947327,14048.466779], pct:[.043579,.040448,.052621,.046756,.051977]};
+var TFD_TOT = {totalEgresos:[287448.210624,187322.05762,206914.054388,259795.413247,209187.248654], pctTotalEgresos:[1.111871,.747831,.734115,.996065,.773957],
+  totalEgresosMasPresidencia:[298714.571631,197453.735947,221745.639548,271990.360574,223235.715433]};
+
+var TFD_PAR = 3;
+var TFD_PARES = [[0,1],[1,2],[2,3],[3,4]];
+var TFD_NOTAS = {}; // key: nombreLinea__mes__idx -> {texto,fecha,registro,linea,mes}
+var TFD_MODAL_ACTUAL = null;
+
+function tfdFmt(v){ return "$"+(v||0).toLocaleString("es-VE",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function tfdPctf(v){ return (v*100).toFixed(1)+"%"; }
+
+function tfdRenderBar(){
+  var html = '<span style="font-size:9px;color:rgba(255,255,255,.45);font-weight:700;text-transform:uppercase;margin-right:4px">Comparativo:</span>';
+  TFD_PARES.forEach(function(p,i){ html += '<button class="tfd-par-btn'+(i===TFD_PAR?' on':'')+'" onclick="tfdSetPar('+i+')">'+TFD_MESES[p[1]]+' vs '+TFD_MESES[p[0]]+'</button>'; });
+  document.getElementById("tfd-bar").innerHTML = html;
+}
+window.tfdSetPar = function(i){ TFD_PAR=i; tfdRenderAll(); };
+
+function tfdRenderStrip(){
+  var par = TFD_PARES[TFD_PAR]; var html = "";
+  TFD_MESES.forEach(function(m,i){
+    var activo = (i===par[0]||i===par[1]);
+    var delta = i>0 ? ((TFD_BCV[i]-TFD_BCV[i-1])/TFD_BCV[i-1]*100).toFixed(2) : null;
+    html += '<div class="tfd-item'+(activo?' activo':'')+'"><div class="mes">'+m+'</div><div class="val">'+TFD_BCV[i].toFixed(2)+'</div>'
+      + (delta!==null?'<div class="delta">▲ +'+delta+'%</div>':'<div class="delta" style="opacity:0">—</div>') + '</div>';
+  });
+  var varPar = ((TFD_BCV[par[1]]-TFD_BCV[par[0]])/TFD_BCV[par[0]]*100).toFixed(2);
+  html += '<div class="tfd-resumen"><div class="lbl">Var. BCV — '+TFD_MESES[par[1]]+' vs '+TFD_MESES[par[0]]+'</div><div class="val">+'+varPar+'%</div></div>';
+  document.getElementById("tfd-strip").innerHTML = html;
+}
+
+function tfdRenderIngresos(){
+  var mIdx = TFD_PARES[TFD_PAR][1];
+  var html = '<div class="tfd-ing-row"><span class="n">Prima Cobrada (Individual + Grupo Polar)</span><span class="v">Pendiente de carga</span></div>'
+    + '<div class="tfd-ing-row resta"><span class="n">Devoluciones de Prima</span><span class="v">'+tfdFmt(TFD_DEVOLUCIONES[mIdx])+'</span></div>'
+    + '<div class="tfd-ing-row total"><span class="n">Total Ingresos</span><span class="v">Pendiente</span></div>';
+  document.getElementById("tfd-ing").innerHTML = html;
+}
+
+function tfdRenderKPIs(){
+  var par = TFD_PARES[TFD_PAR], b=par[0], c=par[1];
+  var items = [
+    {lbl:"a) Siniestralidad", vB:TFD_SIN.pct[b], vC:TFD_SIN.pct[c]},
+    {lbl:"b) % Comisiones / Prima", vB:TFD_COM.pct[b], vC:TFD_COM.pct[c]},
+    {lbl:"c) % Administración / Prima", vB:TFD_ADM.pct[b], vC:TFD_ADM.pct[c]},
+    {lbl:"d) % Costos Tributarios / Prima", vB:TFD_TRIB.pct[b], vC:TFD_TRIB.pct[c]},
+    {lbl:"e) % Total Egresos / Prima", vB:TFD_TOT.pctTotalEgresos[b], vC:TFD_TOT.pctTotalEgresos[c]},
+    {lbl:"f) % Presidencia / Prima", vB:TFD_PRES.pct[b], vC:TFD_PRES.pct[c]}
+  ];
+  var html = "";
+  items.forEach(function(it){
+    var delta=(it.vC-it.vB)*100, up=delta>=0;
+    html += '<div class="tfd-kpi-c"><div class="lbl">'+it.lbl+'</div><div class="val">'+tfdPctf(it.vC)+'</div>'
+      + '<div class="cmp '+(up?'up':'down')+'">'+(up?'▲':'▼')+' '+Math.abs(delta).toFixed(1)+' pp vs '+TFD_MESES[b]+'</div>'
+      + '<div class="bar"><div class="bar-f" style="width:'+Math.min(it.vC*100,100)+'%;background:var(--tp)"></div></div></div>';
+  });
+  document.getElementById("tfd-kpis").innerHTML = html;
+}
+
+var TFD_DETALLES = [];
+function tfdRegistrar(d){ TFD_DETALLES.push(d); return TFD_DETALLES.length-1; }
+function tfdSubRow(nombre, monto, fuente, formula, nested){
+  var d = tfdRegistrar({nombre:nombre, monto:monto, fuente:fuente, formula:formula});
+  return '<div class="tfd-fc-sub-row'+(nested?' nested':'')+'"><span class="n">'+(nested?'└ ':'')+nombre+'</span><span class="v" onclick="tfdAbrirModal('+d+')">'+tfdFmt(monto)+'</span></div>';
+}
+function tfdGrpUsd(id,nombre,total,fuente,formula){
+  var d = tfdRegistrar({nombre:nombre+' (bloque completo)', monto:total, fuente:fuente, formula:formula});
+  return '<span class="tfd-fc-grp-usd" onclick="event.stopPropagation();tfdAbrirModal('+d+')">'+tfdFmt(total)+'</span>';
+}
+function tfdRenderFC(){
+  var mIdx = TFD_PARES[TFD_PAR][1];
+  TFD_DETALLES = [];
+  var mes = TFD_MESES[mIdx];
+  var html = '<div class="tfd-fc-card"><div class="tfd-fc-sec-hdr"><span>Concepto</span><span>% s/ Prima · Monto USD ('+mes+')</span></div>';
+  var FSRC = "FLUJO_DE_CAJA_LA_FE_al_31-05-2026.xlsx · hoja 'FLUJO DE CAJA $'";
+  function grp(id,nombre,pct,total,fuenteB,formulaB,subrows){
+    return '<div class="tfd-fc-grp"><div class="tfd-fc-grp-hdr" onclick="tfdToggleGrp(\''+id+'\')">'
+      + '<span class="tfd-fc-arrow" id="tfd-arr-'+id+'">▶</span><span class="tfd-fc-grp-name">'+nombre+'</span>'
+      + '<span class="tfd-fc-grp-pct">'+tfdPctf(pct)+'</span>'+tfdGrpUsd(id,nombre,total,fuenteB,formulaB)+'</div>'
+      + '<div class="tfd-fc-sub-list" id="tfd-sub-'+id+'">'+subrows+'</div></div>';
+  }
+  html += grp('sin','1. Gastos de Siniestros', TFD_SIN.pct[mIdx], TFD_SIN.total[mIdx], FSRC, "=SUM(D18:D21)",
+      tfdSubRow('Siniestros Pagados (Seguros La Fe + Grupo Polar)', TFD_SIN.segurosLaFe[mIdx]+TFD_SIN.grupoPolar[mIdx], FSRC, 'Suma filas 17+18 (unificado)')
+    + tfdSubRow('Siniestros Pagados por Anticipado', TFD_SIN.anticipados[mIdx], FSRC, 'Celda directa, fila 19')
+    + tfdSubRow('Gastos Grupo Nueve Once', TFD_SIN.grupoNueveOnce[mIdx], FSRC, 'Celda directa, fila 20'));
+  html += grp('com','2. Gastos de Comisiones', TFD_COM.pct[mIdx], TFD_COM.total[mIdx], FSRC, "=SUM(D26:D28)",
+      tfdSubRow('Coordinación Funeasistencia', TFD_COM.funeasistencia[mIdx], FSRC, 'Celda directa, fila 25')
+    + tfdSubRow('Comisiones Call Center', TFD_COM.callCenter[mIdx], FSRC, 'Celda directa, fila 26')
+    + tfdSubRow('Gastos de Promoción y Venta', TFD_COM.promocionVenta[mIdx], FSRC, 'Celda directa, fila 27')
+    + '<div class="tfd-fc-sub-row nested"><span class="n">⚠ Este total se contabiliza dentro de "Gasto de Administración" en la fórmula oficial — se muestra aparte solo para visibilidad.</span><span></span></div>');
+  html += grp('adm','3. Gasto de Administración', TFD_ADM.pct[mIdx], TFD_ADM.total[mIdx], FSRC, "=D29+D33+D34+D52+D54+D61+D62+D53",
+      tfdSubRow('Gastos de Administración (honorarios, servicios, varios)', TFD_ADM.gastosAdministracion[mIdx], FSRC, 'Celda directa, fila 32')
+    + tfdSubRow('Total Comisiones (nested — ver bloque 2)', TFD_COM.total[mIdx], FSRC, 'Referencia a fila 28')
+    + tfdSubRow('Anticipo a Proveedores', TFD_ADM.anticipoProveedores[mIdx], FSRC, 'Celda directa, fila 33')
+    + tfdSubRow('Nómina Gerentes', TFD_ADM.nominaGerentes[mIdx], FSRC, 'Celda directa, fila 51')
+    + tfdSubRow('Diferencial Cambiario Nómina Gerentes', TFD_ADM.diferencialNomina[mIdx], FSRC, 'Celda directa, fila 52')
+    + tfdSubRow('Gastos Extraordinarios', TFD_ADM.gastosExtraordinarios[mIdx], FSRC, 'Celda directa, fila 53')
+    + tfdSubRow('Impuestos (IVA, ISLR, SUDEASEG, Patente, IGTF, Otras)', TFD_ADM.impuestosVarios[mIdx], FSRC, 'Celda directa, fila 60')
+    + tfdSubRow('ISLR Anual', TFD_ADM.islrAnual[mIdx], FSRC, 'Celda directa, fila 61'));
+  html += grp('trib','4. Costos Tributarios', TFD_TRIB.pct[mIdx], TFD_TRIB.total[mIdx], FSRC, "=SUM(D67)",
+      tfdSubRow('Retenciones de IVA, ISLR e IAE', TFD_TRIB.retenciones[mIdx], FSRC, 'Celda directa, fila 66'));
+  html += grp('ban','5. Costo Bancario', TFD_BAN.pct[mIdx], TFD_BAN.total[mIdx], FSRC, "=SUM(D72:D73)",
+      tfdSubRow('Comisión Bancaria por Domiciliación en Cobranza', TFD_BAN.domiciliacion[mIdx], FSRC, 'Celda directa, fila 71')
+    + tfdSubRow('Comisión Bancaria por Mantenimiento de Cuenta', TFD_BAN.mantenimiento[mIdx], FSRC, 'Celda directa, fila 72'));
+  var dTot = tfdRegistrar({nombre:'Total Egresos', monto:TFD_TOT.totalEgresos[mIdx], fuente:FSRC, formula:"=D74+D68+D63+D22 — verificado: cuadra exacto en los 5 meses"});
+  html += '<div class="tfd-fc-tot-row">Total Egresos ('+mes+')<span onclick="tfdAbrirModal('+dTot+')" style="cursor:pointer">'+tfdFmt(TFD_TOT.totalEgresos[mIdx])+'</span></div>';
+  html += grp('pres','6. Presidencia', TFD_PRES.pct[mIdx], TFD_PRES.total[mIdx], FSRC, "=D83+D89+D90+D88",
+      tfdSubRow('Gastos de Presidencia (incluye Condominios+Servicios+Diversos+Grupo Valles)', TFD_PRES.gastosPresidencia[mIdx], FSRC, 'Fila 82 — subtotal anidado verificado')
+    + tfdSubRow('Condominios', TFD_PRES.condominios[mIdx], FSRC, 'Fila 83', true)
+    + tfdSubRow('Servicios Básicos', TFD_PRES.serviciosBasicos[mIdx], FSRC, 'Fila 84', true)
+    + tfdSubRow('Gastos Diversos Presidencia', TFD_PRES.gastosDiversos[mIdx], FSRC, 'Fila 86', true)
+    + tfdSubRow('Gastos Grupo Valles', TFD_PRES.grupoValles[mIdx], FSRC, 'Fila 87', true)
+    + tfdSubRow('Líneas de Crédito', TFD_PRES.lineasCredito[mIdx], FSRC, 'Fila 88')
+    + tfdSubRow('Zelle', TFD_PRES.zelle[mIdx], FSRC, 'Fila 89'));
+  var dGran = tfdRegistrar({nombre:'Total Egresos + Gasto de Presidencia', monto:TFD_TOT.totalEgresosMasPresidencia[mIdx], fuente:FSRC, formula:"=D77+D91"});
+  html += '<div class="tfd-fc-tot-row gran">Total Egresos + Gasto de Presidencia ('+mes+')<span onclick="tfdAbrirModal('+dGran+')" style="cursor:pointer">'+tfdFmt(TFD_TOT.totalEgresosMasPresidencia[mIdx])+'</span></div></div>';
+  document.getElementById("tfd-fc-tree").innerHTML = html;
+}
+window.tfdToggleGrp = function(id){
+  var el=document.getElementById("tfd-sub-"+id), arr=document.getElementById("tfd-arr-"+id);
+  var open=el.classList.toggle("open"); arr.style.transform = open?"rotate(90deg)":"rotate(0deg)";
+};
+
+/* Mapeo de líneas de árbol -> categoría real en window.__TF_RAW.regs, para trazabilidad */
+var TFD_CORE_MAP = {
+  'Siniestros Pagados (Seguros La Fe + Grupo Polar)': 'siniestros',
+  'Gastos Grupo Nueve Once': 'telemedicina',
+  'Gastos de Promoción y Venta': 'promocion_venta',
+  'Impuestos (IVA, ISLR, SUDEASEG, Patente, IGTF, Otras)': 'impuestos'
+};
+window.tfdAbrirModal = function(idx){
+  var d = TFD_DETALLES[idx];
+  var mIdx = TFD_PARES[TFD_PAR][1];
+  TFD_MODAL_ACTUAL = {idx:idx, mIdx:mIdx};
+  document.getElementById("tfd-modal-title").textContent = d.nombre;
+  document.getElementById("tfd-modal-sub").textContent = TFD_MESES[mIdx]+" 2026";
+  var body = '<div class="tfd-mb-big">'+tfdFmt(d.monto)+'</div>'
+    + '<div class="tfd-mb-sec">Trazabilidad certificada</div>'
+    + '<div class="tfd-mb-row"><span>Fuente</span><b>'+d.fuente+'</b></div>'
+    + '<div class="tfd-mb-row"><span>Fórmula / origen de la cifra</span><b>'+d.formula+'</b></div>';
+
+  var catKey = TFD_CORE_MAP[d.nombre];
+  var regs = (catKey && window.__TF_RAW) ? window.__TF_RAW.regs.filter(function(r){return r.mes===(mIdx+1)&&r.cat===catKey;}).sort(function(a,b){return b.usd-a.usd;}).slice(0,8) : null;
+
+  if (regs && regs.length){
+    body += '<div class="tfd-mb-sec">Detalle transaccional real — CORE/Mayor Analítico (top '+regs.length+' por monto) <span style="font-weight:500;text-transform:none;color:var(--ttx3)">— clic en 🗒️ junto a la fecha para dejar una nota</span></div>';
+    body += '<table class="tfd-det-tbl"><thead><tr><th>Fecha</th><th>N° Asiento</th><th>Tipo</th><th>Descripción</th><th>Beneficiario</th><th class="r">Monto Bs.</th><th class="r">Monto USD</th></tr></thead><tbody>';
+    regs.forEach(function(r,i){
+      var rKey = d.nombre+'__'+mIdx+'__'+i;
+      var nota = TFD_NOTAS[rKey];
+      body += '<tr id="tfd-row-'+i+'" class="'+(nota?'tfd-en-revision':'')+'">'
+        + '<td>'+(r.fecha||'—')
+          + '<span class="tfd-nota-ic'+(nota?' activa':'')+'" onclick="tfdTogglePop('+i+')" title="Nota">🗒️</span>'
+          + (nota?'<span class="tfd-chip-rev">✓ En revisión</span>':'')
+          + '<div class="tfd-nota-pop" id="tfd-pop-'+i+'"><textarea id="tfd-pop-in-'+i+'" placeholder="Ej: el accionista pidió ver el físico...">'+(nota?nota.texto:'')+'</textarea>'
+          + '<div class="ac">'+(nota?'<button class="tfd-mini-btn c" onclick="tfdQuitarNota('+i+')">Quitar</button>':'')+'<button class="tfd-mini-btn c" onclick="tfdTogglePop('+i+')">Cerrar</button><button class="tfd-mini-btn g" onclick="tfdGuardarNota('+i+')">Guardar</button></div></div>'
+        + '</td>'
+        + '<td style="font-family:monospace;font-size:9px;color:var(--ttx3)">'+(r.id||'—')+'</td>'
+        + '<td>'+(r.tipo||'—')+'</td>'
+        + '<td>'+(r.conc||r.desc||'—')+(r.desc&&r.conc?' — '+r.desc:'')+'</td>'
+        + '<td>'+(r.benef||'—')+'</td>'
+        + '<td class="r">Bs. '+Number(r.bs||0).toLocaleString('es-VE',{minimumFractionDigits:2})+'</td>'
+        + '<td class="r">'+tfdFmt(r.usd)+'</td></tr>';
+    });
+    body += '</tbody></table>';
+    body += '<p style="font-size:9px;color:var(--ttx3);margin-top:8px">Fuente: Mayor Analítico/CORE ya cargado (window.__TF_RAW) · el monto de esta línea es del modelo oficial certificado; el CORE se usa aquí solo para trazabilidad, no para recalcular el total.</p>';
+  } else {
+    body += '<div class="tfd-mb-pendiente">📌 Esta partida no tiene cobertura completa en el CORE (ej. Grupo Polar, Anticipos, Nómina Gerentes o Presidencia se procesan por canales fuera del CORE) — el monto viene 100% verificado del modelo oficial.</div>';
+  }
+  document.getElementById("tfd-modal-body").innerHTML = body;
+  document.getElementById("tfd-modal").classList.add("open");
+};
+window.tfdCerrarModal = function(){ document.getElementById("tfd-modal").classList.remove("open"); };
+
+window.tfdTogglePop = function(i){
+  document.querySelectorAll('.tfd-nota-pop.open').forEach(function(p){ if(p.id!=='tfd-pop-'+i) p.classList.remove('open'); });
+  document.getElementById('tfd-pop-'+i).classList.toggle('open');
+};
+window.tfdGuardarNota = function(i){
+  var texto = document.getElementById('tfd-pop-in-'+i).value.trim();
+  if(!texto) return;
+  var d = TFD_DETALLES[TFD_MODAL_ACTUAL.idx];
+  var rKey = d.nombre+'__'+TFD_MODAL_ACTUAL.mIdx+'__'+i;
+  var fecha = new Date().toLocaleString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  var catKey = TFD_CORE_MAP[d.nombre];
+  var regs = window.__TF_RAW.regs.filter(function(r){return r.mes===(TFD_MODAL_ACTUAL.mIdx+1)&&r.cat===catKey;}).sort(function(a,b){return b.usd-a.usd;}).slice(0,8);
+  TFD_NOTAS[rKey] = {texto:texto, fecha:fecha, registro:regs[i], linea:d.nombre, mes:TFD_MESES[TFD_MODAL_ACTUAL.mIdx]};
+  tfdAbrirModal(TFD_MODAL_ACTUAL.idx);
+  tfdActualizarReportBar();
+};
+window.tfdQuitarNota = function(i){
+  var d = TFD_DETALLES[TFD_MODAL_ACTUAL.idx];
+  delete TFD_NOTAS[d.nombre+'__'+TFD_MODAL_ACTUAL.mIdx+'__'+i];
+  tfdAbrirModal(TFD_MODAL_ACTUAL.idx);
+  tfdActualizarReportBar();
+};
+function tfdActualizarReportBar(){
+  var n = Object.keys(TFD_NOTAS).length;
+  document.getElementById('tfd-report-count').textContent = n;
+  document.getElementById('tfd-report-bar').classList.toggle('show', n>0);
+}
+
+window.tfdAbrirReporte = function(){
+  var html='';
+  Object.keys(TFD_NOTAS).forEach(function(k){
+    var n = TFD_NOTAS[k]; var r = n.registro||{};
+    html += '<div class="tfd-reporte-item"><b>'+n.linea+' · '+n.mes+' 2026</b> — '+(r.desc||r.conc||'Movimiento')
+      + '<div style="color:var(--ttx2);font-style:italic;margin-top:3px">"'+n.texto+'"</div>'
+      + '<div style="color:var(--ttx3);font-size:9px;margin-top:3px">N° '+ (r.id||'—') +' · '+tfdFmt(r.usd||0)+' · '+n.fecha+'</div></div>';
+  });
+  if(!html) html = '<p style="font-size:11px;color:var(--ttx3)">No hay registros marcados para revisión todavía.</p>';
+  document.getElementById('tfd-reporte-lista').innerHTML = html;
+  document.getElementById('tfd-reporte-count').textContent = Object.keys(TFD_NOTAS).length;
+  document.getElementById('tfd-reporte-modal').classList.add('open');
+};
+window.tfdCerrarReporte = function(){ document.getElementById('tfd-reporte-modal').classList.remove('open'); };
+window.tfdExportarExcel = function(){
+  var claves = Object.keys(TFD_NOTAS);
+  if(!claves.length){ alert('No hay registros en revisión para exportar.'); return; }
+  var PM='#2D1860',PM2='#4B2D8F',PL='#EDE8F8',PB='#E2DFF0';
+  var htmlDoc = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>'
+    +'table{border-collapse:collapse;font-size:11pt;font-family:Calibri}.tit{background:'+PM+';color:#fff;font-size:16pt;font-weight:bold;padding:10px}.sub{background:'+PM2+';color:#fff;font-size:10pt;padding:6px 10px}'
+    +'th{background:'+PM+';color:#fff;font-weight:bold;padding:8px 10px;border:1px solid '+PB+';text-align:left;font-size:9.5pt;text-transform:uppercase}td{padding:7px 10px;border:1px solid '+PB+';font-size:10.5pt}.par{background:'+PL+'}'
+    +'</style></head><body><table><tr><td class="tit" colspan="8">Reporte de Cierre de Presentación de Cifras</td></tr>'
+    +'<tr><td class="sub" colspan="8">Seguros La Fe, C.A. · '+claves.length+' registro(s) solicitados en revisión</td></tr><tr><td colspan="8" style="padding:4px"></td></tr>'
+    +'<tr><th>Línea</th><th>Mes</th><th>Fecha</th><th>N° Asiento</th><th>Descripción</th><th>Beneficiario</th><th>Monto USD</th><th>Nota</th></tr>';
+  claves.forEach(function(k,i){
+    var n=TFD_NOTAS[k]; var r=n.registro||{};
+    htmlDoc += '<tr class="'+(i%2===1?'par':'')+'"><td>'+n.linea+'</td><td>'+n.mes+' 2026</td><td>'+(r.fecha||'')+'</td><td>'+(r.id||'')+'</td><td>'+(r.desc||r.conc||'')+'</td><td>'+(r.benef||'')+'</td><td>'+tfdFmt(r.usd||0)+'</td><td>'+n.texto+'</td></tr>';
+  });
+  htmlDoc += '</table></body></html>';
+  var blob = new Blob(['\ufeff'+htmlDoc],{type:'application/vnd.ms-excel'});
+  var url = URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download='Reporte_Revision_Accionistas_'+new Date().toISOString().slice(0,10)+'.xls';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+};
+
+window.tfdRenderAll = function(){ TFD_DETALLES=[]; tfdRenderBar(); tfdRenderStrip(); tfdRenderIngresos(); tfdRenderKPIs(); tfdRenderFC(); tfdActualizarReportBar(); };
+})();
 function esc(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function fmtCta(s){
   var c=(s||"").replace(/[^\d]/g,"");
@@ -1452,7 +1836,7 @@ window.tfActualizarDesdeAuditoria=function(){
       </div>
     </div>
     <div class="dv-btn-row">
-      <button class="btn btn-primary" onclick="dv2Registrar()">&#10003; Registrar Compra</button>
+      <button class="btn btn-primary" id="dv2-btn-registrar" onclick="dv2Registrar()">&#10003; Registrar Compra</button>
       <button class="btn" onclick="dv2Exportar()" style="background:var(--gob);color:var(--go);border-color:var(--go)">&#8659; Exportar CSV</button>
       <span id="dv2-msg" style="font-size:11px;color:var(--g);font-weight:600"></span>
     </div>
@@ -1507,6 +1891,8 @@ window.dv2Calc=function(){
 
 function fmt2(v,d){d=d||2;return(v||0).toLocaleString("es-VE",{minimumFractionDigits:d,maximumFractionDigits:d});}
 
+var DV2_EDIT_IDX = null;
+
 window.dv2Registrar=function(){
   var fecha=document.getElementById("dv2-fecha").value;
   var mes=parseInt(document.getElementById("dv2-mes").value);
@@ -1526,8 +1912,9 @@ window.dv2Registrar=function(){
   var equiv_bcv=monto_bs/tbcv;
   var costo_adq=equiv_bcv-usd;
   var prima_pct=usd>0?(costo_adq/usd*100).toFixed(4):0;
+  var idPrevio = (DV2_EDIT_IDX!==null) ? DV2_REGS[DV2_EDIT_IDX].id : "DIV_"+Date.now();
   var reg={
-    id:"DIV_"+Date.now(),fecha:fecha,mes:mes,mn:DV2_MN[mes],
+    id:idPrevio,fecha:fecha,mes:mes,mn:DV2_MN[mes],
     tipo:"Compra Divisas",conc:conc,desc:desc||conc,benef:benef,
     cta:"",tp:"COMPRA DIVISAS",nu:"",
     bs:Math.round(monto_bs*100)/100,tasa:tpar,usd:usd,
@@ -1537,15 +1924,36 @@ window.dv2Registrar=function(){
     costo_adq:Math.round(costo_adq*100)/100,
     prima_pct:prima_pct
   };
-  DV2_REGS.push(reg);
+  var esEdicion = (DV2_EDIT_IDX!==null);
+  if(esEdicion){ DV2_REGS[DV2_EDIT_IDX]=reg; DV2_EDIT_IDX=null; document.getElementById("dv2-btn-registrar").textContent="\u2713 Registrar Compra"; }
+  else DV2_REGS.push(reg);
   // Notificar al FC
   if(typeof window.tfActualizarDesdeDivisas==="function")window.tfActualizarDesdeDivisas(reg);
   dv2RenderResumen();dv2RenderHist();
   document.getElementById("dv2-msg").style.color="var(--g)";
-  document.getElementById("dv2-msg").textContent="\u2713 Registrado. El FC ha sido actualizado.";
+  document.getElementById("dv2-msg").textContent=esEdicion?"\u2713 Compra actualizada. El FC ha sido sincronizado.":"\u2713 Registrado. El FC ha sido actualizado.";
   setTimeout(function(){document.getElementById("dv2-msg").textContent="";},3000);
   ["dv2-usd","dv2-tpar","dv2-tbcv","dv2-conc","dv2-desc","dv2-benef"].forEach(function(id){document.getElementById(id).value="";});
   dv2Calc();
+};
+
+window.dv2Editar=function(i){
+  var d = DV2_REGS[i];
+  DV2_EDIT_IDX = i;
+  document.getElementById("dv2-fecha").value = d.fecha;
+  document.getElementById("dv2-mes").value = d.mes;
+  document.getElementById("dv2-usd").value = d.usd;
+  document.getElementById("dv2-tpar").value = d.tpar;
+  document.getElementById("dv2-tbcv").value = d.tbcv;
+  document.getElementById("dv2-tipo").value = d.cat_fc;
+  document.getElementById("dv2-conc").value = d.conc;
+  document.getElementById("dv2-desc").value = d.desc;
+  document.getElementById("dv2-benef").value = d.benef;
+  dv2Calc();
+  document.getElementById("dv2-btn-registrar").textContent = "\u270f\ufe0f Guardar Cambios";
+  document.getElementById("dv2-msg").style.color="var(--go)";
+  document.getElementById("dv2-msg").textContent="Editando compra del "+d.fecha+" — modifica los campos y guarda.";
+  document.querySelector(".dv-form-card").scrollIntoView({behavior:"smooth"});
 };
 
 function dv2RenderResumen(){
@@ -1579,7 +1987,7 @@ function dv2RenderHist(){
       +"<td class=\"mr cost\">$"+fmt2(d.costo_adq)+"</td>"
       +"<td class=\"mr\">"+d.prima_pct+"%</td>"
       +"<td>"+DV2_CAT_LBL[d.cat_fc]+"</td>"
-      +"<td><button style=\"background:none;border:1px solid var(--r);color:var(--r);padding:2px 8px;border-radius:10px;cursor:pointer;font-size:10px\" onclick=\"dv2Elim("+i+")\">&times;</button></td>"
+      +"<td><button style=\"background:none;border:1px solid var(--go);color:var(--go);padding:2px 8px;border-radius:10px;cursor:pointer;font-size:10px;margin-right:4px\" onclick=\"dv2Editar("+i+")\">&#9998;</button><button style=\"background:none;border:1px solid var(--r);color:var(--r);padding:2px 8px;border-radius:10px;cursor:pointer;font-size:10px\" onclick=\"dv2Elim("+i+")\">&times;</button></td>"
       +"</tr>";
   });
   document.getElementById("dv2-body").innerHTML=b||"<tr><td colspan=\"14\" style=\"text-align:center;padding:20px;color:var(--txt2)\">Sin compras registradas</td></tr>";
@@ -1861,6 +2269,471 @@ window.audExportarInforme=function(){
 })();
 </script>
 </div>
+
+<!-- ══ TAB: GERENCIAL · MANTENIMIENTO Y ANÁLISIS FC ══ -->
+<div class="pane" id="pane-gerencial-mantenimiento" style="padding:0;flex-direction:column;overflow:hidden">
+<style>
+.gm-wrap{max-width:1180px;margin:0 auto;padding:16px 20px 70px}
+.gm-hdr{margin-bottom:16px}
+.gm-hdr h1{font-size:20px;font-weight:800;color:var(--ink2);display:flex;align-items:center;gap:8px}
+.gm-hdr p{font-size:12px;color:var(--tm);margin-top:5px;max-width:640px;line-height:1.5}
+.gm-tip{background:var(--pb);border-left:4px solid var(--p);border-radius:8px;padding:11px 15px;font-size:11px;color:var(--ink2);margin-bottom:18px}
+.gm-mes-sel{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.gm-mes-btn{padding:9px 16px;border-radius:9px;border:1.5px solid var(--br);background:var(--s);cursor:pointer;font-size:11.5px;font-weight:700;color:var(--tm)}
+.gm-mes-btn.on{background:var(--p);color:#fff;border-color:var(--p)}
+.gm-mes-btn .est{display:block;font-size:8.5px;font-weight:600;opacity:.85;margin-top:2px}
+.gm-partida{background:var(--s);border-radius:11px;box-shadow:0 2px 10px rgba(75,45,143,.08);padding:16px 18px;margin-bottom:11px;display:flex;align-items:center;gap:16px}
+.gm-partida .ic{width:40px;height:40px;border-radius:10px;background:var(--pb);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.gm-partida .info{flex:1;min-width:0}
+.gm-partida .info h4{font-size:12.5px;font-weight:800;color:var(--tx)}
+.gm-partida .info p{font-size:10px;color:var(--td)}
+.gm-partida .monto{text-align:right;flex-shrink:0}
+.gm-partida .monto .v{font-size:15px;font-weight:800;color:var(--ink2)}
+.gm-partida .monto .l{font-size:8.5px;color:var(--td);text-transform:uppercase}
+.gm-badge{padding:2px 8px;border-radius:8px;font-size:8.5px;font-weight:700;margin-left:7px}
+.gm-badge.limpio{background:var(--gb);color:var(--g)}
+.gm-badge.ajustado{background:#E8F0FB;color:#1F497D}
+.gm-badge.cerrado{background:var(--gob);color:var(--go)}
+.gm-btn-ajustar{padding:8px 15px;border-radius:8px;background:#E8F0FB;color:#1F497D;border:none;font-size:11px;font-weight:700;cursor:pointer}
+.gm-btn-ajustar:disabled{opacity:.5;cursor:not-allowed}
+.gm-modal-ov{display:none;position:fixed;inset:0;background:rgba(15,10,30,.6);z-index:400;align-items:center;justify-content:center}
+.gm-modal-ov.on{display:flex}
+.gm-modal{background:#fff;border-radius:13px;width:980px;max-width:96vw;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.gm-modal .hdr{background:var(--ink2);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
+.gm-modal .hdr .back{cursor:pointer;font-size:10.5px;color:#E5C229;font-weight:700}
+.gm-modal .hdr h3{font-size:13.5px;font-weight:800}
+.gm-modal .hdr p{font-size:10px;color:rgba(255,255,255,.65);margin-top:2px}
+.gm-modal .hdr .x{cursor:pointer;font-size:17px;opacity:.75}
+.gm-modal .body{padding:18px 20px;overflow-y:auto;flex:1}
+.gm-sub{background:#fff;border:1.5px solid var(--br);border-radius:11px;padding:14px 16px;margin-bottom:9px;display:flex;align-items:center;gap:14px;cursor:pointer}
+.gm-sub:hover{border-color:var(--pl)}
+.gm-sub .info{flex:1}
+.gm-sub .info h4{font-size:11.5px;font-weight:800;color:var(--tx)}
+.gm-sub .info p{font-size:9.5px;color:var(--td);margin-top:2px}
+.gm-sub .val{text-align:right}
+.gm-sub .val .v{font-size:14px;font-weight:800;color:var(--ink2)}
+table.gm-mov{width:100%;border-collapse:collapse;font-size:10.5px;table-layout:fixed}
+table.gm-mov thead th{background:var(--pb);color:var(--p);padding:7px 8px;font-size:8.5px;font-weight:800;text-transform:uppercase;text-align:left}
+table.gm-mov thead th.r{text-align:right}
+table.gm-mov thead th.c{width:32px;text-align:center}
+table.gm-mov tbody td{padding:7px 8px;border-bottom:1px solid var(--br);vertical-align:top}
+table.gm-mov tbody td.r{text-align:right;font-weight:700;color:var(--ink2);white-space:nowrap}
+.gm-desc-edit{width:100%;border:1px solid transparent;background:transparent;font-size:12px;font-weight:700;color:var(--tx);padding:5px 7px;border-radius:6px}
+.gm-desc-edit:hover{border-color:var(--br)}
+.gm-desc-edit:focus{outline:none;border-color:var(--pl);background:var(--pb)}
+.gm-desc-edit.editada{background:var(--gob);border-color:var(--go)}
+.gm-btn-add{padding:7px 13px;border-radius:8px;background:var(--gb);color:var(--g);border:1.5px dashed var(--g);font-size:10.5px;font-weight:700;cursor:pointer}
+.gm-btn-reporte{padding:7px 13px;border-radius:8px;background:#E8F0FB;color:#1F497D;border:none;font-size:10.5px;font-weight:700;cursor:pointer}
+.gm-footer{padding:13px 20px;background:var(--s2);display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--br)}
+.gm-footer .tot{font-size:12px;font-weight:800;color:var(--ink2)}
+.gm-btn{padding:9px 16px;border-radius:8px;font-size:11.5px;font-weight:700;cursor:pointer;border:none}
+.gm-btn-primary{background:var(--p);color:#fff}
+.gm-btn-ghost{background:transparent;color:var(--p);border:1.5px solid var(--pl)}
+.gm-toast{position:fixed;bottom:20px;right:20px;background:var(--g);color:#fff;padding:12px 20px;border-radius:9px;font-size:11.5px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.2);display:none;z-index:500}
+.gm-toast.on{display:block}
+</style>
+<div class="gm-wrap">
+  <div class="gm-hdr">
+    <h1>🛠️ Mantenimiento y Análisis del Flujo de Caja</h1>
+    <p>Corrige una partida antes de enviarla a Cierre y Aprobación. Cada movimiento es real (extraído del Mayor Analítico/CORE ya cargado) — puedes eliminar, incluir o corregir la descripción.</p>
+  </div>
+  <div class="gm-tip">💡 Si un monto se ve correcto, no lo toques — ya viene certificado. Usa "Ajustar" solo si Contabilidad o Presidencia pidió corregir algo puntual.</div>
+  <div class="gm-mes-sel" id="gm-mes-sel"></div>
+  <div id="gm-partidas"></div>
+</div>
+
+<div class="gm-modal-ov" id="gm-modal">
+  <div class="gm-modal">
+    <div class="hdr">
+      <div><span class="back" id="gm-back" onclick="gmVolverSub()" style="display:none">← Volver a subconceptos</span><h3 id="gm-titulo">Detalle</h3><p id="gm-sub">Mes 2026</p></div>
+      <span class="x" onclick="gmCerrarModal()">✕</span>
+    </div>
+    <div class="body" id="gm-body"></div>
+    <div class="gm-footer" id="gm-footer" style="display:none">
+      <span class="tot" id="gm-total-sub"></span>
+      <div style="display:flex;gap:8px">
+        <button class="gm-btn gm-btn-ghost" onclick="gmVolverSub()">Cancelar</button>
+        <button class="gm-btn gm-btn-primary" onclick="gmGuardar()">💾 Guardar y actualizar Dashboard</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="gm-toast" id="gm-toast"></div>
+</div>
+
+<!-- ══ TAB: GERENCIAL · CARGA DE DATOS HISTÓRICOS ══ -->
+<div class="pane" id="pane-gerencial-historico" style="padding:0;flex-direction:column;overflow:hidden">
+  <div class="gm-wrap">
+    <div class="gm-hdr">
+      <h1>🗄️ Carga de Datos Históricos</h1>
+      <p>Módulo de inicialización del sistema — pendiente de construir. Se activa cuando se carguen los Mayores Analíticos históricos que sustentan la trazabilidad completa de los meses ya certificados que ven los accionistas.</p>
+    </div>
+    <div class="gm-tip">📌 Este módulo procesará los históricos con el mismo script de auditoría ya validado (detección por patrón de reclasificaciones: HCM mal contabilizado, uniformes/bordados, mobiliario, asientos mecánicos de nómina), cruzándolos contra el CORE para completar la trazabilidad transaccional de Grupo Polar, Anticipos y Presidencia.</div>
+  </div>
+</div>
+
+<!-- ══ TAB: GERENCIAL · CIERRE Y APROBACIÓN ══ -->
+<div class="pane" id="pane-gerencial-cierre" style="padding:0;flex-direction:column;overflow:hidden">
+  <div class="gm-wrap">
+    <div class="gm-hdr">
+      <h1>✅ Cierre y Aprobación</h1>
+      <p>El mes pasa de "En revisión" a "Cerrado" únicamente al completar este flujo — Contabilidad revisa y luego Presidencia aprueba. Mientras tanto, el mes puede seguir editándose en Mantenimiento.</p>
+    </div>
+    <div class="gm-mes-sel" id="gc-mes-sel"></div>
+    <div class="gm-partida" id="gc-panel" style="flex-direction:column;align-items:stretch;gap:0"></div>
+  </div>
+</div>
+
+<!-- ══ TAB: GERENCIAL · EXPORTAR REPORTE A EXCEL ══ -->
+<div class="pane" id="pane-gerencial-exportar" style="padding:0;flex-direction:column;overflow:hidden">
+  <div class="gm-wrap">
+    <div class="gm-hdr">
+      <h1>📊 Exportar Reporte a Excel</h1>
+      <p>Descarga en Excel los cambios registrados en Mantenimiento (eliminados, incluidos, reincluidos, descripciones editadas) para un mes específico — para este MVP, el envío se hace manualmente por el correo que prefieras (el envío automático por Gmail queda pendiente de OAuth para producción).</p>
+    </div>
+    <div class="gm-mes-sel" id="ge-mes-sel"></div>
+    <div class="gm-partida" id="ge-preview" style="flex-direction:column;align-items:stretch;gap:8px"></div>
+    <div style="margin-top:14px"><button class="gm-btn gm-btn-primary" onclick="gmExportarExcel()">📊 Exportar a Excel</button></div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   GERENCIAL — Mantenimiento, Cierre, Exportar
+   Fuente de cifras: modelo oficial verificado (FLUJO_DE_CAJA_LA_FE).
+   Fuente de trazabilidad transaccional: window.__TF_RAW.regs (CORE real).
+   ══════════════════════════════════════════════════════════════════ */
+(function(){
+var GM_MESES = ["Enero","Febrero","Marzo","Abril","Mayo"];
+var GM_ESTADOS = {1:'cerrado',2:'cerrado',3:'cerrado',4:'cerrado',5:'en revisión'};
+var GM_MES_ACTIVO = 5;
+
+/* Cifras oficiales certificadas (verificadas por fórmula contra FLUJO_DE_CAJA_LA_FE) */
+var GM_PARTIDAS = [
+  {ic:'🧾', nombre:'Siniestros Pagados', desc:'Seguros La Fe + Grupo Polar', cats:['siniestros','telemedicina'],
+   montos:{1:132381.99,2:61141.42,3:68124.07,4:104854.94,5:78457.82}},
+  {ic:'🤝', nombre:'Gastos de Comisiones', desc:'Promoción, Call Center, Funeasistencia', cats:['promocion_venta'],
+   montos:{1:7508.98,2:16038.51,3:21090.88,4:26744.63,5:18691.02}},
+  {ic:'🏢', nombre:'Gasto de Administración', desc:'Honorarios, servicios, proveedores', cats:['gastos_adm','soporte_tecnico','impuestos','beneficios_emp'],
+   montos:{1:96724.78,2:67989.51,3:79391.02,4:90402.81,5:74272.59}},
+  {ic:'🧑\u200d💼', nombre:'Nómina Gerentes + Diferencial', desc:'Pago en divisas al equipo gerencial', cats:['nomina_gerentes','difer_cambiario'],
+   montos:{1:29826.39,2:21653.58,3:23960.94,4:21176.88,5:18837.19}},
+  {ic:'🏦', nombre:'Costo Bancario', desc:'Comisiones de domiciliación y mantenimiento', cats:['costo_bancario'],
+   montos:{1:5795.01,2:5424.70,3:5733.05,4:8225.07,5:6243.66}},
+  {ic:'🏛️', nombre:'Gastos de Presidencia', desc:'Incluye condominios, servicios, diversos', cats:['presidencia'],
+   montos:{1:11266.36,2:10131.68,3:14831.59,4:12194.95,5:14048.47}}
+];
+
+var GM_ELIMINADOS = {};   // key: mes-partidaIdx-catIdx -> Set(indices de reg eliminados)
+var GM_AGREGADOS = {};    // key: mes-partidaIdx-catIdx -> array de registros manuales
+var GM_DESC_EDITADAS = {};// key: mes-partidaIdx-catIdx-regId -> nueva descripcion
+var GM_AJUSTES_TOTAL = {};// key: mes-partidaIdx -> nuevo total
+var GM_CAMBIOS = [];      // {mes, partida, cat, accion, reg, fecha}
+var GM_PARTIDA_ACTUAL = null, GM_CAT_ACTUAL = null;
+
+function gmFmt(v){ return "$"+(v||0).toLocaleString("es-VE",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function gmToast(msg){
+  var t = document.getElementById('gm-toast');
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(window._gmToastTimer);
+  window._gmToastTimer = setTimeout(function(){ t.classList.remove('on'); }, 2800);
+}
+
+function gmRegsDe(mIdx, cat){
+  if(!window.__TF_RAW) return [];
+  return window.__TF_RAW.regs.filter(function(r){ return r.mes===mIdx && r.cat===cat; })
+    .sort(function(a,b){ return b.usd-a.usd; });
+}
+function gmMovsDe(pIdx, catIdx){
+  var p = GM_PARTIDAS[pIdx]; var cat = p.cats[catIdx];
+  var base = gmRegsDe(GM_MES_ACTIVO, cat);
+  var key = GM_MES_ACTIVO+'-'+pIdx+'-'+catIdx;
+  return base.concat(GM_AGREGADOS[key]||[]);
+}
+function gmTotalCat(pIdx, catIdx){
+  var key = GM_MES_ACTIVO+'-'+pIdx+'-'+catIdx;
+  var elim = GM_ELIMINADOS[key] || new Set();
+  var movs = gmMovsDe(pIdx, catIdx);
+  var t = 0;
+  movs.forEach(function(m,i){ if(!elim.has(i)) t += (m.usd||0); });
+  return t;
+}
+
+function renderGmMesSel(){
+  var html = '';
+  GM_MESES.forEach(function(m,i){
+    var mi = i+1;
+    html += '<div class="gm-mes-btn'+(mi===GM_MES_ACTIVO?' on':'')+'" onclick="gmSetMes('+mi+')">'+m
+      + '<span class="est">'+(GM_ESTADOS[mi]==='cerrado'?'✓ Cerrado':'⏳ En revisión')+'</span></div>';
+  });
+  document.getElementById('gm-mes-sel').innerHTML = html;
+}
+window.gmSetMes = function(mi){ GM_MES_ACTIVO = mi; renderGmMesSel(); renderGmPartidas(); };
+
+function renderGmPartidas(){
+  var html = '';
+  var cerrado = GM_ESTADOS[GM_MES_ACTIVO]==='cerrado';
+  GM_PARTIDAS.forEach(function(p, idx){
+    var key = GM_MES_ACTIVO+'-'+idx;
+    var ajustado = GM_AJUSTES_TOTAL[key]!==undefined;
+    var monto = ajustado ? GM_AJUSTES_TOTAL[key] : p.montos[GM_MES_ACTIVO];
+    html += '<div class="gm-partida">'
+      + '<div class="ic">'+p.ic+'</div>'
+      + '<div class="info"><h4>'+p.nombre+(ajustado?'<span class="gm-badge ajustado">Ajustado</span>':'<span class="gm-badge limpio">Sin cambios</span>')+(cerrado?'<span class="gm-badge cerrado">🔒 Cerrado</span>':'')+'</h4><p>'+p.desc+'</p></div>'
+      + '<div class="monto"><div class="v">'+gmFmt(monto)+'</div><div class="l">Monto actual</div></div>'
+      + '<button class="gm-btn-ajustar" '+(cerrado?'disabled':'')+' onclick="gmAbrirSub('+idx+')">'+(cerrado?'🔒 Bloqueado':'✏️ Ajustar')+'</button>'
+      + '</div>';
+  });
+  document.getElementById('gm-partidas').innerHTML = html;
+}
+
+window.gmAbrirSub = function(pIdx){
+  GM_PARTIDA_ACTUAL = pIdx;
+  var p = GM_PARTIDAS[pIdx];
+  document.getElementById('gm-titulo').textContent = p.nombre;
+  document.getElementById('gm-sub').textContent = GM_MESES[GM_MES_ACTIVO-1]+' 2026 · Selecciona un subconcepto';
+  document.getElementById('gm-back').style.display = 'none';
+  document.getElementById('gm-footer').style.display = 'none';
+  var html = '';
+  p.cats.forEach(function(cat, cIdx){
+    var lbl = (window.__TF_RAW && window.__TF_RAW.resumen[cat]) ? window.__TF_RAW.resumen[cat].lbl : cat;
+    var total = gmTotalCat(pIdx, cIdx);
+    var n = gmMovsDe(pIdx, cIdx).length;
+    html += '<div class="gm-sub" onclick="gmAbrirMovs('+pIdx+','+cIdx+')">'
+      + '<div class="info"><h4>'+lbl+'</h4><p>'+n+' movimiento(s) reales del CORE/Mayor Analítico este mes</p></div>'
+      + '<div class="val"><div class="v">'+gmFmt(total)+'</div></div>'
+      + '</div>';
+  });
+  document.getElementById('gm-body').innerHTML = html;
+  document.getElementById('gm-modal').classList.add('on');
+};
+window.gmVolverSub = function(){
+  if (GM_CAT_ACTUAL !== null){ GM_CAT_ACTUAL = null; gmAbrirSub(GM_PARTIDA_ACTUAL); }
+  else gmCerrarModal();
+};
+window.gmCerrarModal = function(){ document.getElementById('gm-modal').classList.remove('on'); GM_PARTIDA_ACTUAL=null; GM_CAT_ACTUAL=null; };
+
+window.gmAbrirMovs = function(pIdx, catIdx){
+  GM_PARTIDA_ACTUAL = pIdx; GM_CAT_ACTUAL = catIdx;
+  var p = GM_PARTIDAS[pIdx];
+  var lbl = (window.__TF_RAW && window.__TF_RAW.resumen[p.cats[catIdx]]) ? window.__TF_RAW.resumen[p.cats[catIdx]].lbl : p.cats[catIdx];
+  document.getElementById('gm-titulo').textContent = lbl;
+  document.getElementById('gm-sub').textContent = p.nombre+' · '+GM_MESES[GM_MES_ACTIVO-1]+' 2026';
+  document.getElementById('gm-back').style.display = 'inline';
+  document.getElementById('gm-footer').style.display = 'flex';
+  renderGmMovs();
+};
+
+function gmContarCambios(pIdx, catIdx){
+  return GM_CAMBIOS.filter(function(c){ return c.mes===GM_MES_ACTIVO && c.pIdx===pIdx && c.catIdx===catIdx; }).length;
+}
+function gmRegistrarCambio(accion, reg){
+  GM_CAMBIOS.push({mes:GM_MES_ACTIVO, pIdx:GM_PARTIDA_ACTUAL, catIdx:GM_CAT_ACTUAL,
+    partida:GM_PARTIDAS[GM_PARTIDA_ACTUAL].nombre, accion:accion, reg:reg,
+    fecha:new Date().toLocaleString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})});
+}
+
+function renderGmMovs(){
+  var pIdx=GM_PARTIDA_ACTUAL, catIdx=GM_CAT_ACTUAL;
+  var key = GM_MES_ACTIVO+'-'+pIdx+'-'+catIdx;
+  var elim = GM_ELIMINADOS[key] || new Set();
+  var movs = gmMovsDe(pIdx, catIdx);
+  var cerrado = GM_ESTADOS[GM_MES_ACTIVO]==='cerrado';
+  var nCambios = gmContarCambios(pIdx, catIdx);
+
+  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px">'
+    + '<span style="font-size:10.5px;color:var(--tm)">📌 Movimientos reales — edita la descripción o elimina uno si no corresponde.</span>'
+    + '<div style="display:flex;gap:8px">'
+    + (nCambios>0 ? '<button class="gm-btn-reporte" onclick="gmVerCambios()">📋 Ver cambios ('+nCambios+')</button>' : '')
+    + (cerrado?'':'<button class="gm-btn-add" onclick="gmAgregarMov()">➕ Incluir movimiento</button>')
+    + '</div></div>';
+
+  html += '<table class="gm-mov"><thead><tr><th class="c">Quitar</th><th style="width:75px">Fecha</th><th style="width:95px">N° Asiento</th><th style="width:150px">Tipo</th><th>Descripción</th><th style="width:140px">Beneficiario</th><th class="r" style="width:95px">Monto Bs.</th><th class="r" style="width:85px">Monto USD</th></tr></thead><tbody>';
+  movs.forEach(function(m, i){
+    if (elim.has(i)) return;
+    var descKey = key+'-'+(m.id||i);
+    var descVal = GM_DESC_EDITADAS[descKey]!==undefined ? GM_DESC_EDITADAS[descKey] : (m.desc||'');
+    var editada = GM_DESC_EDITADAS[descKey]!==undefined;
+    html += '<tr>'
+      + '<td class="c"><input type="checkbox" onchange="gmToggleElim('+i+')" '+(cerrado?'disabled':'')+'></td>'
+      + '<td>'+(m.fecha||'—')+'</td>'
+      + '<td style="font-family:monospace;font-size:9px;color:var(--td)">'+(m.id||'—')+'</td>'
+      + '<td style="font-size:10px">'+(m.tipo||'—')+'</td>'
+      + '<td><input type="text" class="gm-desc-edit'+(editada?' editada':'')+'" value="'+String(descVal).replace(/"/g,'&quot;')+'" onchange="gmEditarDesc('+i+',this.value)" '+(cerrado?'disabled':'')+'></td>'
+      + '<td style="font-size:10px">'+(m.benef||'—')+'</td>'
+      + '<td class="r">Bs. '+Number(m.bs||0).toLocaleString('es-VE',{minimumFractionDigits:2})+'</td>'
+      + '<td class="r">'+gmFmt(m.usd)+'</td>'
+      + '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('gm-body').innerHTML = html;
+  document.getElementById('gm-total-sub').textContent = 'Total del subconcepto: '+gmFmt(gmTotalCat(pIdx,catIdx));
+}
+
+window.gmToggleElim = function(i){
+  var key = GM_MES_ACTIVO+'-'+GM_PARTIDA_ACTUAL+'-'+GM_CAT_ACTUAL;
+  if(!GM_ELIMINADOS[key]) GM_ELIMINADOS[key] = new Set();
+  var movs = gmMovsDe(GM_PARTIDA_ACTUAL, GM_CAT_ACTUAL);
+  GM_ELIMINADOS[key].add(i);
+  gmRegistrarCambio('eliminado', movs[i]);
+  renderGmMovs();
+  gmToast('Registro eliminado — quedó en el reporte de cambios');
+};
+window.gmEditarDesc = function(i, valor){
+  var movs = gmMovsDe(GM_PARTIDA_ACTUAL, GM_CAT_ACTUAL);
+  var m = movs[i];
+  var descKey = GM_MES_ACTIVO+'-'+GM_PARTIDA_ACTUAL+'-'+GM_CAT_ACTUAL+'-'+(m.id||i);
+  GM_DESC_EDITADAS[descKey] = valor;
+  var editado = Object.assign({}, m, {desc:valor});
+  gmRegistrarCambio('editado', editado);
+  renderGmMovs();
+};
+window.gmAgregarMov = function(){
+  var key = GM_MES_ACTIVO+'-'+GM_PARTIDA_ACTUAL+'-'+GM_CAT_ACTUAL;
+  if(!GM_AGREGADOS[key]) GM_AGREGADOS[key] = [];
+  var nuevo = {id:'', fecha:'', tipo:'', desc:'', benef:'', bs:0, usd:0};
+  GM_AGREGADOS[key].push(nuevo);
+  gmRegistrarCambio('incluido', nuevo);
+  renderGmMovs();
+};
+window.gmVerCambios = function(){
+  var cambios = GM_CAMBIOS.filter(function(c){ return c.mes===GM_MES_ACTIVO && c.pIdx===GM_PARTIDA_ACTUAL && c.catIdx===GM_CAT_ACTUAL; });
+  var html = '<h4 style="font-size:12.5px;font-weight:800;color:var(--ink2);margin-bottom:11px">📋 Reporte de cambios</h4>';
+  cambios.forEach(function(c){
+    var color = c.accion==='eliminado'?'var(--r)':c.accion==='incluido'?'var(--g)':'#1F497D';
+    html += '<div style="border-left:3px solid '+color+';background:var(--s2);border-radius:7px;padding:9px 12px;margin-bottom:7px;font-size:10.5px">'
+      + '<b>'+c.accion.toUpperCase()+'</b> <span style="color:var(--td);font-size:9px;margin-left:6px">'+c.fecha+'</span>'
+      + '<div style="margin-top:4px">'+(c.reg.desc||c.reg.id||'—')+' · '+gmFmt(c.reg.usd||0)+'</div></div>';
+  });
+  if(!cambios.length) html += '<p style="font-size:10.5px;color:var(--td)">Sin cambios registrados.</p>';
+  html += '<button class="gm-btn gm-btn-ghost" style="margin-top:8px" onclick="renderGmMovs()">← Volver a movimientos</button>';
+  document.getElementById('gm-body').innerHTML = html;
+};
+window.gmGuardar = function(){
+  var p = GM_PARTIDAS[GM_PARTIDA_ACTUAL];
+  var total = 0;
+  p.cats.forEach(function(cat, cIdx){ total += gmTotalCat(GM_PARTIDA_ACTUAL, cIdx); });
+  GM_AJUSTES_TOTAL[GM_MES_ACTIVO+'-'+GM_PARTIDA_ACTUAL] = total;
+  gmCerrarModal();
+  renderGmPartidas();
+  gmToast('Movimientos guardados — Dashboard de Flujo de Caja actualizado');
+};
+
+function renderGerencialMantenimiento(){ renderGmMesSel(); renderGmPartidas(); }
+window.renderGerencialMantenimiento = renderGerencialMantenimiento;
+
+/* ══════════ CIERRE Y APROBACIÓN ══════════ */
+var GC_FIRMAS = {};
+function renderGcMesSel(){
+  var html = '';
+  GM_MESES.forEach(function(m,i){
+    var mi = i+1;
+    html += '<div class="gm-mes-btn'+(mi===GM_MES_ACTIVO?' on':'')+'" onclick="gcSetMes('+mi+')">'+m
+      + '<span class="est">'+(GM_ESTADOS[mi]==='cerrado'?'✓ Cerrado':'⏳ En revisión')+'</span></div>';
+  });
+  document.getElementById('gc-mes-sel').innerHTML = html;
+}
+window.gcSetMes = function(mi){ GM_MES_ACTIVO=mi; renderGcMesSel(); renderGerencialCierre(); };
+function renderGerencialCierre(){
+  renderGcMesSel();
+  var mes = GM_MES_ACTIVO;
+  var f = GC_FIRMAS[mes] || {contabilidad:false, presidencia:false};
+  var cerrado = GM_ESTADOS[mes]==='cerrado';
+  var nCambios = GM_CAMBIOS.filter(function(c){return c.mes===mes;}).length;
+  var html = '<h3 style="font-size:13px;font-weight:800;color:var(--ink2);margin-bottom:6px">Estado de '+GM_MESES[mes-1]+' 2026</h3>'
+    + '<p style="font-size:10.5px;color:var(--td);margin-bottom:14px">'+nCambios+' cambio(s) registrados en Mantenimiento para este mes.</p>'
+    + '<label style="display:flex;align-items:center;gap:10px;background:var(--s2);padding:11px 15px;border-radius:9px;cursor:pointer;margin-bottom:9px">'
+      + '<input type="checkbox" style="width:17px;height:17px" '+(f.contabilidad?'checked':'')+' '+(cerrado?'disabled':'')+' onchange="gcToggleFirma(\'contabilidad\')">'
+      + '<span style="font-size:11.5px"><b>Contabilidad revisó</b> las partidas y ajustes del mes</span></label>'
+    + '<label style="display:flex;align-items:center;gap:10px;background:var(--s2);padding:11px 15px;border-radius:9px;cursor:pointer;margin-bottom:14px">'
+      + '<input type="checkbox" style="width:17px;height:17px" '+(f.presidencia?'checked':'')+' '+(cerrado||!f.contabilidad?'disabled':'')+' onchange="gcToggleFirma(\'presidencia\')">'
+      + '<span style="font-size:11.5px"><b>Presidencia aprobó</b> para publicación al accionista</span></label>';
+  if (cerrado){
+    html += '<div style="background:var(--gb);color:var(--g);padding:11px 15px;border-radius:9px;font-weight:700;font-size:11.5px">✓ Mes cerrado y aprobado. Mantenimiento queda bloqueado para este mes.</div>';
+  } else {
+    html += '<button class="gm-btn gm-btn-primary" '+((f.contabilidad&&f.presidencia)?'':'disabled style="opacity:.5;cursor:not-allowed"')+' onclick="gcAprobar()">✅ Aprobar y Cerrar el mes</button>';
+  }
+  document.getElementById('gc-panel').innerHTML = html;
+}
+window.gcToggleFirma = function(quien){
+  if(!GC_FIRMAS[GM_MES_ACTIVO]) GC_FIRMAS[GM_MES_ACTIVO] = {contabilidad:false, presidencia:false};
+  GC_FIRMAS[GM_MES_ACTIVO][quien] = !GC_FIRMAS[GM_MES_ACTIVO][quien];
+  renderGerencialCierre();
+};
+window.gcAprobar = function(){
+  GM_ESTADOS[GM_MES_ACTIVO] = 'cerrado';
+  renderGerencialCierre();
+  gmToast(GM_MESES[GM_MES_ACTIVO-1]+' cerrado y aprobado — Mantenimiento bloqueado para este mes');
+};
+window.renderGerencialCierre = renderGerencialCierre;
+
+/* ══════════ EXPORTAR A EXCEL ══════════ */
+var GE_MES = GM_MES_ACTIVO;
+function renderGeMesSel(){
+  var html = '';
+  GM_MESES.forEach(function(m,i){
+    var mi=i+1;
+    html += '<div class="gm-mes-btn'+(mi===GE_MES?' on':'')+'" onclick="geSetMes('+mi+')">'+m
+      + '<span class="est">'+(GM_ESTADOS[mi]==='cerrado'?'✓ Cerrado':'⏳ En revisión')+'</span></div>';
+  });
+  document.getElementById('ge-mes-sel').innerHTML = html;
+}
+window.geSetMes = function(mi){ GE_MES=mi; renderGeMesSel(); renderGeGerencialExportar(); };
+function renderGeGerencialExportar(){
+  renderGeMesSel();
+  var cambios = GM_CAMBIOS.filter(function(c){ return c.mes===GE_MES; });
+  var html = '';
+  if(!cambios.length){ html = '<p style="font-size:11px;color:var(--td)">No hay cambios registrados en Mantenimiento para '+GM_MESES[GE_MES-1]+'.</p>'; }
+  cambios.forEach(function(c){
+    var color = c.accion==='eliminado'?'var(--r)':c.accion==='incluido'?'var(--g)':'#1F497D';
+    html += '<div style="border-left:3px solid '+color+';background:var(--s2);border-radius:7px;padding:9px 12px;font-size:10.5px">'
+      + '<b>'+c.accion.toUpperCase()+'</b> · '+c.partida+' — '+(c.reg.desc||c.reg.id||'—')+' · '+gmFmt(c.reg.usd||0)+'</div>';
+  });
+  document.getElementById('ge-preview').innerHTML = html;
+}
+window.renderGerencialExportar = renderGeGerencialExportar;
+
+function gmCsvEscape(v){ v=(v===null||v===undefined)?'':String(v); if(v.indexOf(',')>-1||v.indexOf('"')>-1||v.indexOf('\n')>-1) v='"'+v.replace(/"/g,'""')+'"'; return v; }
+window.gmExportarExcel = function(){
+  var cambios = GM_CAMBIOS.filter(function(c){ return c.mes===GE_MES; });
+  if(!cambios.length){ alert('No hay cambios registrados para '+GM_MESES[GE_MES-1]+'.'); return; }
+  var PM='#2D1860', PM2='#4B2D8F', PL='#F2EEFB', PB='#E4DCF5';
+  var htmlDoc = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">'
+    + '<head><meta charset="UTF-8"><style>'
+    + 'table{border-collapse:collapse;font-size:11pt;font-family:Calibri}'
+    + '.tit{background:'+PM+';color:#fff;font-size:16pt;font-weight:bold;padding:10px}'
+    + '.sub{background:'+PM2+';color:#fff;font-size:10pt;padding:6px 10px}'
+    + 'th{background:'+PM+';color:#fff;font-weight:bold;padding:8px 10px;border:1px solid '+PB+';text-align:left;font-size:9.5pt;text-transform:uppercase}'
+    + 'td{padding:7px 10px;border:1px solid '+PB+';font-size:10.5pt}'
+    + '.par{background:'+PL+'}'
+    + '.b-elim{background:#F9E0DD;color:#B0190F;font-weight:bold;text-align:center}.b-inc{background:#DCEFD8;color:#0D7A4E;font-weight:bold;text-align:center}.b-edit{background:#E8F0FB;color:#1F497D;font-weight:bold;text-align:center}'
+    + '</style></head><body><table>'
+    + '<tr><td class="tit" colspan="8">Reporte de Cambios — Mantenimiento del Flujo de Caja</td></tr>'
+    + '<tr><td class="sub" colspan="8">Seguros La Fe, C.A. · '+GM_MESES[GE_MES-1]+' 2026 · '+cambios.length+' cambio(s)</td></tr>'
+    + '<tr><td colspan="8" style="padding:4px"></td></tr>'
+    + '<tr><th>Partida</th><th>Acción</th><th>Fecha</th><th>N° Asiento</th><th>Descripción</th><th>Beneficiario</th><th>Monto Bs.</th><th>Monto USD</th></tr>';
+  cambios.forEach(function(c,i){
+    var cls = c.accion==='eliminado'?'b-elim':c.accion==='incluido'?'b-inc':'b-edit';
+    htmlDoc += '<tr class="'+(i%2===1?'par':'')+'">'
+      + '<td>'+gmCsvEscape(c.partida)+'</td>'
+      + '<td class="'+cls+'">'+c.accion.toUpperCase()+'</td>'
+      + '<td>'+gmCsvEscape(c.reg.fecha)+'</td>'
+      + '<td>'+gmCsvEscape(c.reg.id)+'</td>'
+      + '<td>'+gmCsvEscape(c.reg.desc)+'</td>'
+      + '<td>'+gmCsvEscape(c.reg.benef)+'</td>'
+      + '<td>Bs. '+Number(c.reg.bs||0).toLocaleString('es-VE',{minimumFractionDigits:2})+'</td>'
+      + '<td>'+gmFmt(c.reg.usd||0)+'</td>'
+      + '</tr>';
+  });
+  htmlDoc += '</table></body></html>';
+  var blob = new Blob(['\ufeff'+htmlDoc], {type:'application/vnd.ms-excel'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a'); a.href=url; a.download='Cambios_Mantenimiento_'+GM_MESES[GE_MES-1]+'_2026.xls';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  gmToast('Excel exportado — '+cambios.length+' cambio(s)');
+};
+})();
+</script>
 
 <!-- ══ TAB: DASHBOARD ══ -->
 <div class="pane" id="pane-dashboard" style="padding:0;height:calc(100vh - 110px);flex-direction:column">
@@ -2209,6 +3082,9 @@ function showTab(name, btn){
   if(name==='tesoreria-flujo') renderTesoreriaFlujo();
   if(name==='tesoreria-divisas') renderTesoreriaDivisas();
   if(name==='tesoreria-carga') renderTesoreriaCarga();
+  if(name==='gerencial-mantenimiento') renderGerencialMantenimiento();
+  if(name==='gerencial-cierre') renderGerencialCierre();
+  if(name==='gerencial-exportar') renderGerencialExportar();
 }
 
 // Expande/colapsa un grupo del menú lateral. Si se abre uno, cierra los demás
