@@ -476,28 +476,128 @@ table.diff td.new{background:#DCFCE7;color:var(--g);font-weight:700}
 
 <!-- ══ TAB: CUENTAS ══ -->
 <div class="pane" id="pane-cuentas">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-    <h2 style="font-size:14px;font-weight:700;color:var(--ink2)">Catálogo de Cuentas Contables</h2>
-    <button class="btn btn-primary" onclick="openAccountModal()">+ Nueva Cuenta</button>
+<style>
+.mcc-hdr{margin-bottom:14px}
+.mcc-hdr h2{font-size:15px;font-weight:800;color:var(--ink2)}
+.mcc-hdr p{font-size:11px;color:var(--tm);margin-top:4px;max-width:680px;line-height:1.45}
+.mcc-tip{background:var(--pb);border-left:3px solid var(--p);border-radius:7px;padding:9px 13px;font-size:10.5px;color:var(--ink2);margin-bottom:14px}
+.mcc-ramo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:16px}
+.mcc-ramo-card{border-radius:11px;padding:14px;cursor:pointer;border:2px solid transparent;color:#fff;min-height:76px;display:flex;flex-direction:column;justify-content:space-between;transition:.15s}
+.mcc-ramo-card:hover{transform:translateY(-2px)}
+.mcc-ramo-card.on{border-color:#E5C229;box-shadow:0 0 0 3px rgba(229,194,41,.3)}
+.mcc-ramo-card .nom{font-size:12.5px;font-weight:800}
+.mcc-ramo-card .meta{font-size:9px;opacity:.85;margin-top:5px}
+.mcc-ramo-card.nuevo{background:var(--s);border:2px dashed var(--pl);color:var(--p);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11.5px;min-height:76px}
+.mcc-ramo-card.nuevo:hover{background:var(--pb)}
+.mcc-card{background:var(--s);border-radius:11px;box-shadow:0 2px 10px rgba(0,0,0,.06);padding:16px 18px;margin-bottom:14px}
+.mcc-card h3{font-size:12.5px;font-weight:800;color:var(--ink2);margin-bottom:3px;display:flex;justify-content:space-between;align-items:center}
+.mcc-card .sub{font-size:10px;color:var(--tm);margin-bottom:12px}
+table.mcc-tbl{width:100%;border-collapse:collapse;font-size:10.5px}
+table.mcc-tbl thead th{background:var(--pb);color:var(--p);padding:7px 9px;font-size:9px;font-weight:800;text-transform:uppercase;text-align:left}
+table.mcc-tbl thead th.c{text-align:center}
+table.mcc-tbl tbody td{padding:7px 9px;border-bottom:1px solid var(--br);vertical-align:middle}
+table.mcc-tbl tbody td.c{text-align:center}
+table.mcc-tbl tbody tr.certificada{background:rgba(13,122,78,.04)}
+.mcc-badge{padding:2px 8px;border-radius:7px;font-size:8.5px;font-weight:700}
+.mcc-badge.cert{background:var(--gb);color:var(--g)}
+.mcc-badge.custom{background:#E8F0FB;color:#1F497D}
+.mcc-mono{font-family:'Courier New',monospace;font-size:9.5px;color:var(--tm)}
+.mcc-btn-add{padding:7px 14px;border-radius:7px;background:var(--gb);color:var(--g);border:1.5px dashed var(--g);font-size:10.5px;font-weight:700;cursor:pointer}
+.mcc-btn-add:hover{background:var(--g);color:#fff}
+.mcc-btn-mini{background:none;border:none;cursor:pointer;font-size:12px}
+.mcc-prorrateo-bar{display:flex;height:30px;border-radius:7px;overflow:hidden;margin:9px 0}
+.mcc-prorrateo-bar .seg{display:flex;align-items:center;justify-content:center;color:#fff;font-size:9.5px;font-weight:800}
+.mcc-financiero-badge{background:#E8F0FB;color:#1F497D;font-size:8.5px;font-weight:800;padding:3px 9px;border-radius:7px;text-transform:uppercase}
+.mcc-step-label{font-size:11px;font-weight:800;color:var(--tm);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px;display:flex;align-items:center;gap:8px}
+.mcc-step-n{width:20px;height:20px;border-radius:50%;background:var(--p);color:#fff;font-size:10.5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mcc-prod-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.mcc-prod-chip{padding:9px 16px;border-radius:20px;border:1.5px solid var(--br);background:var(--s);cursor:pointer;font-size:11.5px;font-weight:700;color:var(--tm)}
+.mcc-prod-chip.on{color:#fff;border-color:transparent}
+.mcc-prod-chip .n{font-size:9px;opacity:.85;margin-left:5px;font-weight:600}
+.mcc-prod-chip.nuevo{border-style:dashed;color:var(--p);border-color:var(--pl)}
+.mcc-prod-chip.nuevo:hover{background:var(--pb)}
+.mcc-inline-input{width:100%;border:1.5px solid transparent;background:transparent;padding:5px 7px;border-radius:6px;font-size:11px;font-family:inherit;color:var(--ink2)}
+.mcc-inline-input:hover{border-color:var(--br)}
+.mcc-inline-input:focus{outline:none;border-color:var(--p);background:var(--pb)}
+</style>
+
+  <div class="mcc-hdr">
+    <h2>🗂️ Mantenimiento de Cuentas Contables</h2>
+    <p>Configura qué cuentas contables alimentan cada Ramo y Producto para el cálculo de la gestión técnica. Selecciona el ramo, el producto, y luego ve agregando los conceptos con su cuenta contable — el sistema hace el resto automáticamente.</p>
   </div>
-  <div class="card">
-    <div class="card-body" id="accounts-body">
-      <div class="empty-state"><div class="ei">🔄</div><div class="et">Cargando cuentas...</div></div>
-    </div>
+  <div class="mcc-tip">ℹ️ <b>Regla automática (fija, no editable):</b> Enero toma el <b>Saldo Final</b> del balance; de Febrero en adelante toma el <b>Movimiento del mes</b>. El sistema ya lo aplica solo.</div>
+
+  <div class="mcc-step-label"><span class="mcc-step-n">1</span> Selecciona el Ramo</div>
+  <div class="mcc-ramo-grid" id="mcc-ramo-grid"></div>
+
+  <div class="mcc-step-label"><span class="mcc-step-n">2</span> Selecciona el Producto</div>
+  <div class="mcc-prod-row" id="mcc-producto-row"></div>
+
+  <div class="mcc-card" id="mcc-conceptos-card" style="display:none">
+    <h3><span id="mcc-conceptos-titulo">Conceptos y Cuentas</span><button class="btn btn-primary" style="font-size:10.5px;padding:6px 12px" onclick="openAccountModal(null,MCC_RAMO_ACTIVO,MCC_PRODUCTO_ACTIVO)">+ Nueva Cuenta</button></h3>
+    <p class="sub">Cada concepto certificado ya viene con su campo de fórmula fijo (no editable). Los conceptos que agregues tú también deben elegir un campo — el signo de la fórmula ya está definido por ese campo, no se configura aparte.</p>
+    <div id="mcc-conceptos-body"></div>
+  </div>
+
+  <div class="mcc-card">
+
+    <h3>💼 Gestión Financiera <span class="mcc-financiero-badge">No afecta la gestión técnica</span></h3>
+    <p class="sub">Ingresos y egresos financieros que se registran aparte del cálculo por ramo — incluye el 2% de Gasto Administrativo prorrateado automáticamente.</p>
+    <div id="mcc-financiero-body"></div>
+    <button class="mcc-btn-add" style="margin-top:10px" onclick="openAccountModal(null,'financiero')">➕ Agregar concepto financiero</button>
+  </div>
+
+  <div class="mcc-card">
+    <h3>📐 Prorrateo del Gasto Administrativo — regla fija 98% / 2%</h3>
+    <p class="sub" id="mcc-prorrateo-sub">El 98% se prorratea entre los ramos según su % de Prima Cobrada; el 2% va directo a Gestión Financiera. Cálculo 100% automático, ya certificado.</p>
+    <div id="mcc-prorrateo-body"></div>
   </div>
 </div>
 
 <!-- ══ TAB: KPIs CONFIG ══ -->
 <div class="pane" id="pane-kpis">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-    <h2 style="font-size:14px;font-weight:700;color:var(--ink2)">Configuración de KPIs</h2>
-    <button class="btn btn-primary" onclick="openKpiModal()">+ Nuevo KPI</button>
+  <div class="kpiv-hdr">
+    <h2>📈 ¿Cómo va cada ramo?</h2>
+    <p>Aquí ves, de un vistazo, si cada ramo está sano o necesita atención. Toca un ramo para ver sus indicadores — el número ya viene calculado con el último balance cargado.</p>
   </div>
-  <div class="card">
-    <div class="card-body" id="kpis-body">
-      <div class="empty-state"><div class="ei">🔄</div><div class="et">Cargando KPIs...</div></div>
-    </div>
-  </div>
+  <style>
+  .kpiv-hdr{margin-bottom:16px}
+  .kpiv-hdr h2{font-size:16px;font-weight:800;color:var(--ink2)}
+  .kpiv-hdr p{font-size:11.5px;color:var(--tm);margin-top:5px;max-width:640px;line-height:1.5}
+
+  /* Selector de ramo — pestañas simples, NO tarjetas grandes de color (para no verse como Cuentas Contables) */
+  .kpiv-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;border-bottom:2px solid var(--br);padding-bottom:0}
+  .kpiv-tab{padding:10px 18px;cursor:pointer;font-size:12px;font-weight:700;color:var(--tm);border-bottom:3px solid transparent;margin-bottom:-2px;display:flex;align-items:center;gap:7px}
+  .kpiv-tab .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+  .kpiv-tab.on{color:var(--ink2)}
+
+  .kpiv-mesref{font-size:10.5px;color:var(--tm);margin-bottom:14px;display:flex;align-items:center;gap:6px}
+  .kpiv-mesref b{color:var(--ink2)}
+
+  /* Tarjetas de indicador — con medidor circular, no solo texto */
+  .kpiv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+  .kpiv-card{background:var(--s);border-radius:13px;box-shadow:0 2px 10px rgba(0,0,0,.06);padding:16px;position:relative}
+  .kpiv-card .top{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .kpiv-gauge{width:52px;height:52px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:800;color:#fff}
+  .kpiv-gauge.g{background:conic-gradient(var(--g) 0 100%, var(--g) 0);background:var(--g)}
+  .kpiv-gauge.a{background:var(--go)}
+  .kpiv-gauge.r{background:var(--r)}
+  .kpiv-gauge.n{background:var(--td)}
+  .kpiv-card h4{font-size:12.5px;font-weight:800;color:var(--ink2);line-height:1.3}
+  .kpiv-veredicto{font-size:10px;font-weight:700;color:var(--tm);margin-top:2px}
+  .kpiv-card .frase{font-size:10.5px;color:var(--tm);line-height:1.4;margin-top:8px}
+  .kpiv-card .tag-tuyo{position:absolute;top:12px;right:12px;background:var(--pb);color:var(--p);font-size:8px;font-weight:800;padding:2px 7px;border-radius:6px;text-transform:uppercase}
+  .kpiv-card .acciones{display:flex;gap:6px;margin-top:10px;justify-content:flex-end}
+  .kpiv-mini-btn{background:none;border:1px solid var(--br);border-radius:7px;width:26px;height:26px;cursor:pointer;font-size:11px}
+  .kpiv-mini-btn:hover{background:var(--pb)}
+  .kpiv-add-card{border:2px dashed var(--pl);border-radius:13px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;cursor:pointer;padding:20px;color:var(--p);font-size:11.5px;font-weight:700;min-height:120px}
+  .kpiv-add-card:hover{background:var(--pb)}
+  .kpiv-add-card .plus{font-size:24px}
+  </style>
+
+  <div class="kpiv-tabs" id="kpi-ramo-grid"></div>
+  <div class="kpiv-mesref">📅 Datos de: <b id="kpi-mes-ref">—</b></div>
+  <div class="kpiv-grid" id="kpi-lista-body"></div>
 </div>
 
 <!-- ══ TAB: KPIs CONSULTA (calculados) ══ -->
@@ -2771,47 +2871,26 @@ window.gmExportarExcel = function(){
         </div>
         <div class="field">
           <label>Ramo</label>
-          <select id="acc-ramo">
-            <option value="vida">Vida</option>
-            <option value="fun">Funerario</option>
-            <option value="ap">Acc. Personales</option>
-            <option value="rcv">RC Vehículos</option>
-            <option value="financiero">Financiero</option>
-            <option value="general">General</option>
+          <select id="acc-ramo" onchange="mccActualizarCamposDeRamo()">
           </select>
         </div>
         <div class="field">
-          <label>Campo (referencia)</label>
+          <label>Producto</label>
+          <select id="acc-producto">
+          </select>
+        </div>
+      </div>
+      <div class="form-row col1">
+        <div class="field">
+          <label>Campo de la fórmula <span class="hint" style="font-weight:400">— el signo (suma/resta) ya está definido por este campo, no se configura aparte</span></label>
           <select id="acc-field">
-            <option value="a">a — Primas cobradas</option>
-            <option value="b">b — Devoluciones</option>
-            <option value="c">c — Reserva prima año actual</option>
-            <option value="cIV">cIV — Reserva prima comp. año actual</option>
-            <option value="d">d — Reserva prima año anterior</option>
-            <option value="dVI">dVI — Reserva prima comp. año anterior</option>
-            <option value="f">f — Comisiones adquisición</option>
-            <option value="g">g — Gasto adm. directo</option>
-            <option value="h">h — Gasto adm. prorrateo</option>
-            <option value="j">j — Siniestros pagados</option>
-            <option value="k">k — Siniestros pendientes año actual</option>
-            <option value="l">l — IBNR año actual</option>
-            <option value="ll">ll — Siniestros pendientes año anterior</option>
-            <option value="m">m — IBNR año anterior</option>
-            <option value="eg02">eg02 — Egresos financieros</option>
-            <option value="eg04">eg04 — Fluctuación cambiaria egreso</option>
-            <option value="eg06">eg06 — Depreciación</option>
-            <option value="eg07">eg07 — Reserva provisión</option>
-            <option value="eg09">eg09 — Otros egresos</option>
-            <option value="ing01">ing01 — Producto inversión</option>
-            <option value="ing03">ing03 — Fluctuación cambiaria ingreso</option>
-            <option value="custom">custom — Personalizado</option>
           </select>
         </div>
       </div>
       <div class="form-row">
         <div class="field">
-          <label>Signo en el cálculo</label>
-          <select id="acc-sign">
+          <label>Signo en el cálculo <span class="hint" style="font-weight:400">(informativo — lo determina el campo elegido arriba)</span></label>
+          <select id="acc-sign" disabled style="opacity:.6">
             <option value="+">+ Suma (incrementa el campo)</option>
             <option value="-">− Resta (reduce el campo)</option>
           </select>
@@ -2864,83 +2943,108 @@ window.gmExportarExcel = function(){
 
 <!-- ══ MODAL: KPI ══ -->
 <div class="modal-overlay" id="modal-kpi">
-  <div class="modal">
+  <div class="modal" style="max-width:460px">
     <div class="modal-hdr">
-      <h3 id="modal-kpi-title">Nuevo KPI</h3>
+      <h3 id="modal-kpi-title">Nuevo Indicador</h3>
       <span class="modal-close" onclick="closeModal('modal-kpi')">✕</span>
     </div>
-    <div class="modal-body">
-      <div class="form-row">
-        <div class="field">
-          <label>ID del KPI</label>
-          <input type="text" id="kpi-id" placeholder="k9" oninput="this.value=this.value.replace(/\s/g,'')">
-          <span class="hint">Identificador único. Los 8 base son k1–k8.</span>
-        </div>
-        <div class="field">
-          <label>Nombre del KPI</label>
-          <input type="text" id="kpi-name" placeholder="Siniestralidad Total vs Prima Devengada">
+    <div class="modal-body" style="padding-top:6px">
+
+      <!-- Barra de progreso de 3 pasos -->
+      <div style="display:flex;gap:6px;margin-bottom:20px">
+        <div class="kw-step-bar" id="kw-bar-1"></div>
+        <div class="kw-step-bar" id="kw-bar-2"></div>
+        <div class="kw-step-bar" id="kw-bar-3"></div>
+      </div>
+
+      <!-- ══ PASO 1: NOMBRE ══ -->
+      <div id="kw-paso-1" class="kw-paso">
+        <div class="kw-titulo">📝 ¿Cómo quieres llamar a este indicador?</div>
+        <input type="text" id="kpi-nombre" placeholder="Escribe aquí el nombre..." class="kw-input-grande">
+        <div class="kw-sub">Algunas ideas, toca una si te sirve:</div>
+        <div class="kw-chips">
+          <div class="kw-chip" onclick="kwUsarNombre('Siniestralidad')">Siniestralidad</div>
+          <div class="kw-chip" onclick="kwUsarNombre('Gasto en Comisiones')">Gasto en Comisiones</div>
+          <div class="kw-chip" onclick="kwUsarNombre('Peso en la Cartera')">Peso en la Cartera</div>
+          <div class="kw-chip" onclick="kwUsarNombre('Gasto Administrativo')">Gasto Administrativo</div>
         </div>
       </div>
-      <div class="form-row col1">
-        <div class="field">
-          <label>Descripción</label>
-          <textarea id="kpi-desc" placeholder="Explica qué mide este KPI y cómo interpretarlo..."></textarea>
-        </div>
+
+      <!-- ══ PASO 2: RAMO ══ -->
+      <div id="kw-paso-2" class="kw-paso" style="display:none">
+        <div class="kw-titulo">🏷️ ¿De qué ramo es este indicador?</div>
+        <div class="kw-sub" style="margin-bottom:12px">Toca uno para continuar.</div>
+        <div id="kpi-ramo-pills" class="kw-ramo-grid"></div>
+        <input type="hidden" id="kpi-ramo">
       </div>
-      <div class="field" style="margin-bottom:12px">
-        <label>Fórmula (usa variables disponibles)</label>
-        <div class="formula-vars">
-          <span style="font-size:9px;color:var(--td);width:100%;margin-bottom:4px">Variables disponibles (clic para insertar):</span>
-          <span class="fvar" onclick="insertVar('a')">a — Prima cobrada</span>
-          <span class="fvar" onclick="insertVar('e')">e — Prima devengada</span>
-          <span class="fvar" onclick="insertVar('f')">f — Comisiones adq.</span>
-          <span class="fvar" onclick="insertVar('g')">g — Gasto dir. adm.</span>
-          <span class="fvar" onclick="insertVar('h')">h — Gasto prorrateo</span>
-          <span class="fvar" onclick="insertVar('i')">i — Total com.+gastos</span>
-          <span class="fvar" onclick="insertVar('j')">j — Sin. pagados</span>
-          <span class="fvar" onclick="insertVar('n')">n — Sin. incurridos</span>
-          <span class="fvar" onclick="insertVar('o')">o — Res. técnico bruto</span>
-          <span class="fvar" onclick="insertVar('total_a')">total_a — Prima total empresa</span>
-          <span class="fvar" onclick="insertVar('saldo_gen')">saldo_gen — Saldo general</span>
+
+      <!-- ══ PASO 3: COMPARACIÓN ══ -->
+      <div id="kw-paso-3" class="kw-paso" style="display:none">
+        <div class="kw-titulo">⚖️ ¿Qué quieres comparar?</div>
+        <div class="kw-compara-box">
+          <div class="kw-compara-lbl">Quiero ver...</div>
+          <select id="kpi-numerador" onchange="kpiActualizarPreview()" class="kw-select-grande"></select>
+          <div class="kw-compara-lbl" style="margin-top:12px">...comparado contra...</div>
+          <select id="kpi-denominador" onchange="kpiActualizarPreview()" class="kw-select-grande"></select>
         </div>
-        <input type="text" id="kpi-formula" placeholder="j/a*100" style="font-family:monospace">
-        <span class="hint">Ejemplo: j/a*100 · o/e*100 · (n+i)/a*100 · Resultado se muestra en %</span>
+        <div id="kpi-preview" class="kw-preview"></div>
+
+        <div class="kw-avanzado" onclick="kwToggleAvanzado()">
+          <span id="kw-avanzado-icono">▸</span> Configuración avanzada (opcional)
+        </div>
+        <div id="kw-avanzado-body" style="display:none">
+          <div class="form-row col1" style="margin-top:10px">
+            <div class="field">
+              <label style="font-size:11px">Descripción (opcional)</label>
+              <textarea id="kpi-desc" placeholder="Para qué sirve este indicador..." style="font-size:11.5px"></textarea>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label style="font-size:11px">🟢 Verde hasta (%)</label>
+              <input type="number" id="kpi-verde" placeholder="Ej: 25" min="0" max="500">
+            </div>
+            <div class="field">
+              <label style="font-size:11px">🟡 Ámbar hasta (%)</label>
+              <input type="number" id="kpi-ambar" placeholder="Ej: 40" min="0" max="500">
+            </div>
+          </div>
+        </div>
+        <input type="hidden" id="kpi-active" value="true">
       </div>
-      <div class="form-row col3">
-        <div class="field">
-          <label>Semáforo verde ≤ (%)</label>
-          <input type="number" id="kpi-verde" placeholder="25" min="0" max="200">
-          <span class="hint">Dejar vacío si no aplica semáforo</span>
-        </div>
-        <div class="field">
-          <label>Semáforo ámbar ≤ (%)</label>
-          <input type="number" id="kpi-ambar" placeholder="40" min="0" max="200">
-        </div>
-        <div class="field">
-          <label>Orden de visualización</label>
-          <input type="number" id="kpi-order" placeholder="9" min="1" max="50">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="field">
-          <label>Estado</label>
-          <select id="kpi-active">
-            <option value="true">Activo — visible en dashboard</option>
-            <option value="false">Inactivo — oculto</option>
-          </select>
-        </div>
-        <div class="field" style="align-self:end">
-          <button class="btn btn-ghost" onclick="testFormula()" style="width:100%">🧪 Probar fórmula</button>
-        </div>
-      </div>
-      <div id="formula-test-result" style="display:none"></div>
+
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-kpi')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveKpi()">💾 Guardar KPI</button>
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn btn-ghost" id="kw-btn-atras" onclick="kwAtras()" style="visibility:hidden">← Atrás</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="closeModal('modal-kpi')">Cancelar</button>
+        <button class="btn btn-primary" id="kw-btn-siguiente" onclick="kwSiguiente()">Siguiente →</button>
+      </div>
     </div>
   </div>
 </div>
+
+<style>
+.kw-step-bar{flex:1;height:5px;border-radius:3px;background:var(--br)}
+.kw-step-bar.on{background:var(--p)}
+.kw-step-bar.hecho{background:var(--g)}
+.kw-titulo{font-size:14.5px;font-weight:800;color:var(--ink2);margin-bottom:14px}
+.kw-sub{font-size:11px;color:var(--tm)}
+.kw-input-grande{width:100%;font-size:16px;padding:14px 16px;border:2px solid var(--br);border-radius:10px;font-family:inherit}
+.kw-input-grande:focus{outline:none;border-color:var(--p)}
+.kw-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.kw-chip{padding:8px 14px;border-radius:20px;background:var(--pb);color:var(--p);font-size:11.5px;font-weight:700;cursor:pointer}
+.kw-chip:hover{background:var(--p);color:#fff}
+.kw-ramo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kw-ramo-btn{padding:20px 12px;border-radius:12px;color:#fff;font-size:13.5px;font-weight:800;text-align:center;cursor:pointer;border:3px solid transparent}
+.kw-ramo-btn.on{border-color:var(--go);transform:scale(1.03)}
+.kw-compara-box{background:var(--pb);border-radius:12px;padding:16px}
+.kw-compara-lbl{font-size:11.5px;font-weight:700;color:var(--ink2);margin-bottom:6px}
+.kw-select-grande{width:100%;font-size:14px;padding:12px 14px;border:2px solid var(--br);border-radius:9px;font-family:inherit;background:#fff}
+.kw-preview{background:var(--gb);color:var(--g);border-radius:10px;padding:13px 15px;font-size:12.5px;font-weight:700;margin-top:14px;text-align:center;line-height:1.4}
+.kw-avanzado{font-size:11px;color:var(--tm);cursor:pointer;margin-top:16px;font-weight:700}
+.kw-avanzado:hover{color:var(--ink2)}
+</style>
 
 <script>
 // ═══════════════════════════════════════════════════════════════════
@@ -2952,16 +3056,11 @@ const STATE = {
   apiUrl: 'https://script.google.com/macros/s/AKfycbxYvkE8iaMaX0apOrlmcQz3DyvbWmZawLhKJUDARW_Nlb720RWWXQkhd62HXGK2Kcaq/exec',
   bcvRates: {},
   accounts: [],
-  kpis: [
-    {id:'k1',name:'Composición de Cartera',              formula:'a / total_a × 100',       description:'Prima cobrada ramo / Prima cobrada total',          active:true},
-    {id:'k2',name:'Siniestralidad Pagada / Prima Cobrada',formula:'j / a × 100',             description:'Siniestros pagados / Prima cobrada',                active:true},
-    {id:'k3',name:'Siniestralidad Pagada / Prima Devengada',formula:'j / e × 100',           description:'Siniestros pagados / Prima devengada',              active:true},
-    {id:'k4',name:'Siniestralidad Incurrida / Prima Cobrada',formula:'n / a × 100',          description:'Siniestros incurridos / Prima cobrada',             active:true},
-    {id:'k5',name:'Comisiones Adq. / Prima Cobrada',     formula:'f / a × 100',              description:'Comisiones y gastos adq. / Prima cobrada',          active:true},
-    {id:'k6',name:'Gasto Adm. Directo / Prima Cobrada',  formula:'g / a × 100',              description:'Gastos directos adm. / Prima cobrada',              active:true},
-    {id:'k7',name:'Gasto Adm. Prorrateo / Prima Cobrada',formula:'h / a × 100',              description:'Gasto adm. prorrateo / Prima cobrada',              active:true},
-    {id:'k8',name:'Índice Combinado',                     formula:'o / a × 100',              description:'Resultado Técnico Bruto / Prima cobrada',           active:true},
-  ],
+  customRamos: [],
+  customProductos: [],
+  // Los 8 KPIs certificados ahora viven en BUILTIN_KPIS (motor real, se calculan de verdad).
+  // STATE.kpis queda solo para los KPIs personalizados que el usuario cree.
+  kpis: [],
   months: [],
   currentFile: null,
   extractedData: null,
@@ -2971,12 +3070,79 @@ const STATE = {
 const MESES_ORDER = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                      'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-const RAMOS_MAP = {
-  vida: {label:'Vida',       fields:['a','b','c','d','e','f','g','h','i','j','k','l','ll','m','n','o']},
-  fun:  {label:'Funerario',  fields:['a','b','c','d','e','f','g','h','i','j','k','l','ll','m','n','o']},
-  ap:   {label:'Acc.Personales', fields:['a','b','c','d','e','f','g','h','i','j','k','l','ll','m','n','o']},
-  rcv:  {label:'RC Vehículos',fields:['a','b','c','cIV','d','dVI','e','f','g','h','i','j','k','l','ll','m','n','o']},
+/* ══════════════════════════════════════════════════════════════════
+   REGISTRO ÚNICO DE RAMOS — fuente de verdad para TODO el sistema.
+   Los 4 ramos certificados son fijos. Los ramos nuevos que se agreguen
+   desde Mantenimiento de Cuentas Contables se guardan en
+   STATE.customRamos (localStorage) y se fusionan aquí automáticamente,
+   por lo que quedan operativos en TODOS los cálculos sin tocar código.
+   ══════════════════════════════════════════════════════════════════ */
+var RAMOS_FIJOS = {
+  vida: {label:'Vida',            color:'#4B2D8F', fijo:true, fields:['a','b','c','d','f','g','h','j','k','l','ll','m','e','n','i','o']},
+  fun:  {label:'Funerario',       color:'#0D7A4E', fijo:true, fields:['a','b','c','d','f','g','h','j','k','l','ll','m','e','n','i','o']},
+  ap:   {label:'Acc.Personales',  color:'#B07A00', fijo:true, fields:['a','b','c','d','f','g','j','e','n','h','i','o']},
+  rcv:  {label:'RC Vehículos',    color:'#8B1A1A', fijo:true, fields:['a','b','c','cIV','d','dVI','f','e','n','h','i','o']}
 };
+var CAMPOS_DEFAULT_RAMO_NUEVO = ['a','b','c','d','f','g','h','j','k','l','ll','m','e','n','i','o'];
+
+function getRamosRegistry(){
+  var reg = {};
+  Object.keys(RAMOS_FIJOS).forEach(function(k){ reg[k] = RAMOS_FIJOS[k]; });
+  (STATE.customRamos||[]).forEach(function(r){
+    reg[r.id] = {label:r.label, color:r.color, fijo:false, fields:r.fields||CAMPOS_DEFAULT_RAMO_NUEVO};
+  });
+  return reg;
+}
+function getRamosIds(){ return Object.keys(getRamosRegistry()); }
+function ramoLabel(id){ var r=getRamosRegistry()[id]; return r?r.label:id; }
+function ramoColor(id){ var r=getRamosRegistry()[id]; return r?r.color:'#888'; }
+function getRamosMap(){
+  var map = {}, reg = getRamosRegistry();
+  Object.keys(reg).forEach(function(id){ map[id] = {label:reg[id].label, fields:reg[id].fields}; });
+  return map;
+}
+function getCamposPorRamo(){
+  var out = {}, reg = getRamosRegistry();
+  Object.keys(reg).forEach(function(id){ out[id] = reg[id].fields; });
+  out.totals = ['a','e','h','i','n','o','saldo_gen'];
+  out.fin = ['eg02','eg04','eg06','eg07','eg09','eg_adm_2pct','total_eg','ing01','ing03','total_ing','saldo_fin'];
+  return out;
+}
+var RAMOS_MAP = getRamosMap();
+
+/* ══════════════════════════════════════════════════════════════════
+   PRODUCTOS POR RAMO — nivel organizativo (Ramo → Producto → Conceptos),
+   restaurado por instrucción expresa. Basado en los prefijos REALES de
+   código ya certificados (fi_/fc_ = Funerario Ind./Col.; api_/apc_ =
+   AP Ind./Col.). Vida y RC Vehículos solo tienen un producto en los
+   datos certificados actuales — no se inventan divisiones que no existen.
+   No afecta el cálculo (que sigue siendo por ramo); es solo para
+   organizar la pantalla de mantenimiento.
+   ══════════════════════════════════════════════════════════════════ */
+var PRODUCTOS_POR_RAMO = {
+  vida: [{id:'vida', nombre:'Vida', prefijos:['vida_']}],
+  fun:  [{id:'fi', nombre:'Funerario Individual', prefijos:['fi_']},
+         {id:'fc', nombre:'Funerario Colectivo', prefijos:['fc_']}],
+  ap:   [{id:'api', nombre:'AP Individual', prefijos:['api_']},
+         {id:'apc', nombre:'AP Colectivo', prefijos:['apc_']}],
+  rcv:  [{id:'rcv', nombre:'RC Vehículos', prefijos:['rcv_']}]
+};
+function getProductosDeRamo(ramoId){
+  var base = PRODUCTOS_POR_RAMO[ramoId] ? PRODUCTOS_POR_RAMO[ramoId].slice() : [{id:ramoId, nombre:ramoLabel(ramoId), prefijos:[ramoId+'_']}];
+  var custom = (STATE.customProductos||[]).filter(function(p){ return p.ramo===ramoId; });
+  return base.concat(custom);
+}
+function getProductoDeCuenta(acc){
+  if (acc.producto) return acc.producto;
+  var productos = getProductosDeRamo(acc.ramo);
+  for (var i=0;i<productos.length;i++){
+    var p = productos[i];
+    for (var j=0;j<p.prefijos.length;j++){
+      if (acc.code && acc.code.indexOf(p.prefijos[j])===0) return p.id;
+    }
+  }
+  return productos[0] ? productos[0].id : null;
+}
 
 // BUILT-IN account catalog (always applied, cannot be deleted, only disabled)
 const BUILTIN_ACCOUNTS = [
@@ -3406,6 +3572,8 @@ function initApp(){
   try{localStorage.setItem('slf_months',JSON.stringify(STATE.months));}catch(e){}
   try{ var sk=localStorage.getItem('slf_kpis'); if(sk){ var kp=JSON.parse(sk); if(kp&&kp.length) STATE.kpis=kp; } }catch(e){}
   try{ var sa=localStorage.getItem('slf_accounts'); if(sa){ var ac=JSON.parse(sa); if(ac&&ac.length) STATE.accounts=ac; } }catch(e){}
+  try{ var sr=localStorage.getItem('slf_custom_ramos'); if(sr){ var cr=JSON.parse(sr); if(cr&&cr.length) STATE.customRamos=cr; } }catch(e){}
+  try{ var sp=localStorage.getItem('slf_custom_productos'); if(sp){ var cp=JSON.parse(sp); if(cp&&cp.length) STATE.customProductos=cp; } }catch(e){}
   // Precargar tasas BCV: primero desde localStorage (ediciones del usuario),
   // y para los meses que no estén ahí, usar el bcv embebido en cada mes cargado.
   try{
@@ -3563,9 +3731,9 @@ function showMonthDetail(mes, md){
     var s=abs.toLocaleString('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2});
     return u<0?'(USD '+s+')':'USD '+s;
   }
-  var RLBL={vida:'Vida',fun:'Funerario',ap:'Acc. Personales',rcv:'RC Vehículos'};
-  var RCLR={vida:'#4B2D8F',fun:'#0D7A4E',ap:'#B07A00',rcv:'#8B1A1A'};
-  var ramoCards=['vida','fun','ap','rcv'].map(function(ramo){
+  var RLBL={}, RCLR={};
+  getRamosIds().forEach(function(id){ RLBL[id]=ramoLabel(id); RCLR[id]=ramoColor(id); });
+  var ramoCards=getRamosIds().map(function(ramo){
     var rd=r[ramo]||{};
     var o=rd.o||0;
     return '<div style="background:'+RCLR[ramo]+'15;border:1px solid '+RCLR[ramo]+'40;border-radius:8px;padding:10px">'
@@ -3642,104 +3810,513 @@ function showMonthDetail(mes, md){
   modal.innerHTML='<div style="background:#fff;border-radius:12px;max-width:560px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">'+html+'</div>';
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   MANTENIMIENTO DE CUENTAS CONTABLES — reemplaza el catálogo simple.
+   Usa el esquema REAL certificado (ramo/campo/cuentas/fórmula fija),
+   NO un toggle libre de suma/resta. Producto queda unificado (sin
+   separar Individual/Colectivo) por instrucción expresa.
+   ══════════════════════════════════════════════════════════════════ */
+var MCC_RAMO_ACTIVO = null;
+
+var MCC_PRODUCTO_ACTIVO = null;
+
 function renderAccountsTable(){
-  var container=document.getElementById('accounts-body');
-  if(!container) return;
-  var all=BUILTIN_ACCOUNTS.concat(STATE.accounts||[]);
-  if(!all.length){
-    container.innerHTML='<p style="text-align:center;color:var(--td);padding:20px">No hay cuentas configuradas</p>';
+  if (!MCC_RAMO_ACTIVO) MCC_RAMO_ACTIVO = getRamosIds()[0];
+  mccRenderRamoCards();
+  mccRenderProductos();
+  mccRenderFinanciero();
+  mccRenderProrrateo();
+}
+
+function mccRenderRamoCards(){
+  var reg = getRamosRegistry();
+  var html = '';
+  getRamosIds().forEach(function(id){
+    var r = reg[id];
+    var nProd = getProductosDeRamo(id).length;
+    html += '<div class="mcc-ramo-card'+(MCC_RAMO_ACTIVO===id?' on':'')+'" style="background:'+r.color+'" onclick="mccSeleccionarRamo(\''+id+'\')">'
+      + '<div class="nom">'+r.label+(r.fijo?'':' <span class="mcc-badge custom" style="background:rgba(255,255,255,.25);color:#fff">Nuevo</span>')+'</div>'
+      + '<div class="meta">'+nProd+' producto(s) configurado(s)'+(r.fijo?'':'<br>⚠ requiere ajuste de motor para sumar')+'</div>'
+      + '</div>';
+  });
+  html += '<div class="mcc-ramo-card nuevo" onclick="mccAbrirModalRamo()">➕ Nuevo Ramo</div>';
+  document.getElementById('mcc-ramo-grid').innerHTML = html;
+}
+window.mccSeleccionarRamo = function(id){
+  MCC_RAMO_ACTIVO = id;
+  MCC_PRODUCTO_ACTIVO = null;
+  mccRenderRamoCards();
+  mccRenderProductos();
+  document.getElementById('mcc-conceptos-card').style.display = 'none';
+};
+
+function mccRenderProductos(){
+  var cont = document.getElementById('mcc-producto-row');
+  if (!MCC_RAMO_ACTIVO){ cont.innerHTML = '<p style="font-size:11px;color:var(--td)">Selecciona un ramo primero.</p>'; return; }
+  var color = ramoColor(MCC_RAMO_ACTIVO);
+  var productos = getProductosDeRamo(MCC_RAMO_ACTIVO);
+  var html = '';
+  productos.forEach(function(p){
+    var n = BUILTIN_ACCOUNTS.concat(STATE.accounts||[]).filter(function(a){ return a.ramo===MCC_RAMO_ACTIVO && getProductoDeCuenta(a)===p.id; }).length;
+    var on = MCC_PRODUCTO_ACTIVO===p.id;
+    html += '<div class="mcc-prod-chip'+(on?' on':'')+'" style="'+(on?'background:'+color:'')+'" onclick="mccSeleccionarProducto(\''+p.id+'\')">'+p.nombre+'<span class="n">'+n+' cuenta(s)</span></div>';
+  });
+  html += '<div class="mcc-prod-chip nuevo" onclick="mccAbrirModalProducto()">➕ Nuevo Producto</div>';
+  cont.innerHTML = html;
+}
+window.mccSeleccionarProducto = function(id){
+  MCC_PRODUCTO_ACTIVO = id;
+  mccRenderProductos();
+  mccRenderConceptos();
+};
+
+/* ══ Nuevo Producto (modal simple) — persistido en STATE.customProductos ══ */
+window.mccAbrirModalProducto = function(){
+  if (!MCC_RAMO_ACTIVO){ alert('Selecciona un ramo primero.'); return; }
+  var nombre = prompt('Nombre del nuevo producto para '+ramoLabel(MCC_RAMO_ACTIVO)+':');
+  if (!nombre || !nombre.trim()) return;
+  if (!STATE.customProductos) STATE.customProductos = [];
+  var id = 'prod_'+Date.now();
+  STATE.customProductos.push({ramo:MCC_RAMO_ACTIVO, id:id, nombre:nombre.trim(), prefijos:[]});
+  try{ localStorage.setItem('slf_custom_productos', JSON.stringify(STATE.customProductos)); }catch(e){}
+  MCC_PRODUCTO_ACTIVO = id;
+  mccRenderProductos();
+  mccRenderConceptos();
+  showToast('Producto "'+nombre.trim()+'" creado');
+};
+
+/* ══ Tabla de conceptos — edición EN LÍNEA (sin modal) para las cuentas personalizadas.
+   Las certificadas se muestran fijas/solo lectura, tal como siempre. ══ */
+function mccFilaCuenta(a){
+  var cert = BUILTIN_ACCOUNTS.indexOf(a) !== -1;
+  var cuentasTxt = Array.isArray(a.cuentas) ? a.cuentas.join(', ') : (a.cuentas||'');
+  if (cert){
+    return '<tr class="certificada">'
+      + '<td>'+(a.label||'—')+'</td>'
+      + '<td><span class="mcc-mono">'+etiquetaCampo(a.field)+' ('+a.field+')</span></td>'
+      + '<td class="mcc-mono">'+cuentasTxt+'</td>'
+      + '<td class="c">'+(a.sign==='-'?'– Resta':'+ Suma')+'</td>'
+      + '<td class="c"><span class="mcc-badge cert">Certificada</span></td>'
+      + '<td class="c">—</td>'
+      + '</tr>';
+  }
+  // Personalizada — todo editable en línea, directo en la celda
+  var opcionesCampo = mccOpcionesCampo(a.ramo);
+  return '<tr>'
+    + '<td><input type="text" class="mcc-inline-input" value="'+(a.label||'').replace(/"/g,'&quot;')+'" placeholder="Nombre del concepto" onchange="mccEditarCuenta(\''+a.code+'\',\'label\',this.value)"></td>'
+    + '<td><select class="mcc-inline-input" onchange="mccEditarCuenta(\''+a.code+'\',\'field\',this.value)">'+opcionesCampo.replace('value="'+a.field+'"','value="'+a.field+'" selected')+'</select></td>'
+    + '<td><input type="text" class="mcc-inline-input mcc-mono" value="'+cuentasTxt.replace(/"/g,'&quot;')+'" placeholder="3 381 01 01 00" onchange="mccEditarCuenta(\''+a.code+'\',\'cuentas\',this.value)"></td>'
+    + '<td class="c"><span class="mcc-mono" style="font-size:9.5px;color:var(--td)">'+(a.sign==='-'?'– Resta':'+ Suma')+'</span></td>'
+    + '<td class="c"><span class="mcc-badge custom">Personalizada</span></td>'
+    + '<td class="c"><button class="mcc-btn-mini" onclick="mccEliminarCuenta(\''+a.code+'\')" title="Eliminar">🗑️</button></td>'
+    + '</tr>';
+}
+window.mccEditarCuenta = function(code, campo, valor){
+  var acc = STATE.accounts.find(function(a){return a.code===code;});
+  if (!acc) return;
+  if (campo==='cuentas') acc.cuentas = valor.split(',').map(function(s){return s.trim();}).filter(Boolean);
+  else acc[campo] = valor;
+  try{ localStorage.setItem('slf_accounts', JSON.stringify(STATE.accounts)); }catch(e){}
+  renderAccountsTable();
+  showToast('Guardado');
+};
+window.mccAgregarConceptoInline = function(ramo, producto){
+  if (!STATE.accounts) STATE.accounts=[];
+  var campos = getCamposPorRamo()[ramo]||[];
+  var campoDefault = campos.filter(function(c){return CAMPOS_DERIVADOS.indexOf(c)===-1;})[0] || 'a';
+  var nuevo = {
+    code: 'custom_'+Date.now(),
+    ramo: ramo,
+    producto: ramo==='financiero'?null:producto,
+    field: campoDefault,
+    sign: '+',
+    label: '',
+    cuentas: [],
+    effective_from: 'Enero',
+    active: true,
+    notes: ''
+  };
+  STATE.accounts.push(nuevo);
+  try{ localStorage.setItem('slf_accounts', JSON.stringify(STATE.accounts)); }catch(e){}
+  renderAccountsTable();
+};
+
+function mccRenderConceptos(){
+  if (!MCC_RAMO_ACTIVO || !MCC_PRODUCTO_ACTIVO) return;
+  document.getElementById('mcc-conceptos-card').style.display = 'block';
+  var productos = getProductosDeRamo(MCC_RAMO_ACTIVO);
+  var prod = productos.find(function(p){return p.id===MCC_PRODUCTO_ACTIVO;});
+  document.getElementById('mcc-conceptos-titulo').textContent = '📋 '+ramoLabel(MCC_RAMO_ACTIVO)+' → '+(prod?prod.nombre:'')+' — Conceptos y Cuentas';
+  var all = BUILTIN_ACCOUNTS.concat(STATE.accounts||[]).filter(function(a){ return a.ramo===MCC_RAMO_ACTIVO && getProductoDeCuenta(a)===MCC_PRODUCTO_ACTIVO; });
+  var html = '<table class="mcc-tbl"><thead><tr><th>Concepto</th><th>Campo de Fórmula</th><th>Cuenta(s) Contable(s)</th><th class="c">Efecto</th><th class="c">Origen</th><th class="c">Acción</th></tr></thead><tbody>';
+  html += all.map(mccFilaCuenta).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--td);padding:14px">Sin conceptos configurados para este producto.</td></tr>';
+  html += '</tbody></table>'
+    + '<button class="mcc-btn-add" style="margin-top:10px" onclick="mccAgregarConceptoInline(\''+MCC_RAMO_ACTIVO+'\',\''+MCC_PRODUCTO_ACTIVO+'\')">➕ Agregar concepto</button>';
+  document.getElementById('mcc-conceptos-body').innerHTML = html;
+}
+function mccRenderFinanciero(){
+  var all = BUILTIN_ACCOUNTS.concat(STATE.accounts||[]).filter(function(a){ return a.ramo==='financiero'; });
+  var html = '<table class="mcc-tbl"><thead><tr><th>Concepto</th><th>Campo</th><th>Cuenta(s) Contable(s)</th><th class="c">Efecto</th><th class="c">Origen</th><th class="c">Acción</th></tr></thead><tbody>';
+  html += all.map(mccFilaCuenta).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--td);padding:14px">Sin conceptos financieros configurados.</td></tr>';
+  html += '</tbody></table>'
+    + '<button class="mcc-btn-add" style="margin-top:10px" onclick="mccAgregarConceptoInline(\'financiero\',null)">➕ Agregar concepto financiero</button>';
+  document.getElementById('mcc-financiero-body').innerHTML = html;
+}
+window.mccEliminarCuenta = function(code){
+  if(!confirm('¿Eliminar esta cuenta? Esta acción no se puede deshacer.')) return;
+  var idx = STATE.accounts.findIndex(function(a){return a.code===code;});
+  if(idx>=0) STATE.accounts.splice(idx,1);
+  try{ localStorage.setItem('slf_accounts', JSON.stringify(STATE.accounts)); }catch(e){}
+  renderAccountsTable();
+  showToast('Cuenta eliminada');
+};
+
+/* ══ PRORRATEO 98/2 — datos reales del último mes cargado ══ */
+function mccRenderProrrateo(){
+  var meses = STATE.months || [];
+  if (!meses.length){
+    document.getElementById('mcc-prorrateo-body').innerHTML = '<p style="font-size:11px;color:var(--td)">Carga al menos un mes de balance para ver el prorrateo real. Mientras tanto, así se calculará automáticamente.</p>';
     return;
   }
-  var html='<div style="overflow-x:auto"><table class="tbl"><thead><tr>'
-    +'<th>Código</th><th>Ramo</th><th>Descripción</th><th>Cuentas</th><th>Desde</th><th>Estado</th>'
-    +'</tr></thead><tbody>';
-  html+=all.map(function(a){
-    return '<tr><td class="mono">'+(a.code||'')+'</td><td>'+(a.ramo||'')+'</td><td>'+(a.label||'')+'</td>'
-      +'<td class="mono" style="font-size:10px">'+(Array.isArray(a.cuentas)?a.cuentas.join('<br>'):a.cuentas||'')+'</td>'
-      +'<td>'+(a.effective_from||'Enero')+'</td>'
-      +'<td><span class="badge '+(a.active!==false?'g':'r')+'">'+(a.active!==false?'Activo':'Inactivo')+'</span></td></tr>';
-  }).join('');
-  html+='</tbody></table></div>';
-  container.innerHTML=html;
+  var ORDEN_M=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var sorted = meses.slice().sort(function(a,b){ return ORDEN_M.indexOf((b.month||'').split(' ')[0]) - ORDEN_M.indexOf((a.month||'').split(' ')[0]); });
+  var ultimo = sorted[0];
+  var ramos = ultimo.ramos || {};
+  var totalA = getRamosIds().reduce(function(s,r){ return s + ((ramos[r]||{}).a||0); }, 0);
+  var gastoTotal = 0;
+  getRamosIds().forEach(function(r){ gastoTotal += ((ramos[r]||{}).h||0); });
+  gastoTotal = totalA ? gastoTotal/0.98 : 0; // reconstruir el 100% desde el 98% ya prorrateado
+
+  var visual = '', tabla = '<table class="mcc-tbl"><thead><tr><th>Ramo</th><th class="c">% Prima</th><th class="c">Gasto Adm. Asignado</th></tr></thead><tbody>';
+  getRamosIds().forEach(function(r){
+    var a = (ramos[r]||{}).a || 0;
+    var pct = totalA ? (a/totalA*100) : 0;
+    var h = (ramos[r]||{}).h || 0;
+    visual += '<div class="seg" style="width:'+pct.toFixed(1)+'%;background:'+ramoColor(r)+'">'+pct.toFixed(1)+'%</div>';
+    tabla += '<tr><td>'+ramoLabel(r)+'</td><td class="c">'+pct.toFixed(1)+'%</td><td class="c">Bs. '+h.toLocaleString('es-VE',{maximumFractionDigits:0})+'</td></tr>';
+  });
+  tabla += '<tr style="background:#E8F0FB"><td><b>Gestión Financiera (2% fijo)</b></td><td class="c">2.0%</td><td class="c"><b>Bs. '+(gastoTotal*0.02).toLocaleString('es-VE',{maximumFractionDigits:0})+'</b></td></tr>';
+  tabla += '</tbody></table>';
+  document.getElementById('mcc-prorrateo-sub').innerHTML = 'Basado en <b>'+(ultimo.month||'último mes cargado')+'</b> — Gasto Administrativo total: <b>Bs. '+gastoTotal.toLocaleString('es-VE',{maximumFractionDigits:0})+'</b>';
+  document.getElementById('mcc-prorrateo-body').innerHTML = '<div class="mcc-prorrateo-bar">'+visual+'</div>'+tabla;
+}
+
+/* ══ MODAL: NUEVO RAMO — funcional de punta a punta ══ */
+var MCC_COLOR_SEL = '#1F497D';
+window.mccAbrirModalRamo = function(){
+  var body = document.getElementById('mcc-modal-ramo-body');
+  if (!body){
+    var ov = document.createElement('div');
+    ov.className = 'modal-overlay'; ov.id = 'mcc-modal-ramo';
+    ov.innerHTML = '<div class="modal" style="max-width:420px">'
+      + '<div class="modal-hdr"><h3>➕ Crear Nuevo Ramo</h3><span class="modal-close" onclick="closeModal(\'mcc-modal-ramo\')">✕</span></div>'
+      + '<div class="modal-body" id="mcc-modal-ramo-body">'
+        + '<div class="field"><label>Nombre del ramo</label><input type="text" id="mcc-nr-nombre" placeholder="Ej: Seguro de Salud"></div>'
+        + '<div class="field"><label>Color identificador</label><div id="mcc-nr-colores" style="display:flex;gap:8px;margin-top:6px"></div></div>'
+        + '<div class="alert" style="background:var(--gob);color:#7A5900;border-radius:8px;padding:10px 12px;font-size:10.5px;margin-top:12px">⚠️ El ramo se creará y quedará disponible para asignar cuentas, pero <b>necesita un paso adicional de desarrollo</b> (agregar sus fórmulas específicas al motor) antes de sumar en los totales generales.</div>'
+      + '</div>'
+      + '<div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal(\'mcc-modal-ramo\')">Cancelar</button><button class="btn btn-primary" onclick="mccCrearRamo()">Crear Ramo</button></div>'
+      + '</div>';
+    document.body.appendChild(ov);
+  }
+  var colores = ['#1F497D','#B0190F','#0891B2','#7C3AED','#C2410C','#065F46','#9333EA','#0D9488'];
+  var html = colores.map(function(c,i){ return '<div onclick="mccElegirColor(\''+c+'\',this)" style="width:30px;height:30px;border-radius:7px;background:'+c+';cursor:pointer;border:2px solid '+(i===0?'var(--ink2)':'transparent')+'"></div>'; }).join('');
+  document.getElementById('mcc-nr-colores').innerHTML = html;
+  MCC_COLOR_SEL = colores[0];
+  document.getElementById('mcc-nr-nombre').value = '';
+  openModal('mcc-modal-ramo');
+};
+window.mccElegirColor = function(c, el){
+  MCC_COLOR_SEL = c;
+  Array.prototype.forEach.call(el.parentElement.children, function(s){ s.style.border='2px solid transparent'; });
+  el.style.border = '2px solid var(--ink2)';
+};
+window.mccCrearRamo = function(){
+  var nombre = document.getElementById('mcc-nr-nombre').value.trim();
+  if(!nombre){ alert('Escribe el nombre del ramo.'); return; }
+  var id = 'ramo_'+Date.now();
+  if(!STATE.customRamos) STATE.customRamos=[];
+  STATE.customRamos.push({id:id, label:nombre, color:MCC_COLOR_SEL, fields:CAMPOS_DEFAULT_RAMO_NUEVO.slice()});
+  try{ localStorage.setItem('slf_custom_ramos', JSON.stringify(STATE.customRamos)); }catch(e){}
+  closeModal('mcc-modal-ramo');
+  MCC_RAMO_ACTIVO = id;
+  renderAccountsTable();
+  showToast('Ramo "'+nombre+'" creado — recuerda que necesita el ajuste de motor para sumar en los totales');
+};
+
+/* ══════════════════════════════════════════════════════════════════
+   KPIs POR RAMO — motor REAL (reemplaza el sistema de texto libre que
+   nunca se evaluaba). Cada KPI = Numerador ÷ Denominador × 100, usando
+   los mismos campos certificados de Cuentas Contables. Se calcula con
+   el último balance cargado.
+   ══════════════════════════════════════════════════════════════════ */
+var KPI_RAMO_ACTIVO = null;
+var KPI_CAMPOS_EXCLUIR_RATIO = []; // en KPIs sí se permite usar campos derivados (e,n,i,o,h) — a diferencia de cuentas
+
+// KPIs certificados — migrados 1:1 desde los 8 KPIs originales (mismo nombre/descripción/resultado)
+var BUILTIN_KPIS = [
+  {code:'k1', tipo:'participacion', ramo:null, campo:'a', numerador:null, denominador:null,
+   nombre:'Composición de Cartera', descripcion:'Prima cobrada del ramo / Prima cobrada total de la empresa'},
+  {code:'k2', tipo:'ramo', ramo:null, numerador:'j', denominador:'a',
+   nombre:'Siniestralidad Pagada / Prima Cobrada', descripcion:'Siniestros pagados / Prima cobrada'},
+  {code:'k3', tipo:'ramo', ramo:null, numerador:'j', denominador:'e',
+   nombre:'Siniestralidad Pagada / Prima Devengada', descripcion:'Siniestros pagados / Prima devengada'},
+  {code:'k4', tipo:'ramo', ramo:null, numerador:'n', denominador:'a',
+   nombre:'Siniestralidad Incurrida / Prima Cobrada', descripcion:'Siniestros incurridos / Prima cobrada'},
+  {code:'k5', tipo:'ramo', ramo:null, numerador:'f', denominador:'a',
+   nombre:'Comisiones Adq. / Prima Cobrada', descripcion:'Comisiones y gastos de adquisición / Prima cobrada'},
+  {code:'k6', tipo:'ramo', ramo:null, numerador:'g', denominador:'a',
+   nombre:'Gasto Adm. Directo / Prima Cobrada', descripcion:'Gastos directos de administración / Prima cobrada'},
+  {code:'k7', tipo:'ramo', ramo:null, numerador:'h', denominador:'a',
+   nombre:'Gasto Adm. Prorrateo / Prima Cobrada', descripcion:'Gasto adm. prorrateo / Prima cobrada'},
+  {code:'k8', tipo:'ramo', ramo:null, numerador:'o', denominador:'a',
+   nombre:'Índice Combinado', descripcion:'Resultado Técnico Bruto / Prima cobrada'}
+];
+// Nota: los BUILTIN_KPIS con ramo:null son "plantillas" que se aplican a CUALQUIER ramo que
+// se seleccione (por eso los 8 aparecen dentro de cada tarjeta de ramo, tal como ya funcionaba).
+
+function kpiUltimoMes(){
+  var meses = STATE.months || [];
+  if(!meses.length) return null;
+  var ORDEN_M=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var sorted = meses.slice().sort(function(a,b){ return ORDEN_M.indexOf((b.month||'').split(' ')[0]) - ORDEN_M.indexOf((a.month||'').split(' ')[0]); });
+  return sorted[0];
+}
+
+// Evalúa un KPI para un ramo específico. Devuelve número (%) o null si no hay datos.
+function kpiEvaluar(kpi, ramoId){
+  var mes = kpiUltimoMes();
+  if(!mes) return null;
+  var ramos = mes.ramos || {};
+  if (kpi.tipo === 'participacion'){
+    var campo = kpi.campo || 'a';
+    var valorRamo = (ramos[ramoId]||{})[campo] || 0;
+    var totalCampo = getRamosIds().reduce(function(s,r){ return s + ((ramos[r]||{})[campo]||0); }, 0);
+    return totalCampo ? (valorRamo/totalCampo*100) : null;
+  }
+  if (kpi.tipo === 'total'){
+    var t = mes.totals || {}, f = mes.fin || {};
+    var num = (t[kpi.numerador]!==undefined?t[kpi.numerador]:f[kpi.numerador]) || 0;
+    var den = (t[kpi.denominador]!==undefined?t[kpi.denominador]:f[kpi.denominador]) || 0;
+    return den ? (num/den*100) : null;
+  }
+  // tipo 'ramo' (por defecto)
+  var rd = ramos[ramoId] || {};
+  var num = rd[kpi.numerador] || 0;
+  var den = rd[kpi.denominador] || 0;
+  return den ? (num/den*100) : null;
+}
+
+function kpiSemaforoColor(kpi, valor){
+  if (valor===null) return 'n';
+  if (!kpi.semaforo_verde && !kpi.semaforo_ambar) return 'n';
+  var v = parseFloat(kpi.semaforo_verde), a = parseFloat(kpi.semaforo_ambar);
+  if (!isNaN(v) && valor<=v) return 'g';
+  if (!isNaN(a) && valor<=a) return 'a';
+  return 'r';
+}
+function kpiFraseAmigable(k){
+  if (k.descripcion) return k.descripcion;
+  if (k.tipo === 'participacion') return 'Qué parte de "'+etiquetaCampo(k.campo)+'" (de toda la empresa) le corresponde a este ramo.';
+  return '"'+etiquetaCampo(k.numerador)+'" sobre "'+etiquetaCampo(k.denominador)+'".';
 }
 
 function renderKpisTable(){
-  var container=document.getElementById('kpis-body');
-  if(!container) return;
-  var kpis=STATE.kpis||[];
+  if (!KPI_RAMO_ACTIVO) KPI_RAMO_ACTIVO = getRamosIds()[0];
+  kpiRenderRamoCards();
+  kpiRenderLista();
+}
 
-  // ── KPI sistémico fijo: Gestión General Empresa ───────────────
-  // Fórmula: Siniestros Incurridos + Total Comisiones y Gastos + abs(Saldo Financiero)
-  // Se calcula sobre el último mes cargado con datos reales
-  var kpiGGE = '';
-  if(STATE.months && STATE.months.length){
-    var ORDEN_M=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-    var sorted = STATE.months.slice().sort(function(a,b){
-      return ORDEN_M.indexOf((b.month||'').split(' ')[0]) - ORDEN_M.indexOf((a.month||'').split(' ')[0]);
-    });
-    var ultimo = sorted[0];
-    if(ultimo && ultimo.totals){
-      var t=ultimo.totals, f=ultimo.fin||{};
-      var gge = (t.n||0) + (t.i||0) + Math.abs(f.saldo_fin||0);
-      var bcvAvg = ultimo.bcv&&ultimo.bcv.avg&&ultimo.bcv.avg>1?ultimo.bcv.avg:0;
-      var ggeUsd = bcvAvg ? (gge/bcvAvg) : 0;
-      var mesNombre = (ultimo.month||'').split(' ')[0];
-      kpiGGE = '<div style="background:var(--s2);border:1px solid var(--br);border-radius:10px;padding:14px 16px;margin-bottom:14px">'
-        +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
-        +'<div>'
-        +'<div style="font-size:8px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">📊 Gestión General Empresa</div>'
-        +'<div style="font-size:11px;color:var(--td);margin-bottom:8px">Siniestros Incurridos + Total Comisiones y Gastos + |Saldo Financiero| · '+mesNombre+'</div>'
-        +'<div style="font-size:22px;font-weight:800;color:var(--ink2)">Bs. '+gge.toLocaleString('es-VE',{maximumFractionDigits:0})+'</div>'
-        +(ggeUsd?'<div style="font-size:12px;font-weight:600;color:var(--td);margin-top:2px">USD '+Math.round(ggeUsd).toLocaleString('es-VE')+'</div>':'')
-        +'<div style="font-size:9px;color:var(--td);margin-top:8px;display:flex;gap:12px">'
-        +'<span>Siniestros: Bs. '+(t.n||0).toLocaleString('es-VE',{maximumFractionDigits:0})+'</span>'
-        +'<span>Com.+Gastos: Bs. '+(t.i||0).toLocaleString('es-VE',{maximumFractionDigits:0})+'</span>'
-        +'<span>Saldo Fin.: Bs. '+(f.saldo_fin||0).toLocaleString('es-VE',{maximumFractionDigits:0})+'</span>'
-        +'</div>'
-        +'</div>'
-        +'<div style="background:var(--pb);border-radius:8px;padding:8px 12px;text-align:right;min-width:120px">'
-        +'<div style="font-size:8px;color:var(--td)">Sobre prima cobrada</div>'
-        +(t.a>0?'<div style="font-size:16px;font-weight:800;color:var(--r)">'+((gge/t.a)*100).toFixed(1)+'%</div>':'<div style="font-size:12px;color:var(--td)">—</div>')
-        +'</div>'
-        +'</div></div>';
+function kpiRenderRamoCards(){
+  var reg = getRamosRegistry();
+  var html = '';
+  getRamosIds().forEach(function(id){
+    var r = reg[id];
+    html += '<div class="kpiv-tab'+(KPI_RAMO_ACTIVO===id?' on':'')+'" onclick="kpiSeleccionarRamo(\''+id+'\')">'
+      + '<span class="dot" style="background:'+r.color+'"></span>'+r.label
+      + '</div>';
+  });
+  document.getElementById('kpi-ramo-grid').innerHTML = html;
+}
+window.kpiSeleccionarRamo = function(id){ KPI_RAMO_ACTIVO=id; kpiRenderRamoCards(); kpiRenderLista(); };
+
+function kpiVeredicto(color){
+  if (color==='g') return '🟢 Bien';
+  if (color==='a') return '🟡 Atención';
+  if (color==='r') return '🔴 Revisar';
+  return '';
+}
+function kpiRenderLista(){
+  if (!KPI_RAMO_ACTIVO) return;
+  var mes = kpiUltimoMes();
+  document.getElementById('kpi-mes-ref').textContent = mes ? mes.month : 'sin balances cargados todavía';
+
+  var todos = BUILTIN_KPIS.concat((STATE.kpis||[]).filter(function(k){ return k.ramo===KPI_RAMO_ACTIVO || k.ramo===null; }));
+  var html = '';
+  todos.forEach(function(k){
+    var cert = BUILTIN_KPIS.indexOf(k) !== -1;
+    if (k.active===false) return;
+    var valor = kpiEvaluar(k, KPI_RAMO_ACTIVO);
+    var color = kpiSemaforoColor(k, valor);
+    var veredicto = kpiVeredicto(color);
+    html += '<div class="kpiv-card">'
+      + (cert?'':'<span class="tag-tuyo">Tuyo</span>')
+      + '<div class="top"><div class="kpiv-gauge '+color+'">'+(valor===null?'—':Math.round(valor)+'%')+'</div><div><h4>'+k.nombre+'</h4>'+(veredicto?'<div class="kpiv-veredicto">'+veredicto+'</div>':'')+'</div></div>'
+      + '<div class="frase">'+kpiFraseAmigable(k)+'</div>'
+      + (cert?'':'<div class="acciones"><button class="kpiv-mini-btn" onclick="kpiAbrirModal(\''+k.code+'\')" title="Editar">✏️</button><button class="kpiv-mini-btn" onclick="kpiEliminar(\''+k.code+'\')" title="Eliminar">🗑️</button></div>')
+      + '</div>';
+  });
+  html += '<div class="kpiv-add-card" onclick="kpiAbrirModal(null)"><span class="plus">➕</span>Crear un indicador nuevo</div>';
+  document.getElementById('kpi-lista-body').innerHTML = html;
+}
+
+/* ══ MODAL: crear/editar Indicador — versión amigable, solo etiquetas ══ */
+var _editKpiCode = null;
+var KPI_RAMO_MODAL = null;
+var KPI_TOTAL_EMPRESA = '__TOTAL__'; // valor especial de denominador = participación sobre el total
+var KW_PASO_ACTUAL = 1;
+
+function kpiOpcionesEtiquetas(ramo){
+  var campos = getCamposPorRamo()[ramo] || [];
+  return campos.map(function(c){ return '<option value="'+c+'">'+etiquetaCampo(c)+'</option>'; }).join('');
+}
+
+/* ══ Navegación del asistente ══ */
+function kwMostrarPaso(n){
+  KW_PASO_ACTUAL = n;
+  [1,2,3].forEach(function(i){
+    document.getElementById('kw-paso-'+i).style.display = (i===n?'block':'none');
+    var bar = document.getElementById('kw-bar-'+i);
+    bar.classList.remove('on','hecho');
+    if (i<n) bar.classList.add('hecho');
+    else if (i===n) bar.classList.add('on');
+  });
+  document.getElementById('kw-btn-atras').style.visibility = (n>1?'visible':'hidden');
+  document.getElementById('kw-btn-siguiente').textContent = (n===3 ? '💾 Guardar Indicador' : 'Siguiente →');
+}
+window.kwSiguiente = function(){
+  if (KW_PASO_ACTUAL===1){
+    var nombre = document.getElementById('kpi-nombre').value.trim();
+    if (!nombre){ alert('Escribe un nombre para el indicador — puedes usar una de las ideas de abajo.'); return; }
+    kwMostrarPaso(2);
+  } else if (KW_PASO_ACTUAL===2){
+    if (!KPI_RAMO_MODAL){ alert('Toca un ramo para continuar.'); return; }
+    kwMostrarPaso(3);
+  } else {
+    kpiGuardar();
+  }
+};
+window.kwAtras = function(){
+  if (KW_PASO_ACTUAL>1) kwMostrarPaso(KW_PASO_ACTUAL-1);
+};
+window.kwUsarNombre = function(nombre){
+  document.getElementById('kpi-nombre').value = nombre;
+  kwMostrarPaso(2);
+};
+window.kwToggleAvanzado = function(){
+  var body = document.getElementById('kw-avanzado-body');
+  var abierto = body.style.display !== 'none';
+  body.style.display = abierto ? 'none' : 'block';
+  document.getElementById('kw-avanzado-icono').textContent = abierto ? '▸' : '▾';
+};
+
+function kpiRenderRamoPills(ramoSeleccionado){
+  var html = '';
+  getRamosIds().forEach(function(id){
+    var on = ramoSeleccionado===id;
+    html += '<div class="kw-ramo-btn'+(on?' on':'')+'" style="background:'+ramoColor(id)+'" onclick="kpiElegirRamoModal(\''+id+'\')">'+ramoLabel(id)+'</div>';
+  });
+  document.getElementById('kpi-ramo-pills').innerHTML = html;
+}
+window.kpiElegirRamoModal = function(id){
+  KPI_RAMO_MODAL = id;
+  document.getElementById('kpi-ramo').value = id;
+  kpiRenderRamoPills(id);
+  kpiCargarOpciones();
+  kwMostrarPaso(3);
+};
+function kpiCargarOpciones(){
+  var ramo = KPI_RAMO_MODAL;
+  var numActual = document.getElementById('kpi-numerador').value;
+  var denActual = document.getElementById('kpi-denominador').value;
+  document.getElementById('kpi-numerador').innerHTML = kpiOpcionesEtiquetas(ramo);
+  document.getElementById('kpi-denominador').innerHTML =
+    '<option value="'+KPI_TOTAL_EMPRESA+'">🏢 Total de la Empresa (todos los ramos)</option>' + kpiOpcionesEtiquetas(ramo);
+  if (numActual) document.getElementById('kpi-numerador').value = numActual;
+  if (denActual) document.getElementById('kpi-denominador').value = denActual;
+  kpiActualizarPreview();
+}
+window.kpiActualizarPreview = function(){
+  var num = document.getElementById('kpi-numerador').value;
+  var den = document.getElementById('kpi-denominador').value;
+  var numLbl = etiquetaCampo(num);
+  var esParticipacion = (den === KPI_TOTAL_EMPRESA);
+  var texto = esParticipacion
+    ? '💡 Vas a ver qué parte de "'+numLbl+'" (sumando todos los ramos) le corresponde a '+ramoLabel(KPI_RAMO_MODAL)+'.'
+    : '💡 Vas a ver: "'+numLbl+'" comparado contra "'+etiquetaCampo(den)+'", del ramo '+ramoLabel(KPI_RAMO_MODAL)+'.';
+  document.getElementById('kpi-preview').textContent = texto;
+};
+window.kpiAbrirModal = function(code){
+  _editKpiCode = code || null;
+  var k = code ? (STATE.kpis||[]).find(function(x){return x.code===code;}) : null;
+  document.getElementById('kpi-nombre').value = k?k.nombre:'';
+  document.getElementById('kpi-desc').value   = k?(k.descripcion||''):'';
+  KPI_RAMO_MODAL = (k&&k.ramo) || KPI_RAMO_ACTIVO;
+  document.getElementById('kpi-ramo').value = KPI_RAMO_MODAL;
+  kpiRenderRamoPills(KPI_RAMO_MODAL);
+  kpiCargarOpciones();
+  if (k){
+    if (k.tipo==='participacion'){
+      document.getElementById('kpi-numerador').value = k.campo;
+      document.getElementById('kpi-denominador').value = KPI_TOTAL_EMPRESA;
+    } else {
+      document.getElementById('kpi-numerador').value = k.numerador;
+      document.getElementById('kpi-denominador').value = k.denominador;
     }
   }
-
-  if(!kpis.length && !kpiGGE){
-    container.innerHTML='<p style="text-align:center;color:var(--td);padding:20px">No hay KPIs configurados</p>';
-    return;
-  }
-  var html='';
-  if(kpiGGE) html+=kpiGGE;
-  if(kpis.length){
-    html+='<div style="overflow-x:auto"><table class="tbl"><thead><tr>'
-      +'<th>#</th><th>Nombre del KPI</th><th>Descripción</th><th style="text-align:center">Estado</th><th style="text-align:center">Acciones</th>'
-      +'</tr></thead><tbody>';
-    html+=kpis.map(function(k,i){
-      var activo = k.active !== false;
-      return '<tr style="opacity:'+(activo?1:0.55)+'">'
-        +'<td class="mono" style="color:var(--td)">'+(i+1)+'</td>'
-        +'<td style="font-weight:600">'+(k.name||'')+'</td>'
-        +'<td style="font-size:11px;color:var(--tm)">'+(k.description||'')+'</td>'
-        +'<td style="text-align:center">'
-          +'<button onclick="toggleKpiActivo(\''+k.id+'\')" title="Click para '+(activo?'desactivar':'activar')+'" '
-          +'style="background:none;border:none;cursor:pointer;padding:0">'
-          +'<span class="badge '+(activo?'g':'')+(activo?'':' inactive')+'" '
-          +'style="'+(activo?'':'background:var(--td);color:#fff;')+'">'
-          +(activo?'✅ Activo':'⬜ Inactivo')+'</span>'
-          +'</button>'
-        +'</td>'
-        +'<td style="text-align:center;white-space:nowrap">'
-          +'<button class="btn btn-ghost" style="font-size:10px;padding:3px 8px;margin-right:4px" onclick="openKpiModal(\''+k.id+'\')">✏️ Editar</button>'
-          +'<button class="btn btn-danger" style="font-size:10px;padding:3px 8px" onclick="deleteKpi(\''+k.id+'\')">🗑️</button>'
-        +'</td>'
-        +'</tr>';
-    }).join('');
-    html+='</tbody></table></div>';
-  }
-  html+='<p style="font-size:10px;color:var(--td);margin-top:12px;padding:0 4px">⚠️ Los KPIs adicionales se calculan sobre datos reales cargados desde el balance de comprobación.</p>';
-  container.innerHTML=html;
-}
+  kpiActualizarPreview();
+  document.getElementById('kpi-verde').value = k?(k.semaforo_verde||''):'';
+  document.getElementById('kpi-ambar').value = k?(k.semaforo_ambar||''):'';
+  document.getElementById('kpi-active').value = (k&&k.active===false)?'false':'true';
+  document.getElementById('kw-avanzado-body').style.display = 'none';
+  document.getElementById('kw-avanzado-icono').textContent = '▸';
+  document.getElementById('modal-kpi-title').textContent = k ? '✏️ Editar Indicador' : '➕ Nuevo Indicador';
+  kwMostrarPaso(k ? 3 : 1); // si es edición, ir directo al paso de comparación (ya tiene nombre y ramo)
+  openModal('modal-kpi');
+};
+window.kpiGuardar = function(){
+  var nombre = document.getElementById('kpi-nombre').value.trim();
+  if(!nombre){ alert('Escribe el nombre del indicador.'); return; }
+  var num = document.getElementById('kpi-numerador').value;
+  var den = document.getElementById('kpi-denominador').value;
+  var esParticipacion = (den === KPI_TOTAL_EMPRESA);
+  var kpi = {
+    code: _editKpiCode || ('kpi_'+Date.now()),
+    ramo: KPI_RAMO_MODAL,
+    tipo: esParticipacion ? 'participacion' : 'ramo',
+    nombre: nombre,
+    descripcion: document.getElementById('kpi-desc').value.trim(),
+    semaforo_verde: document.getElementById('kpi-verde').value,
+    semaforo_ambar: document.getElementById('kpi-ambar').value,
+    active: document.getElementById('kpi-active').value !== 'false'
+  };
+  if (esParticipacion){ kpi.campo = num; }
+  else { kpi.numerador = num; kpi.denominador = den; }
+  if(!STATE.kpis) STATE.kpis=[];
+  var idx = STATE.kpis.findIndex(function(k){return k.code===kpi.code;});
+  if(idx>=0) STATE.kpis[idx]=kpi; else STATE.kpis.push(kpi);
+  try{ localStorage.setItem('slf_kpis', JSON.stringify(STATE.kpis)); }catch(e){}
+  closeModal('modal-kpi');
+  renderKpisTable();
+  showToast('✅ Indicador guardado — ya calculado con el último balance');
+};
+window.kpiEliminar = function(code){
+  if(!confirm('¿Eliminar este KPI?')) return;
+  STATE.kpis = (STATE.kpis||[]).filter(function(k){return k.code!==code;});
+  try{ localStorage.setItem('slf_kpis', JSON.stringify(STATE.kpis)); }catch(e){}
+  renderKpisTable();
+  showToast('KPI eliminado');
+};
 
 // Estado del selector de mes en KPIs
 // _kpiModoActual: 'acum' | array de nombres ['Enero','Febrero',...]
@@ -3776,9 +4353,9 @@ function renderKpisView(modo){
   }
 
   var ORDEN_M=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  var RAMOS=['vida','fun','ap','rcv'];
-  var RLBL={vida:'Vida',fun:'Funerario',ap:'Acc. Personales',rcv:'RC Vehículos'};
-  var RCLR={vida:'#4B2D8F',fun:'#0D7A4E',ap:'#B07A00',rcv:'#8B1A1A'};
+  var RAMOS=getRamosIds();
+  var RLBL={}, RCLR={};
+  RAMOS.forEach(function(id){ RLBL[id]=ramoLabel(id); RCLR[id]=ramoColor(id); });
 
   var sorted = months.slice().sort(function(a,b){
     return ORDEN_M.indexOf((a.month||'').split(' ')[0]) - ORDEN_M.indexOf((b.month||'').split(' ')[0]);
@@ -4606,73 +5183,28 @@ function openModal(id){ document.getElementById(id).classList.add('open'); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 
 // ─── MODAL KPI ────────────────────────────────────────────────
-var _editKpiId = null;
-function openKpiModal(id){
-  _editKpiId = id || null;
-  var kpi = id ? (STATE.kpis.find(function(k){return k.id===id;}) || {}) : {};
-  document.getElementById('kpi-id').value      = kpi.id || ('k'+(STATE.kpis.length+1));
-  document.getElementById('kpi-name').value    = kpi.name || '';
-  document.getElementById('kpi-formula').value = kpi.formula || '';
-  document.getElementById('kpi-desc').value    = kpi.description || '';
-  document.getElementById('kpi-order').value   = kpi.order || STATE.kpis.length+1;
-  document.getElementById('kpi-active').value  = kpi.active===false ? 'false' : 'true';
-  document.getElementById('kpi-verde').value   = kpi.semaforo_verde || '';
-  document.getElementById('kpi-ambar').value   = kpi.semaforo_ambar || '';
-  document.getElementById('formula-test-result').style.display='none';
-  openModal('modal-kpi');
-}
-
-function saveKpi(){
-  var kpi = {
-    id:            document.getElementById('kpi-id').value.trim(),
-    name:          document.getElementById('kpi-name').value.trim(),
-    formula:       document.getElementById('kpi-formula').value.trim(),
-    description:   document.getElementById('kpi-desc').value.trim(),
-    order:         parseInt(document.getElementById('kpi-order').value)||1,
-    active:        document.getElementById('kpi-active').value !== 'false',
-    semaforo_verde:document.getElementById('kpi-verde').value,
-    semaforo_ambar:document.getElementById('kpi-ambar').value,
-  };
-  if(!kpi.id||!kpi.name||!kpi.formula){ alert('Completa ID, Nombre y Fórmula.'); return; }
-  var idx = STATE.kpis.findIndex(function(k){return k.id===kpi.id;});
-  if(idx>=0) STATE.kpis[idx]=kpi; else STATE.kpis.push(kpi);
-  closeModal('modal-kpi');
-  renderKpisTable();
-  showToast('KPI guardado correctamente');
-}
-
-function deleteKpi(id){
-  if(!confirm('¿Eliminar este KPI?')) return;
-  STATE.kpis = STATE.kpis.filter(function(k){return k.id!==id;});
-  try{localStorage.setItem('slf_kpis',JSON.stringify(STATE.kpis));}catch(e){}
-  renderKpisTable();
-  showToast('KPI eliminado');
-}
-
-function toggleKpiActivo(id){
-  var kpi = STATE.kpis.find(function(k){return k.id===id;});
-  if(!kpi) return;
-  kpi.active = kpi.active===false ? true : false;
-  try{localStorage.setItem('slf_kpis',JSON.stringify(STATE.kpis));}catch(e){}
-  renderKpisTable();
-  showToast(kpi.active ? '✅ KPI activado' : '⬜ KPI desactivado');
-}
-
-function testFormula(){
-  var f = document.getElementById('kpi-formula').value;
-  var res = document.getElementById('formula-test-result');
-  res.style.display='block';
-  res.innerHTML='<div class="alert info"><span class="alert-icon">ℹ️</span>Fórmula: <code>'+f+'</code> — Se evaluará con datos reales al cargar el balance.</div>';
-}
-
 // ─── MODAL CUENTA ─────────────────────────────────────────────
 var _editAccCode = null;
-function openAccountModal(code){
+var CAMPOS_DERIVADOS = ['e','n','i','o','h','total_eg','total_ing','saldo_fin','saldo_gen']; // se calculan solos, no son asignables
+function mccOpcionesCampo(ramo){
+  var campos = getCamposPorRamo()[ramo] || [];
+  campos = campos.filter(function(c){ return CAMPOS_DERIVADOS.indexOf(c)===-1; });
+  return campos.map(function(c){ return '<option value="'+c+'">'+c+' — '+etiquetaCampo(c)+'</option>'; }).join('');
+}
+var _accProductoPreseleccionado = null;
+function openAccountModal(code, ramoPreseleccionado, productoPreseleccionado){
   _editAccCode = code || null;
   var acc = code ? (STATE.accounts.find(function(a){return a.code===code;}) || {}) : {};
+  var ramoInicial = acc.ramo || ramoPreseleccionado || 'vida';
+  _accProductoPreseleccionado = acc.producto || productoPreseleccionado || null;
   document.getElementById('acc-code').value    = acc.code || '';
-  document.getElementById('acc-ramo').value    = acc.ramo || 'vida';
-  document.getElementById('acc-field').value   = acc.field || 'a';
+  document.getElementById('acc-ramo').innerHTML = getRamosIds().concat(['financiero']).map(function(r){
+    return '<option value="'+r+'">'+(r==='financiero'?'Financiero':ramoLabel(r))+'</option>';
+  }).join('');
+  document.getElementById('acc-ramo').value    = ramoInicial;
+  document.getElementById('acc-field').innerHTML = mccOpcionesCampo(ramoInicial);
+  document.getElementById('acc-field').value   = acc.field || '';
+  mccActualizarProductosDelModal(ramoInicial, _accProductoPreseleccionado);
   document.getElementById('acc-sign').value    = acc.sign || '+';
   document.getElementById('acc-label').value   = acc.label || '';
   document.getElementById('acc-cuentas').value = Array.isArray(acc.cuentas)?acc.cuentas.join('\n'):acc.cuentas||'';
@@ -4681,15 +5213,35 @@ function openAccountModal(code){
   document.getElementById('acc-notes').value   = acc.notes || '';
   openModal('modal-account');
 }
+window.mccActualizarCamposDeRamo = function(){
+  var ramo = document.getElementById('acc-ramo').value;
+  document.getElementById('acc-field').innerHTML = mccOpcionesCampo(ramo);
+  mccActualizarProductosDelModal(ramo, null);
+};
+function mccActualizarProductosDelModal(ramo, productoSel){
+  var sel = document.getElementById('acc-producto');
+  if (!sel) return;
+  if (ramo === 'financiero'){
+    sel.innerHTML = '<option value="">— No aplica (Gestión Financiera) —</option>';
+    sel.disabled = true;
+    return;
+  }
+  sel.disabled = false;
+  var productos = getProductosDeRamo(ramo);
+  sel.innerHTML = productos.map(function(p){ return '<option value="'+p.id+'">'+p.nombre+'</option>'; }).join('');
+  if (productoSel) sel.value = productoSel;
+}
 
 function saveAccount(){
   var code = document.getElementById('acc-code').value.trim().replace(/\s/g,'_');
   var label= document.getElementById('acc-label').value.trim();
   var raw  = document.getElementById('acc-cuentas').value.trim();
   if(!code||!label||!raw){ alert('Completa Código, Descripción y Cuentas.'); return; }
+  var ramo = document.getElementById('acc-ramo').value;
   var acc = {
     code:           code,
-    ramo:           document.getElementById('acc-ramo').value,
+    ramo:           ramo,
+    producto:       ramo==='financiero' ? null : document.getElementById('acc-producto').value,
     field:          document.getElementById('acc-field').value,
     sign:           document.getElementById('acc-sign').value,
     label:          label,
@@ -4973,7 +5525,7 @@ function extractData(rows, ext, fileName, prevSaldoMap){
   // ── Calcular campos derivados por ramo: e, n (i y o requieren h prorrateado) ──
   // e = a - b - c - cIV + d + dVI   (Primas Devengadas)
   // n = j + k + l - ll - m          (Siniestros Incurridos)
-  ['vida','fun','ap','rcv'].forEach(function(r){
+  getRamosIds().forEach(function(r){
     if(!ramos[r]) return;
     var f=ramos[r];
     var a=f.a||0, b=f.b||0, c=f.c||0, cIV=f.cIV||0, d=f.d||0, dVI=f.dVI||0;
@@ -4983,7 +5535,7 @@ function extractData(rows, ext, fileName, prevSaldoMap){
   });
 
   var total_a = 0;
-  ['vida','fun','ap','rcv'].forEach(function(r){
+  getRamosIds().forEach(function(r){
     if(ramos[r]) total_a += ramos[r].a||0;
   });
 
@@ -4996,7 +5548,7 @@ function extractData(rows, ext, fileName, prevSaldoMap){
   var gastoAdm98 = gastoAdmTotal * 0.98;
   var gastoAdm2  = gastoAdmTotal * 0.02;
 
-  ['vida','fun','ap','rcv'].forEach(function(r){
+  getRamosIds().forEach(function(r){
     if(!ramos[r]) return;
     var pct = total_a ? (ramos[r].a||0)/total_a : 0;
     ramos[r].h = gastoAdm98 * pct;
@@ -5008,7 +5560,7 @@ function extractData(rows, ext, fileName, prevSaldoMap){
 
   // Compute totals across ramos
   var totals={a:0,e:0,h:0,i:0,n:0,o:0};
-  ['vida','fun','ap','rcv'].forEach(function(r){
+  getRamosIds().forEach(function(r){
     if(!ramos[r]) return;
     totals.a += ramos[r].a||0;
     totals.e += ramos[r].e||0;
@@ -5065,10 +5617,10 @@ function showPreview(){
   var body=document.getElementById('preview-body');
   var html='<div class="alert ok" style="margin-bottom:12px"><span class="alert-icon">📅</span>Período: <strong>'+d.month+' '+d.year+'</strong> · Total Prima Cobrada (todas las ramas): <strong>Bs. '+fmtN(d.total_a)+'</strong></div>';
   
-  var RAMOS_LABELS={vida:'Vida',fun:'Funerario',ap:'Acc. Personales',rcv:'RC Vehículos',financiero:'Financiero',general:'General'};
+  var RAMOS_LABELS={financiero:'Financiero',general:'General'};
   Object.keys(d.ramos).forEach(function(ramo){
     var fields=d.ramos[ramo];
-    html+='<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">'+(RAMOS_LABELS[ramo]||ramo)+'</div>';
+    html+='<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">'+(RAMOS_LABELS[ramo]||ramoLabel(ramo))+'</div>';
     html+='<table class="tbl"><thead><tr><th>Campo</th><th class="r">Saldo (Bs.)</th></tr></thead><tbody>';
     Object.keys(fields).sort().forEach(function(f){
       html+='<tr><td class="mono">'+f+'</td><td class="r">'+(fields[f]<0?'<span style="color:var(--r)">':'')+ fmtN(fields[f])+(fields[f]<0?'</span>':'')+'</td></tr>';
@@ -5241,14 +5793,9 @@ function exportarSobregiros(mes){
 // los datos hacia el index.html público.
 // ═══════════════════════════════════════════════════════════════
 
-var CAMPOS_POR_RAMO = {
-  vida:['a','b','c','d','f','g','h','j','k','l','ll','m','e','n','i','o'],
-  fun:['a','b','c','d','f','g','h','j','k','l','ll','m','e','n','i','o'],
-  ap:['a','b','c','d','f','g','j','e','n','h','i','o'],
-  rcv:['a','b','c','cIV','d','dVI','f','e','n','h','i','o'],
-  totals:['a','e','h','i','n','o','saldo_gen'],
-  fin:['eg02','eg04','eg06','eg07','eg09','eg_adm_2pct','total_eg','ing01','ing03','total_ing','saldo_fin']
-};
+// CAMPOS_POR_RAMO ahora es dinámico (getCamposPorRamo(), definida arriba junto al
+// registro de ramos) — incluye automáticamente cualquier ramo nuevo agregado desde
+// Mantenimiento de Cuentas Contables, sin necesidad de tocar este archivo de nuevo.
 
 // Etiquetas legibles para cada campo — se usan solo para mostrar al usuario,
 // el código interno (a, b, c...) se mantiene igual para no afectar los cálculos.
@@ -5290,7 +5837,7 @@ function cargarValorReal(){
   var mes = document.getElementById('adj-mes').value;
   var ramo = document.getElementById('adj-ramo').value;
   var selCampo = document.getElementById('adj-campo');
-  var campos = CAMPOS_POR_RAMO[ramo] || [];
+  var campos = getCamposPorRamo()[ramo] || [];
   var campoActual = selCampo.value;
   selCampo.innerHTML = '<option value="">Selecciona un campo...</option>'
     + campos.map(function(c){ return '<option value="'+c+'">'+etiquetaCampo(c)+'</option>'; }).join('');
@@ -5901,7 +6448,8 @@ function exportarDatos(){
       sobregiros: JSON.parse(localStorage.getItem('slf_sobregiros') || '{}'),
       ajustes:    JSON.parse(localStorage.getItem('slf_ajustes')    || '[]'),
       kpis:       JSON.parse(localStorage.getItem('slf_kpis')       || '[]'),
-      accounts:   JSON.parse(localStorage.getItem('slf_accounts')   || '[]')
+      accounts:   JSON.parse(localStorage.getItem('slf_accounts')   || '[]'),
+      customRamos:JSON.parse(localStorage.getItem('slf_custom_ramos')|| '[]')
     };
     var nMeses = datos.months.length;
     var nTasas = Object.keys(datos.bcv_rates).length;
@@ -5955,6 +6503,7 @@ function importarDatos(event){
       if(datos.ajustes)    localStorage.setItem('slf_ajustes',     JSON.stringify(datos.ajustes));
       if(datos.kpis)       localStorage.setItem('slf_kpis',        JSON.stringify(datos.kpis));
       if(datos.accounts)   localStorage.setItem('slf_accounts',    JSON.stringify(datos.accounts));
+      if(datos.customRamos)localStorage.setItem('slf_custom_ramos',JSON.stringify(datos.customRamos));
       if(st) st.innerHTML = '✅ Datos restaurados correctamente — recargando...';
       showToast('✅ Datos restaurados — recargando sistema');
       setTimeout(function(){ location.reload(); }, 1500);
@@ -5977,13 +6526,6 @@ function addBcvRow(){
   showToast('Mes "'+mes+'" agregado — completa sus tasas en la tabla o sube el archivo del BCV');
 }
 
-function insertVar(v){
-  var f=document.getElementById('kpi-formula');
-  if(!f) return;
-  var pos=f.selectionStart||f.value.length;
-  f.value=f.value.slice(0,pos)+v+f.value.slice(pos);
-  f.focus();
-}
 
 function updateBcv(mes,field,val){
   if(!STATE.bcvRates[mes]) STATE.bcvRates[mes]={};
