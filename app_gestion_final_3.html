@@ -1023,6 +1023,10 @@ table.mcc-tbl tbody tr.certificada{background:rgba(13,122,78,.04)}
 .tfd-fc-tot-row.gran{background:linear-gradient(90deg,var(--tp2),var(--tp));font-size:12.5px}
 table.tfd-fc-tabla{width:100%;border-collapse:collapse;font-size:11px}
 table.tfd-fc-tabla thead th{background:var(--tpl);color:var(--tp);padding:9px 10px;font-size:9px;font-weight:800;text-transform:uppercase;text-align:right;white-space:nowrap}
+.tfd-fc-th-bcv{font-size:9.5px;font-weight:800;color:var(--tp2);text-transform:none;margin-top:3px}
+.tfd-fc-th-bcv-var{font-size:8.5px;font-weight:700;color:var(--tr);text-transform:none;margin-top:1px}
+.tfd-fc-th-bcv-var span{font-weight:500;color:var(--ttx3)}
+.tfd-fc-th-bcv-var.na{color:var(--ttx3);font-style:italic;font-weight:600}
 table.tfd-fc-tabla thead th.tfd-fc-th-concepto{text-align:left}
 table.tfd-fc-tabla tbody td{padding:9px 10px;border-bottom:1px solid #F0EDF8;text-align:right;white-space:nowrap}
 .tfd-fc-td-concepto{text-align:left!important;font-weight:700;color:var(--ttx);cursor:pointer;white-space:normal!important}
@@ -1041,6 +1045,24 @@ tr.tfd-fc-row-total .tfd-fc-td-concepto{color:#fff!important;cursor:default}
 tr.tfd-fc-row-total .tfd-fc-var.up{background:rgba(255,255,255,.18);color:#FF9B9B}
 tr.tfd-fc-row-total .tfd-fc-var.down{background:rgba(255,255,255,.18);color:#8AEFB8}
 .tfd-fc-nota-solo{padding:11px 16px;font-size:10.5px;color:var(--ttx3);font-style:italic;background:#FAFAFE}
+
+/* Punto 1: detalle inline justo debajo del concepto, no al final */
+tr.tfd-fc-row-detalle{display:none}
+tr.tfd-fc-row-detalle.open{display:table-row}
+tr.tfd-fc-row-detalle td{padding:0;border-bottom:1px solid #F0EDF8}
+.tfd-fc-detalle-inner{background:#FAFAFE;padding:10px 16px 12px 34px}
+.tfd-fc-detalle-hdr{font-size:9.5px;font-weight:800;color:var(--tp);text-transform:uppercase;margin-bottom:6px}
+.tfd-fc-detalle-hdr span{font-weight:500;text-transform:none;color:var(--ttx3);margin-left:6px}
+.tfd-fc-td-concepto.sinclic{cursor:default}
+.tfd-fc-td-concepto.sinclic .tfd-fc-arrow{display:none}
+
+/* Punto 4: depreciación acumulada con más énfasis, elegante */
+.tfd-stat.hi{background:linear-gradient(135deg,rgba(229,194,41,.22),rgba(229,194,41,.08));border:1px solid rgba(229,194,41,.4);padding:9px 18px}
+.tfd-stat.hi .lbl{color:rgba(255,255,255,.75);font-size:8.5px}
+.tfd-stat.hi .val{font-size:19px;color:var(--ty);text-shadow:0 1px 8px rgba(229,194,41,.35)}
+
+/* Puntos 3 y 5: mejor contraste en tasas y devaluación (barra certificada, solo color) */
+.tasa-chip .tasa-deval{color:#FFD166;font-weight:800;background:rgba(0,0,0,.22);padding:1px 6px;border-radius:6px;margin-left:5px}
 .tfd-fc-grp-varfila{padding:4px 16px 8px 34px;background:#fff}
 .tfd-fc-tot-varfila{padding:5px 16px;background:var(--tpl);text-align:right}
 .tfd-fc-tot-varfila.gran{background:rgba(255,255,255,.12)}
@@ -1297,6 +1319,22 @@ window.tfdToggleMes = function(i){
   tfdRenderAll();
 };
 
+// Encabezado compartido (Ingresos y Egresos) — bajo cada mes muestra la tasa BCV
+// promedio y su variación % respecto al mes SIGUIENTE en el calendario (no el anterior).
+function tfdConstruirThead(sel){
+  var thead = '<th class="tfd-fc-th-concepto">Concepto</th>';
+  sel.forEach(function(idx, i){
+    var hayMesSiguiente = (idx+1) < TFD_BCV.length;
+    var variacionBcv = hayMesSiguiente ? (((TFD_BCV[idx+1]-TFD_BCV[idx])/TFD_BCV[idx])*100).toFixed(1) : null;
+    thead += '<th class="tfd-fc-th-mes">'+TFD_MESES[idx]
+      + '<div class="tfd-fc-th-bcv">Bs. '+TFD_BCV[idx].toFixed(2)+'</div>'
+      + (variacionBcv!==null ? '<div class="tfd-fc-th-bcv-var">▲ +'+variacionBcv+'% <span>vs '+TFD_MESES[idx+1]+'</span></div>' : '<div class="tfd-fc-th-bcv-var na">— último mes</div>')
+      + '</th>';
+    if (i < sel.length-1) thead += '<th class="tfd-fc-th-delta">Variación</th>';
+  });
+  return thead;
+}
+
 function tfdRenderStrip(){
   var sel = TFD_SELECCION;
   var mIdx = sel[sel.length-1], bIdx = sel.length>1 ? sel[sel.length-2] : mIdx;
@@ -1316,12 +1354,42 @@ function tfdRenderStrip(){
 }
 
 function tfdRenderIngresos(){
-  var mIdx = TFD_SELECCION[TFD_SELECCION.length-1];
-  var prima = TFD_PRIMA[mIdx];
-  var devol = TFD_DEVOLUCIONES[mIdx];
-  var html = '<div class="tfd-ing-row resta"><span class="n">Devoluciones de Prima <span style="font-weight:400;color:var(--ttx3);font-size:9.5px">(certificado, Mayor Analítico)</span></span><span class="v">'+tfdFmt(devol)+'</span></div>'
-    + '<div class="tfd-ing-row"><span class="n">Prima Cobrada <span style="font-weight:400;color:var(--ttx3);font-size:9.5px">(Individual + Grupo Polar — certificado)</span></span><span class="v">'+tfdFmt(prima)+'</span></div>'
-    + '<div class="tfd-ing-row total"><span class="n">Total Ingresos</span><span class="v">'+tfdFmt(prima-devol)+'</span></div>';
+  var sel = TFD_SELECCION;
+  var mIdx = sel[sel.length-1];
+  var FSRC = "FLUJO_DE_CAJA_LA_FE_al_31-05-2026.xlsx · hoja 'FLUJO DE CAJA $'";
+  var totalCols = 1 + sel.length + Math.max(sel.length-1,0);
+
+  var thead = tfdConstruirThead(sel);
+  function celdaVariacion(actual, base){
+    var deltaAbs = actual - base;
+    var deltaPct = base ? (deltaAbs/base*100) : 0;
+    var sube = deltaAbs >= 0;
+    return '<td class="tfd-fc-td-delta"><span class="tfd-fc-var '+(sube?'up':'down')+'">'+(sube?'▲':'▼')+' '+tfdFmt(Math.abs(deltaAbs))+'<br>('+(sube?'+':'')+deltaPct.toFixed(1)+'%)</span></td>';
+  }
+  function filaIng(nombre, arr, resaltar, subrowsHtml, id){
+    var fila = '<td class="tfd-fc-td-concepto'+(resaltar?' tot':'')+(subrowsHtml?'':' sinclic')+'"'+(subrowsHtml?' onclick="tfdToggleGrp(\''+id+'\')"':'')+'>'
+      + (subrowsHtml?'<span class="tfd-fc-arrow" id="tfd-arr-'+id+'">▶</span>':'')+nombre+'</td>';
+    sel.forEach(function(idx, i){
+      fila += '<td class="tfd-fc-td-monto'+(resaltar?' tot':'')+'">'+tfdFmt(arr[idx])+'</td>';
+      if (i < sel.length-1) fila += celdaVariacion(arr[sel[i+1]], arr[idx]);
+    });
+    var out = '<tr class="'+(resaltar?'tfd-fc-row-total':'tfd-fc-row-bloque')+'">'+fila+'</tr>';
+    if (subrowsHtml){
+      out += '<tr class="tfd-fc-row-detalle" id="tfd-sub-'+id+'"><td colspan="'+totalCols+'"><div class="tfd-fc-detalle-inner">'
+        + '<div class="tfd-fc-detalle-hdr">Detalle — '+TFD_MESES[mIdx]+' <span>certificado, filas 11-13</span></div>'+subrowsHtml+'</div></td></tr>';
+    }
+    return out;
+  }
+
+  var totalIngresos = TFD_MESES.map(function(_,i){ return TFD_PRIMA[i]-TFD_DEVOLUCIONES[i]; });
+
+  var html = '<div class="tfd-fc-card" style="overflow-x:auto"><table class="tfd-fc-tabla"><thead><tr>'+thead+'</tr></thead><tbody>';
+  html += filaIng('Prima Cobrada', TFD_PRIMA, false,
+      tfdSubRow('Primas Cobradas Cartera Individual', TFD_PRIMA_INDIVIDUAL[mIdx], FSRC, 'Celda directa, fila 11')
+    + tfdSubRow('Prima Cobrada Grupo Polar (Alícuota)', TFD_PRIMA_POLAR[mIdx], FSRC, 'Celda directa, fila 12'), 'prima');
+  html += filaIng('(–) Devoluciones de Prima', TFD_DEVOLUCIONES, false, null, null);
+  html += filaIng('Total Ingresos', totalIngresos, true, null, null);
+  html += '</tbody></table></div>';
   document.getElementById("tfd-ing").innerHTML = html;
 }
 
@@ -1359,49 +1427,82 @@ function tfdGrpUsd(id,nombre,total,fuente,formula){
 }
 function tfdRenderFC(){
   var sel = TFD_SELECCION;
-  var mIdx = sel[sel.length-1]; // mes más reciente seleccionado — usado para el detalle/drill-down
+  var mIdx = sel[sel.length-1]; // mes más reciente seleccionado — usado para el % s/Prima y el detalle
   TFD_DETALLES = [];
   var esSolo = (sel.length===1);
   var FSRC = "FLUJO_DE_CAJA_LA_FE_al_31-05-2026.xlsx · hoja 'FLUJO DE CAJA $'";
+  var totalCols = 1 + sel.length + Math.max(sel.length-1,0); // concepto + N meses + (N-1) deltas
 
-  // Construir encabezado en cadena: Mar | Abr | Δ | May | Δ  (para sel=[2,3,4])
-  var thead = '<th class="tfd-fc-th-concepto">Concepto</th>';
-  sel.forEach(function(idx, i){
-    thead += '<th class="tfd-fc-th-mes">'+TFD_MESES[idx]+'</th>';
-    if (i < sel.length-1) thead += '<th class="tfd-fc-th-delta">Variación</th>';
-  });
+  var thead = tfdConstruirThead(sel);
 
-  function celdaVariacion(actual, base, mesBaseIdx){
+  function celdaVariacion(actual, base){
     var deltaAbs = actual - base;
     var deltaPct = base ? (deltaAbs/base*100) : 0;
     var sube = deltaAbs >= 0;
     return '<td class="tfd-fc-td-delta"><span class="tfd-fc-var '+(sube?'up':'down')+'">'+(sube?'▲':'▼')+' '+tfdFmt(Math.abs(deltaAbs))+'<br>('+(sube?'+':'')+deltaPct.toFixed(1)+'%)</span></td>';
   }
-  function filaBloque(id, nombre, arr, pctArr, fuenteB, formulaB){
-    var d = tfdRegistrar({nombre:nombre+' (bloque completo)', monto:arr[mIdx], fuente:fuenteB, formula:formulaB});
+  // Fila de concepto (con flecha) + fila de detalle inline, JUSTO debajo — se abre/cierra en el mismo lugar
+  function filaBloqueConDetalle(id, nombre, arr, pctArr, fuenteB, formulaB, subrowsHtml){
     var fila = '<td class="tfd-fc-td-concepto" onclick="tfdToggleGrp(\''+id+'\')"><span class="tfd-fc-arrow" id="tfd-arr-'+id+'">▶</span>'+nombre+'<span class="tfd-fc-grp-pct">'+tfdPctf(pctArr[mIdx])+' s/Prima ('+TFD_MESES[mIdx]+')</span></td>';
     sel.forEach(function(idx, i){
       fila += '<td class="tfd-fc-td-monto" onclick="event.stopPropagation();tfdAbrirModal('+tfdRegistrar({nombre:nombre+' — '+TFD_MESES[idx], monto:arr[idx], fuente:fuenteB, formula:formulaB})+')">'+tfdFmt(arr[idx])+'</td>';
       if (i < sel.length-1) fila += celdaVariacion(arr[sel[i+1]], arr[idx]);
     });
-    return '<tr class="tfd-fc-row-bloque">'+fila+'</tr>';
+    var filaConcepto = '<tr class="tfd-fc-row-bloque">'+fila+'</tr>';
+    var filaDetalle = '<tr class="tfd-fc-row-detalle" id="tfd-sub-'+id+'"><td colspan="'+totalCols+'"><div class="tfd-fc-detalle-inner">'
+      + '<div class="tfd-fc-detalle-hdr">Detalle — '+TFD_MESES[mIdx]+' <span>clic en el monto para ver trazabilidad</span></div>'
+      + subrowsHtml + '</div></td></tr>';
+    return filaConcepto + filaDetalle;
   }
 
   var html = '<div class="tfd-fc-card" style="overflow-x:auto">'
     + '<table class="tfd-fc-tabla"><thead><tr>'+thead+'</tr></thead><tbody>';
-  html += filaBloque('sin','1. Gastos de Siniestros', TFD_SIN.total, TFD_SIN.pct, FSRC, "=SUM(D18:D21)");
-  html += filaBloque('com','2. Gastos de Comisiones', TFD_COM.total, TFD_COM.pct, FSRC, "=SUM(D26:D28)");
-  html += filaBloque('adm','3. Gasto de Administración', TFD_ADM.total, TFD_ADM.pct, FSRC, "=D29+D33+D34+D52+D54+D61+D62+D53");
-  html += filaBloque('trib','4. Costos Tributarios', TFD_TRIB.total, TFD_TRIB.pct, FSRC, "=SUM(D67)");
-  html += filaBloque('ban','5. Costo Bancario', TFD_BAN.total, TFD_BAN.pct, FSRC, "=SUM(D72:D73)");
-  // Total Egresos (fila destacada)
+
+  html += filaBloqueConDetalle('sin','1. Gastos de Siniestros', TFD_SIN.total, TFD_SIN.pct, FSRC, "=SUM(D18:D21)",
+      tfdSubRow('Siniestros Pagados (Seguros La Fe + Grupo Polar)', TFD_SIN.segurosLaFe[mIdx]+TFD_SIN.grupoPolar[mIdx], FSRC, 'Suma filas 17+18 (unificado)')
+    + tfdSubRow('Siniestros Pagados por Anticipado', TFD_SIN.anticipados[mIdx], FSRC, 'Celda directa, fila 19')
+    + tfdSubRow('Gastos Grupo Nueve Once', TFD_SIN.grupoNueveOnce[mIdx], FSRC, 'Celda directa, fila 20'));
+
+  html += filaBloqueConDetalle('com','2. Gastos de Comisiones', TFD_COM.total, TFD_COM.pct, FSRC, "=SUM(D26:D28)",
+      tfdSubRow('Coordinación Funeasistencia', TFD_COM.funeasistencia[mIdx], FSRC, 'Celda directa, fila 25')
+    + tfdSubRow('Comisiones Call Center', TFD_COM.callCenter[mIdx], FSRC, 'Celda directa, fila 26')
+    + tfdSubRow('Gastos de Promoción y Venta', TFD_COM.promocionVenta[mIdx], FSRC, 'Celda directa, fila 27')
+    + '<div class="tfd-fc-sub-row nested"><span class="n">⚠ Este total se contabiliza dentro de "Gasto de Administración" en la fórmula oficial — se muestra aparte solo para visibilidad.</span><span></span></div>');
+
+  html += filaBloqueConDetalle('adm','3. Gasto de Administración', TFD_ADM.total, TFD_ADM.pct, FSRC, "=D29+D33+D34+D52+D54+D61+D62+D53",
+      tfdSubRow('Gastos de Administración (honorarios, servicios, varios)', TFD_ADM.gastosAdministracion[mIdx], FSRC, 'Celda directa, fila 32')
+    + tfdSubRow('Anticipo a Proveedores', TFD_ADM.anticipoProveedores[mIdx], FSRC, 'Celda directa, fila 33')
+    + tfdSubRow('Nómina Gerentes', TFD_ADM.nominaGerentes[mIdx], FSRC, 'Celda directa, fila 51')
+    + tfdSubRow('Diferencial Cambiario Nómina Gerentes', TFD_ADM.diferencialNomina[mIdx], FSRC, 'Celda directa, fila 52')
+    + tfdSubRow('Gastos Extraordinarios', TFD_ADM.gastosExtraordinarios[mIdx], FSRC, 'Celda directa, fila 53')
+    + tfdSubRow('Impuestos (IVA, ISLR, SUDEASEG, Patente, IGTF, Otras)', TFD_ADM.impuestosVarios[mIdx], FSRC, 'Celda directa, fila 60')
+    + tfdSubRow('ISLR Anual', TFD_ADM.islrAnual[mIdx], FSRC, 'Celda directa, fila 61')
+    + '<div class="tfd-fc-sub-row nested"><span class="n">ℹ️ El total de este bloque ya incluye "Total Comisiones" por fórmula (=D29+D33+...) aunque no aparece como fila aquí — así está en el Excel original.</span><span></span></div>');
+
+  html += filaBloqueConDetalle('trib','4. Costos Tributarios', TFD_TRIB.total, TFD_TRIB.pct, FSRC, "=SUM(D67)",
+      tfdSubRow('Retenciones de IVA, ISLR e IAE', TFD_TRIB.retenciones[mIdx], FSRC, 'Celda directa, fila 66'));
+
+  html += filaBloqueConDetalle('ban','5. Costo Bancario', TFD_BAN.total, TFD_BAN.pct, FSRC, "=SUM(D72:D73)",
+      tfdSubRow('Comisión Bancaria por Domiciliación en Cobranza', TFD_BAN.domiciliacion[mIdx], FSRC, 'Celda directa, fila 71')
+    + tfdSubRow('Comisión Bancaria por Mantenimiento de Cuenta', TFD_BAN.mantenimiento[mIdx], FSRC, 'Celda directa, fila 72'));
+
+  // Total Egresos (fila destacada, sin detalle propio)
   var filaTotEg = '<td class="tfd-fc-td-concepto tot">Total Egresos</td>';
   sel.forEach(function(idx, i){
     filaTotEg += '<td class="tfd-fc-td-monto tot" onclick="tfdAbrirModal('+tfdRegistrar({nombre:'Total Egresos — '+TFD_MESES[idx], monto:TFD_TOT.totalEgresos[idx], fuente:FSRC, formula:"=D74+D68+D63+D22"})+')">'+tfdFmt(TFD_TOT.totalEgresos[idx])+'</td>';
     if (i < sel.length-1) filaTotEg += celdaVariacion(TFD_TOT.totalEgresos[sel[i+1]], TFD_TOT.totalEgresos[idx]);
   });
   html += '<tr class="tfd-fc-row-total">'+filaTotEg+'</tr>';
-  html += filaBloque('pres','6. Presidencia', TFD_PRES.total, TFD_PRES.pct, FSRC, "=D83+D89+D90+D88");
+
+  html += filaBloqueConDetalle('pres','6. Presidencia', TFD_PRES.total, TFD_PRES.pct, FSRC, "=D83+D89+D90+D88",
+      tfdSubRow('Gastos de Presidencia (incluye Condominios+Servicios+Diversos+Grupo Valles)', TFD_PRES.gastosPresidencia[mIdx], FSRC, 'Fila 82 — subtotal anidado verificado')
+    + tfdSubRow('Condominios', TFD_PRES.condominios[mIdx], FSRC, 'Fila 83', true)
+    + tfdSubRow('Servicios Básicos', TFD_PRES.serviciosBasicos[mIdx], FSRC, 'Fila 84', true)
+    + tfdSubRow('Gastos Diversos Presidencia', TFD_PRES.gastosDiversos[mIdx], FSRC, 'Fila 86', true)
+    + tfdSubRow('Gastos Grupo Valles', TFD_PRES.grupoValles[mIdx], FSRC, 'Fila 87', true)
+    + tfdSubRow('Líneas de Crédito', TFD_PRES.lineasCredito[mIdx], FSRC, 'Fila 88')
+    + tfdSubRow('Zelle', TFD_PRES.zelle[mIdx], FSRC, 'Fila 89'));
+
   // Gran total
   var filaGran = '<td class="tfd-fc-td-concepto tot gran">Total Egresos + Presidencia</td>';
   sel.forEach(function(idx, i){
@@ -1411,44 +1512,6 @@ function tfdRenderFC(){
   html += '<tr class="tfd-fc-row-total gran">'+filaGran+'</tr>';
   html += '</tbody></table>';
   if (esSolo) html += '<p class="tfd-fc-nota-solo">📌 Solo hay un mes seleccionado ('+TFD_MESES[mIdx]+') — toca otro mes arriba para ver su variación.</p>';
-  html += '</div>';
-
-  // ══ Detalle / drill-down — siempre del mes más reciente seleccionado ══
-  html += '<div class="tfd-fc-card" style="margin-top:10px"><div class="tfd-fc-sec-hdr"><span>Detalle de conceptos — '+TFD_MESES[mIdx]+'</span><span>clic para ver trazabilidad</span></div>';
-  function grpDetalle(id,subrows){
-    return '<div class="tfd-fc-sub-list" id="tfd-sub-'+id+'">'+subrows+'</div>';
-  }
-  html += grpDetalle('sin',
-      tfdSubRow('Siniestros Pagados (Seguros La Fe + Grupo Polar)', TFD_SIN.segurosLaFe[mIdx]+TFD_SIN.grupoPolar[mIdx], FSRC, 'Suma filas 17+18 (unificado)')
-    + tfdSubRow('Siniestros Pagados por Anticipado', TFD_SIN.anticipados[mIdx], FSRC, 'Celda directa, fila 19')
-    + tfdSubRow('Gastos Grupo Nueve Once', TFD_SIN.grupoNueveOnce[mIdx], FSRC, 'Celda directa, fila 20'));
-  html += grpDetalle('com',
-      tfdSubRow('Coordinación Funeasistencia', TFD_COM.funeasistencia[mIdx], FSRC, 'Celda directa, fila 25')
-    + tfdSubRow('Comisiones Call Center', TFD_COM.callCenter[mIdx], FSRC, 'Celda directa, fila 26')
-    + tfdSubRow('Gastos de Promoción y Venta', TFD_COM.promocionVenta[mIdx], FSRC, 'Celda directa, fila 27')
-    + '<div class="tfd-fc-sub-row nested"><span class="n">⚠ Este total se contabiliza dentro de "Gasto de Administración" en la fórmula oficial — se muestra aparte solo para visibilidad.</span><span></span></div>');
-  html += grpDetalle('adm',
-      tfdSubRow('Gastos de Administración (honorarios, servicios, varios)', TFD_ADM.gastosAdministracion[mIdx], FSRC, 'Celda directa, fila 32')
-    + tfdSubRow('Anticipo a Proveedores', TFD_ADM.anticipoProveedores[mIdx], FSRC, 'Celda directa, fila 33')
-    + tfdSubRow('Nómina Gerentes', TFD_ADM.nominaGerentes[mIdx], FSRC, 'Celda directa, fila 51')
-    + tfdSubRow('Diferencial Cambiario Nómina Gerentes', TFD_ADM.diferencialNomina[mIdx], FSRC, 'Celda directa, fila 52')
-    + tfdSubRow('Gastos Extraordinarios', TFD_ADM.gastosExtraordinarios[mIdx], FSRC, 'Celda directa, fila 53')
-    + tfdSubRow('Impuestos (IVA, ISLR, SUDEASEG, Patente, IGTF, Otras)', TFD_ADM.impuestosVarios[mIdx], FSRC, 'Celda directa, fila 60')
-    + tfdSubRow('ISLR Anual', TFD_ADM.islrAnual[mIdx], FSRC, 'Celda directa, fila 61')
-    + '<div class="tfd-fc-sub-row nested"><span class="n">ℹ️ El total de este bloque ya incluye "Total Comisiones" por fórmula (=D29+D33+...) aunque no aparece como fila aquí — así está en el Excel original.</span><span></span></div>');
-  html += grpDetalle('trib',
-      tfdSubRow('Retenciones de IVA, ISLR e IAE', TFD_TRIB.retenciones[mIdx], FSRC, 'Celda directa, fila 66'));
-  html += grpDetalle('ban',
-      tfdSubRow('Comisión Bancaria por Domiciliación en Cobranza', TFD_BAN.domiciliacion[mIdx], FSRC, 'Celda directa, fila 71')
-    + tfdSubRow('Comisión Bancaria por Mantenimiento de Cuenta', TFD_BAN.mantenimiento[mIdx], FSRC, 'Celda directa, fila 72'));
-  html += grpDetalle('pres',
-      tfdSubRow('Gastos de Presidencia (incluye Condominios+Servicios+Diversos+Grupo Valles)', TFD_PRES.gastosPresidencia[mIdx], FSRC, 'Fila 82 — subtotal anidado verificado')
-    + tfdSubRow('Condominios', TFD_PRES.condominios[mIdx], FSRC, 'Fila 83', true)
-    + tfdSubRow('Servicios Básicos', TFD_PRES.serviciosBasicos[mIdx], FSRC, 'Fila 84', true)
-    + tfdSubRow('Gastos Diversos Presidencia', TFD_PRES.gastosDiversos[mIdx], FSRC, 'Fila 86', true)
-    + tfdSubRow('Gastos Grupo Valles', TFD_PRES.grupoValles[mIdx], FSRC, 'Fila 87', true)
-    + tfdSubRow('Líneas de Crédito', TFD_PRES.lineasCredito[mIdx], FSRC, 'Fila 88')
-    + tfdSubRow('Zelle', TFD_PRES.zelle[mIdx], FSRC, 'Fila 89'));
   html += '</div>';
   document.getElementById("tfd-fc-tree").innerHTML = html;
 }
@@ -1639,7 +1702,7 @@ function renderTasaChips(){
   });
   // Pérdida acumulada total
   var tot_deval=((TA_BCV["05"]-base)/base*100).toFixed(1);
-  html+="<div class=\"tasa-chip\" style=\"margin-left:auto;background:rgba(176,25,15,.25);color:#FF8888\">"
+  html+="<div class=\"tasa-chip\" style=\"margin-left:auto;background:linear-gradient(90deg,#7A1220,#B0190F);color:#FFD166;box-shadow:0 0 0 1px rgba(255,209,102,.25) inset\">"
     +"<span style=\"font-size:9px\">Devaluaci&#243;n Ene&#8594;May:</span>"
     +"<span style=\"font-weight:800;margin-left:4px\">+"+tot_deval+"%</span>"
     +"</div>";
