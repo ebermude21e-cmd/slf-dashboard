@@ -1001,6 +1001,7 @@ table.mcc-tbl tbody tr.certificada{background:rgba(13,122,78,.04)}
 .tfd-kpi-c{background:var(--tc);border-radius:10px;padding:12px 14px;box-shadow:0 2px 10px rgba(75,45,143,.08);border-top:4px solid var(--tp)}
 .tfd-kpi-c .lbl{font-size:8.5px;color:var(--ttx2);text-transform:uppercase;font-weight:700;line-height:1.3}
 .tfd-kpi-c .val{font-size:19px;font-weight:800;color:var(--tp2);margin:4px 0 2px}
+.tfd-kpi-c .val.neg{color:var(--tr)}
 .tfd-kpi-c .cmp{font-size:9px;font-weight:700;display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:8px}
 .tfd-kpi-c .cmp.up{background:var(--trl);color:var(--tr)}
 .tfd-kpi-c .cmp.down{background:var(--tgl);color:var(--tg)}
@@ -1051,6 +1052,20 @@ table.tfd-fc-tabla tbody td{padding:9px 10px;border-bottom:1px solid #F0EDF8;tex
 .tfd-fc-var.down{background:var(--tgl);color:var(--tg)}
 tr.tfd-fc-row-total td{background:var(--tp2);color:#fff;font-weight:800;font-size:11.5px}
 tr.tfd-fc-row-total.gran td{background:linear-gradient(90deg,var(--tp2),var(--tp));font-size:12.5px}
+tr.saldo-row td{padding:14px 10px}
+tr.saldo-row .tfd-fc-td-concepto.saldo{background:var(--s2,#F5F4F8);color:var(--ttx);font-weight:800;font-size:11.5px}
+td.tfd-fc-td-monto.saldo{cursor:pointer;text-align:center;vertical-align:middle;background:#fff;position:relative}
+td.tfd-fc-td-monto.saldo.positivo{border-top:3px solid var(--tg,#0D7A4E)}
+td.tfd-fc-td-monto.saldo.negativo{border-top:3px solid var(--tr,#B0190F)}
+td.tfd-fc-td-monto.saldo:hover{background:#FAFAFE}
+.saldo-icono{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;margin-bottom:5px}
+.saldo-icono.positivo{background:var(--tgl,#E8F4F0);color:var(--tg,#0D7A4E)}
+.saldo-icono.negativo{background:var(--trl,#FDE8E8);color:var(--tr,#B0190F)}
+.saldo-monto{font-size:17px;font-weight:900;color:var(--tp2);letter-spacing:-.2px}
+.saldo-monto.negativo{color:var(--tr)}
+.saldo-etiqueta{font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin-top:5px;padding:3px 10px;border-radius:20px;display:inline-block}
+.saldo-etiqueta.positivo{background:var(--tgl,#E8F4F0);color:var(--tg,#0D7A4E)}
+.saldo-etiqueta.negativo{background:var(--trl,#FDE8E8);color:var(--tr,#B0190F)}
 tr.tfd-fc-row-total .tfd-fc-td-concepto{color:#fff!important;cursor:default}
 tr.tfd-fc-row-total .tfd-fc-var.up{background:rgba(255,255,255,.18);color:#FF9B9B}
 tr.tfd-fc-row-total .tfd-fc-var.down{background:rgba(255,255,255,.18);color:#8AEFB8}
@@ -1410,20 +1425,31 @@ function tfdRenderKPIs(){
   var sel = TFD_SELECCION;
   var c = sel[sel.length-1], b = sel.length>1 ? sel[sel.length-2] : c;
   var esSolo = (b===c);
+  // Saldo de Flujo de Caja = Total Ingresos - (Total Egresos + Presidencia); % = Saldo / Total Ingresos
+  function pctSaldo(i){
+    var totalIngresos = TFD_PRIMA[i] - TFD_DEVOLUCIONES[i];
+    var saldo = totalIngresos - TFD_TOT.totalEgresosMasPresidencia[i];
+    return totalIngresos ? (saldo/totalIngresos) : 0;
+  }
   var items = [
     {lbl:"a) Siniestralidad", vB:TFD_SIN.pct[b], vC:TFD_SIN.pct[c]},
     {lbl:"b) % Comisiones / Prima", vB:TFD_COM.pct[b], vC:TFD_COM.pct[c]},
     {lbl:"c) % Administración / Prima", vB:TFD_ADM.pct[b], vC:TFD_ADM.pct[c]},
     {lbl:"d) % Costos Tributarios / Prima", vB:TFD_TRIB.pct[b], vC:TFD_TRIB.pct[c]},
     {lbl:"e) % Total Egresos / Prima", vB:TFD_TOT.pctTotalEgresos[b], vC:TFD_TOT.pctTotalEgresos[c]},
-    {lbl:"f) % Presidencia / Prima", vB:TFD_PRES.pct[b], vC:TFD_PRES.pct[c]}
+    {lbl:"f) % Presidencia / Prima", vB:TFD_PRES.pct[b], vC:TFD_PRES.pct[c]},
+    {lbl:"g) % Saldo de Flujo de Caja / Ingresos", vB:pctSaldo(b), vC:pctSaldo(c), invertido:true}
   ];
   var html = "";
   items.forEach(function(it){
-    var delta=(it.vC-it.vB)*100, up=delta>=0;
-    html += '<div class="tfd-kpi-c"><div class="lbl">'+it.lbl+'</div><div class="val">'+tfdPctf(it.vC)+'</div>'
-      + (esSolo ? '<div class="cmp" style="background:var(--tpl);color:var(--tp)">Mes base — sin comparación</div>' : '<div class="cmp '+(up?'up':'down')+'">'+(up?'▲':'▼')+' '+Math.abs(delta).toFixed(1)+' pp vs '+TFD_MESES[b]+'</div>')
-      + '<div class="bar"><div class="bar-f" style="width:'+Math.min(it.vC*100,100)+'%;background:var(--tp)"></div></div></div>';
+    var delta=(it.vC-it.vB)*100, subio=delta>=0;
+    var favorable = it.invertido ? subio : !subio; // en Saldo, subir es bueno; en el resto, subir es malo
+    var claseColor = favorable ? 'down' : 'up'; // 'down'=verde(bueno), 'up'=rojo(malo) — mismo criterio visual ya usado
+    var anchoBarra = Math.max(0, Math.min(Math.abs(it.vC)*100, 100));
+    var colorBarra = it.vC<0 ? 'var(--tr)' : 'var(--tp)';
+    html += '<div class="tfd-kpi-c"><div class="lbl">'+it.lbl+'</div><div class="val'+(it.vC<0?' neg':'')+'">'+(it.vC<0?'-':'')+tfdPctf(Math.abs(it.vC))+'</div>'
+      + (esSolo ? '<div class="cmp" style="background:var(--tpl);color:var(--tp)">Mes base — sin comparación</div>' : '<div class="cmp '+claseColor+'">'+(subio?'▲':'▼')+' '+Math.abs(delta).toFixed(1)+' pp vs '+TFD_MESES[b]+'</div>')
+      + '<div class="bar"><div class="bar-f" style="width:'+anchoBarra+'%;background:'+colorBarra+'"></div></div></div>';
   });
   document.getElementById("tfd-kpis").innerHTML = html;
 }
@@ -1458,11 +1484,13 @@ function tfdRenderFC(){
 
   var thead = tfdConstruirThead(sel);
 
-  function celdaVariacion(actual, base){
+  function celdaVariacion(actual, base, invertido){
     var deltaAbs = actual - base;
     var deltaPct = base ? (deltaAbs/base*100) : 0;
     var sube = deltaAbs >= 0;
-    return '<td class="tfd-fc-td-delta"><span class="tfd-fc-var '+(sube?'up':'down')+'">'+(sube?'▲':'▼')+' '+tfdFmt(Math.abs(deltaAbs))+'<br>('+(sube?'+':'')+deltaPct.toFixed(1)+'%)</span></td>';
+    var favorable = invertido ? sube : !sube;
+    var claseColor = favorable ? 'down' : 'up'; // 'down'=verde(bueno) 'up'=rojo(malo)
+    return '<td class="tfd-fc-td-delta"><span class="tfd-fc-var '+claseColor+'">'+(sube?'▲':'▼')+' '+tfdFmt(Math.abs(deltaAbs))+'<br>('+(sube?'+':'')+deltaPct.toFixed(1)+'%)</span></td>';
   }
   // Fila de concepto (con flecha) + fila de detalle inline, JUSTO debajo — se abre/cierra en el mismo lugar
   function filaBloqueConDetalle(id, nombre, arr, pctArr, fuenteB, formulaB, subrowsHtml){
@@ -1533,6 +1561,26 @@ function tfdRenderFC(){
     if (i < sel.length-1) filaGran += celdaVariacion(TFD_TOT.totalEgresosMasPresidencia[sel[i+1]], TFD_TOT.totalEgresosMasPresidencia[idx]);
   });
   html += '<tr class="tfd-fc-row-total gran">'+filaGran+'</tr>';
+
+  // ══ Saldo de Caja = Total Ingresos - (Total Egresos + Presidencia) — positivo=verde, negativo=rojo ══
+  function saldoDe(idx){
+    var totalIngresos = TFD_PRIMA[idx] - TFD_DEVOLUCIONES[idx];
+    return totalIngresos - TFD_TOT.totalEgresosMasPresidencia[idx];
+  }
+  var filaSaldo = '<td class="tfd-fc-td-concepto tot saldo">Saldo de Caja</td>';
+  sel.forEach(function(idx, i){
+    var saldo = saldoDe(idx);
+    var esPositivo = saldo >= 0;
+    var d = tfdRegistrar({nombre:'Saldo de Caja — '+TFD_MESES[idx], monto:saldo, fuente:FSRC, formula:"=Total Ingresos - (Total Egresos + Presidencia)"});
+    filaSaldo += '<td class="tfd-fc-td-monto tot saldo '+(esPositivo?'positivo':'negativo')+'" onclick="tfdAbrirModal('+d+')">'
+      + '<div class="saldo-icono '+(esPositivo?'positivo':'negativo')+'">'+(esPositivo?'✓':'!')+'</div>'
+      + '<div class="saldo-monto'+(esPositivo?'':' negativo')+'">'+(esPositivo?'':'-')+tfdFmt(Math.abs(saldo))+'</div>'
+      + '<div class="saldo-etiqueta '+(esPositivo?'positivo':'negativo')+'">'+(esPositivo?'Saldo de Caja Positivo':'Saldo de Caja Negativo')+'</div>'
+      + '</td>';
+    if (i < sel.length-1) filaSaldo += celdaVariacion(saldoDe(sel[i+1]), saldoDe(idx), true);
+  });
+  html += '<tr class="tfd-fc-row-total saldo-row">'+filaSaldo+'</tr>';
+
   html += '</tbody></table>';
   if (esSolo) html += '<p class="tfd-fc-nota-solo">📌 Solo hay un mes seleccionado ('+TFD_MESES[mIdx]+') — toca otro mes arriba para ver su variación.</p>';
   html += '</div>';
