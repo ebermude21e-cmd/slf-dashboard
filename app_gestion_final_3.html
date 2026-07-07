@@ -2573,7 +2573,7 @@ window.dv2Exportar=function(){
         <div class="cd-drop-txt">Arrastrar o hacer clic</div>
         <div class="cd-drop-sub">Egresos.xls &#183; Formato Mayor Anal&#237;tico</div>
       </div>
-      <input type="file" id="cdf-mayor" accept=".xls,.xlsx" style="display:none" onchange="cdCargarMayor(this)">
+      <input type="file" id="cdf-mayor" accept=".xls,.xlsx" multiple style="display:none" onchange="cdCargarMayor(this)">
       <div id="cds-mayor" class="cd-status pend">Sin archivo cargado</div>
     </div>
 
@@ -2706,7 +2706,7 @@ window.mjAgregarFila = function(){
 <script>
 (function(){
 var AUD_ITEMS=[];
-var REGLAS={"kw":{"SINIESTRO":"siniestros","FUNERARIO":"siniestros","CEMENTERIO":"siniestros","PARCELA":"siniestros","VIDA IND":"siniestros","INDEMNIZACION":"siniestros","FUNEASISTENCIA":"siniestros","ASOPROINFU":"siniestros","TELEMEDICINA":"telemedicina","NUEVE ONCE":"telemedicina","PROMOCION":"promocion_venta","COMISION EJECUTIVO":"promocion_venta","SUDEASEG":"impuestos","SUPERINTENDENCIA":"impuestos","PATENTE":"impuestos","ISLR":"impuestos","IVA":"impuestos","SOPORTE TEC":"soporte_tecnico","MANTENIMIENTO APLIC":"soporte_tecnico","ORACLE":"soporte_tecnico","TKONEKTO":"soporte_tecnico","PRESIDENCIA":"presidencia","REINTEGRO":"devoluciones","DEVOLUCION":"devoluciones","COBROS NO APLIC":"devoluciones",
+var REGLAS={"kw":{"SINIESTRO":"siniestros","FUNERARIO":"siniestros","CEMENTERIO":"siniestros","PARCELA":"siniestros","VIDA IND":"siniestros","INDEMNIZACION":"siniestros","FUNEASISTENCIA":"siniestros","ASOPROINFU":"siniestros","TELEMEDICINA":"telemedicina","NUEVE ONCE":"telemedicina","PROMOCION":"promocion_venta","COMISION EJECUTIVO":"promocion_venta","SUDEASEG":"impuestos","SUPERINTENDENCIA":"impuestos","PATENTE":"impuestos","ISLR":"impuestos","IVA":"impuestos","IGTF":"impuestos","SOPORTE TEC":"soporte_tecnico","MANTENIMIENTO APLIC":"soporte_tecnico","ORACLE":"soporte_tecnico","TKONEKTO":"soporte_tecnico","PRESIDENCIA":"presidencia","REINTEGRO":"devoluciones","DEVOLUCION":"devoluciones","COBROS NO APLIC":"devoluciones",
   "CESTA TICKET":"beneficios_emp","MANUTENCION":"beneficios_emp","TRANSPORTE PERSONAL":"beneficios_emp","GUARDERIA":"beneficios_emp","BONO":"nomina_personal",
   "UNIFORME":"gastos_adm","BORDADO":"gastos_adm","MOBILIARIO":"gastos_adm","MICROONDAS":"gastos_adm",
   "HCM":"gastos_adm","QUALITAS":"gastos_adm","UTILIDADES":"nomina_personal"},
@@ -2743,11 +2743,14 @@ function _buscarCol(mapa, posibles){
   for (var i=0;i<posibles.length;i++){ if (mapa[posibles[i]]!==undefined) return mapa[posibles[i]]; }
   return -1;
 }
+function _sinTildes(s){
+  return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
 function _categorizar(descCompleta){
-  var desc_up = descCompleta.toUpperCase();
+  var desc_up = _sinTildes(descCompleta).toUpperCase();
   var cat = null;
   Object.keys(REGLAS.kw).forEach(function(kw){
-    if (!cat && desc_up.indexOf(kw)>=0) cat = REGLAS.kw[kw];
+    if (!cat && desc_up.indexOf(_sinTildes(kw).toUpperCase())>=0) cat = REGLAS.kw[kw];
   });
   return cat || 'gastos_adm'; // si ninguna regla aplica, cae en el bucket general (revisar en auditoría)
 }
@@ -2782,12 +2785,13 @@ function procesarFilasCore(rows, nombreArchivo){
   if (colFecha===-1 || colMontoBs===-1){
     return {ok:false, msg:'No se reconocen las columnas esperadas (FECHA, MONTO...). Verifica que sea el archivo de Extracción de Egresos del CORE.'};
   }
-  var nuevos = [], mesesVistos = {};
+  var nuevos = [], mesesVistos = {}, mesesOmitidosCertificados = {};
   for (var i=1;i<rows.length;i++){
     var row = rows[i];
     if (!row || !row[colFecha]) continue;
     var fi = _mesDesdeFecha(row[colFecha]);
     if (!fi) continue;
+    if (fi.mes<=5){ mesesOmitidosCertificados[fi.mes]=true; continue; } // salvaguarda: no tocar lo certificado
     mesesVistos[fi.mes] = true;
     var conc = colConc>=0 ? String(row[colConc]||'') : '';
     var desc = colDesc>=0 ? String(row[colDesc]||'') : '';
@@ -2803,7 +2807,12 @@ function procesarFilasCore(rows, nombreArchivo){
       bs: Math.round(bs*100)/100, tasa: tasa, usd: Math.round(usd*100)/100, cat: cat, src: 'CORE'
     });
   }
-  if (!nuevos.length) return {ok:false, msg:'No se encontraron filas válidas con fecha reconocible.'};
+  if (!nuevos.length){
+    var msgOmitidos = Object.keys(mesesOmitidosCertificados).length
+      ? ' (se omitieron intencionalmente '+Object.keys(mesesOmitidosCertificados).length+' mes(es) ya certificados: '+Object.keys(mesesOmitidosCertificados).map(function(m){return MN[m];}).join(', ')+')'
+      : '';
+    return {ok:false, msg:'No se encontraron filas válidas de Junio en adelante'+msgOmitidos+'.'};
+  }
   if (!window.__TF_RAW) window.__TF_RAW = {meta:{}, regs:[], resumen:{}};
   window.__TF_RAW.regs = window.__TF_RAW.regs.concat(nuevos);
   TF_DATA = window.__TF_RAW;
@@ -2814,51 +2823,85 @@ function procesarFilasCore(rows, nombreArchivo){
 
 function procesarFilasMayor(rows, nombreArchivo){
   if (!rows.length) return {ok:false, msg:'Archivo vacío.'};
-  // Formato documentado: col.2 = CTA o N° de asiento (12 dígitos); DEBITO=col.13; CREDITO=col.14
-  // Se usan índices 0-based: col.2 -> índice 1; col.13 -> índice 12; col.14 -> índice 13
-  var IDX_CTA = 1, IDX_DEBITO = 12, IDX_CREDITO = 13;
-  var nuevos = [], mesesVistos = {}, asientoActual = null;
+  // Formato REAL verificado contra Egresos.xls (Mayor Analítico exportado del sistema contable):
+  //  - Bloque de encabezado (primeras ~10 filas): incluye la fila "Cuenta Contable" con el código de ESA cuenta
+  //    (el archivo completo es de UNA sola cuenta — por eso ahora se permiten varios archivos, uno por cuenta).
+  //  - Filas de datos: col.1=Fecha, col.2=Nro. Asiento (12 dígitos), col.12=Descripción, col.13=Debe, col.14=Haber.
+  //  - Al final hay una fila "Total Cuenta Contable" que se descarta.
+  var IDX_FECHA=1, IDX_ASIENTO=2, IDX_DESC=12, IDX_DEBE=13, IDX_HABER=14;
+
+  // 1. Ubicar la cuenta contable del encabezado (aplica a TODO el archivo)
+  var cuentaArchivo = '', cuentaLimpia = '';
+  for (var h=0; h<Math.min(rows.length,15); h++){
+    var row0 = rows[h];
+    if (row0 && String(row0[1]||'').trim()==='Cuenta Contable'){
+      cuentaArchivo = String(row0[3]||'').trim();
+      var partes = cuentaArchivo.split(',');
+      cuentaLimpia = (partes[1]||'').replace(/\D/g,'');
+      break;
+    }
+  }
+  if (!cuentaLimpia){
+    return {ok:false, msg:'No se pudo identificar la Cuenta Contable en el encabezado del archivo. Verifica que sea un export de "Mayor Analítico" del sistema contable.'};
+  }
+
+  // 2. Determinar la categoría de ESTA cuenta: primero por prefijo de cuenta conocido,
+  //    si no hay coincidencia se usará la descripción de cada movimiento (keyword) como respaldo.
+  var catPorCuenta = null;
+  Object.keys(REGLAS.cta).forEach(function(pref){
+    if (!catPorCuenta && cuentaLimpia.indexOf(pref)===0) catPorCuenta = REGLAS.cta[pref];
+  });
+
+  // 3. Procesar filas de datos — SOLO Junio en adelante (mes>5). Enero-Mayo ya están
+  //    certificados por el modelo oficial y NUNCA deben recalcularse desde aquí.
+  var nuevos = [], mesesVistos = {}, mesesOmitidosCertificados = {};
   for (var i=0;i<rows.length;i++){
     var row = rows[i];
-    if (!row || row[IDX_CTA]===undefined) continue;
-    var celda = String(row[IDX_CTA]||'').trim();
-    if (/^\d{12}$/.test(celda)){
-      asientoActual = celda; // fila de encabezado del asiento — no tiene monto propio
-      continue;
-    }
-    var ctaLimpia = celda.replace(/\D/g,'');
-    if (!ctaLimpia || !asientoActual) continue;
-    var esPersonal = ctaLimpia.indexOf('3381010')===0;
-    var esEF = ctaLimpia.indexOf('338102')===0;
-    if (!esPersonal && !esEF) continue; // esta carga solo cubre Personal y EF, por diseño documentado
-    var debito = parseFloat(row[IDX_DEBITO])||0, credito = parseFloat(row[IDX_CREDITO])||0;
-    var monto = debito - credito; // movimiento neto de la cuenta
-    if (!monto) continue;
-    // El año/mes del asiento viene codificado en el propio número: AAAAMM######
-    var anio = parseInt(asientoActual.substring(0,4),10), mes = parseInt(asientoActual.substring(4,6),10);
+    if (!row) continue;
+    var asiento = String(row[IDX_ASIENTO]||'').trim();
+    if (!/^\d{12}$/.test(asiento)) continue; // no es una fila de movimiento real (encabezado, total, blanco, etc.)
+    var mes = parseInt(asiento.substring(4,6),10);
     if (!mes || mes<1 || mes>12) continue;
-    mesesVistos[mes] = true;
-    var cat = esPersonal ? 'nomina_personal' : 'costo_bancario';
-    var asientoFlag = REGLAS.asientos[asientoActual];
+    if (mes<=5){ mesesOmitidosCertificados[mes]=true; continue; } // salvaguarda: no tocar lo certificado
+
+    var debe = parseFloat(row[IDX_DEBE])||0, haber = parseFloat(row[IDX_HABER])||0;
+    var monto = debe - haber; // neto, preservando signo
+    if (!monto) continue;
+    var descripcion = String(row[IDX_DESC]||'').trim();
+    var cat = catPorCuenta || _categorizar(descripcion);
     var mesPad = String(mes).padStart(2,'0');
     var tasaMes = (typeof TA_BCV!=='undefined' && TA_BCV[mesPad]) ? TA_BCV[mesPad] : 0;
-    // IMPORTANTE: se preserva el signo (débito=+, crédito=− como reverso) para que el
-    // resumen agregado NETEE correctamente en vez de sumar todo como positivo.
     var montoUsd = tasaMes>0 ? monto/tasaMes : 0;
+    mesesVistos[mes] = true;
     nuevos.push({
-      id: asientoActual+'_'+i, fecha:'', mes: mes, mn: MN[mes]||('Mes '+mes),
-      tipo: esPersonal?'Nómina Personal':'Egresos Financieros', conc:'', desc: asientoFlag||'', benef:'',
-      cta: celda, tp:'', nu: asientoActual,
-      bs: Math.round(monto*100)/100, tasa: tasaMes, usd: Math.round(montoUsd*100)/100, cat: cat, src: 'MAYOR'
+      id: 'MAYOR_'+asiento+'_'+i, fecha:'', mes: mes, mn: MN[mes]||('Mes '+mes),
+      tipo: 'Mayor Analítico', conc: descripcion, desc: descripcion, benef: '',
+      cta: cuentaLimpia, tp:'', nu: asiento,
+      bs: Math.round(monto*100)/100, tasa: tasaMes, usd: Math.round(montoUsd*100)/100,
+      cat: cat, catInferidaPorDescripcion: !catPorCuenta, src: 'MAYOR'
     });
   }
-  if (!nuevos.length) return {ok:false, msg:'No se encontraron movimientos de Nómina Personal (3 381 01 01) o Costo Bancario/EF (3 381 02) reconocibles.'};
+  if (!nuevos.length){
+    var msgOmitidos = Object.keys(mesesOmitidosCertificados).length
+      ? ' (se omitieron intencionalmente '+Object.keys(mesesOmitidosCertificados).length+' mes(es) ya certificados: '+Object.keys(mesesOmitidosCertificados).map(function(m){return MN[m];}).join(', ')+')'
+      : '';
+    return {ok:false, msg:'No se encontraron movimientos de Junio en adelante en esta cuenta'+msgOmitidos+'.'};
+  }
   if (!window.__TF_RAW) window.__TF_RAW = {meta:{}, regs:[], resumen:{}};
   window.__TF_RAW.regs = window.__TF_RAW.regs.concat(nuevos);
   TF_DATA = window.__TF_RAW;
   Object.keys(mesesVistos).forEach(function(m){ recalcularResumenDesdeRegs(parseInt(m,10)); });
   auditar(nuevos, nuevos.length);
-  return {ok:true, filas:nuevos.length, meses:Object.keys(mesesVistos).map(Number)};
+  var desgloseCategoria;
+  if (catPorCuenta){
+    desgloseCategoria = CAT_LBL[catPorCuenta] || catPorCuenta;
+  } else {
+    var conteoCat = {};
+    nuevos.forEach(function(r){ conteoCat[r.cat] = (conteoCat[r.cat]||0)+1; });
+    var top = Object.keys(conteoCat).sort(function(a,b){return conteoCat[b]-conteoCat[a];});
+    desgloseCategoria = 'Múltiple (por descripción) — principal: '+(CAT_LBL[top[0]]||top[0])+' ('+conteoCat[top[0]]+' de '+nuevos.length+')';
+  }
+  return {ok:true, filas:nuevos.length, meses:Object.keys(mesesVistos).map(Number), cuenta:cuentaLimpia, categoria:desgloseCategoria};
 }
 
 window.cdCargarCore=function(input){
@@ -2887,29 +2930,49 @@ window.cdCargarCore=function(input){
   reader.readAsArrayBuffer(file);
 };
 window.cdCargarMayor=function(input){
-  if(!input.files[0])return;
-  var file=input.files[0], fn=file.name;
-  document.getElementById("cds-mayor").innerHTML="<span class=\"cd-status pend\">Leyendo "+fn+"...</span>";
-  var reader = new FileReader();
-  reader.onload = function(e){
-    try{
-      var wb = XLSX.read(e.target.result, {type:'array'});
-      var ws = wb.Sheets[wb.SheetNames[0]];
-      var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:true});
-      var res = procesarFilasMayor(rows, fn);
-      if (res.ok){
-        document.getElementById("cds-mayor").innerHTML="<span class=\"cd-status ok\">&#10003; "+fn+" — "+res.filas+" movimiento(s) de Personal/EF procesados ("+res.meses.map(function(m){return MN[m]||m;}).join(', ')+"). Auditado.</span>";
-        if (typeof renderFCTree==='function' && document.getElementById('fc-tree')) renderFCTree();
-      } else {
-        document.getElementById("cds-mayor").innerHTML="<span class=\"cd-status err\">&#10007; "+res.msg+"</span>";
+  var archivos = Array.prototype.slice.call(input.files||[]);
+  if(!archivos.length)return;
+  document.getElementById("cdz-mayor").querySelector(".cd-drop-sub").textContent = archivos.length===1 ? archivos[0].name : archivos.length+' archivos seleccionados';
+  document.getElementById("cds-mayor").innerHTML = "<span class=\"cd-status pend\">Leyendo "+archivos.length+" archivo(s)...</span>";
+
+  var resultados = [], pendientes = archivos.length;
+  function finalizarSiTerminaron(){
+    pendientes--;
+    if (pendientes>0) return;
+    var ok = resultados.filter(function(r){return r.ok;});
+    var fallidos = resultados.filter(function(r){return !r.ok;});
+    var html = '';
+    ok.forEach(function(r){
+      html += '<div class="cd-status ok" style="display:block;margin-bottom:3px">✓ '+r.nombre+' — cuenta '+r.cuenta+' → <b>'+r.categoria+'</b>, '+r.filas+' movimiento(s) ('+r.meses.map(function(m){return MN[m]||m;}).join(', ')+')</div>';
+    });
+    fallidos.forEach(function(r){
+      html += '<div class="cd-status err" style="display:block;margin-bottom:3px">✗ '+r.nombre+' — '+r.msg+'</div>';
+    });
+    document.getElementById("cds-mayor").innerHTML = html;
+    if (ok.length && typeof renderFCTree==='function' && document.getElementById('fc-tree')) renderFCTree();
+  }
+
+  archivos.forEach(function(file){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      try{
+        var wb = XLSX.read(e.target.result, {type:'array'});
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:true});
+        var res = procesarFilasMayor(rows, file.name);
+        res.nombre = file.name;
+        resultados.push(res);
+      }catch(err){
+        resultados.push({ok:false, nombre:file.name, msg:'Error leyendo el archivo: '+err.message});
       }
-    }catch(err){
-      document.getElementById("cds-mayor").innerHTML="<span class=\"cd-status err\">&#10007; Error leyendo el archivo: "+err.message+"</span>";
-    }
-  };
-  reader.onerror = function(){ document.getElementById("cds-mayor").innerHTML="<span class=\"cd-status err\">&#10007; No se pudo leer el archivo.</span>"; };
-  document.getElementById("cdz-mayor").querySelector(".cd-drop-sub").textContent=fn;
-  reader.readAsArrayBuffer(file);
+      finalizarSiTerminaron();
+    };
+    reader.onerror = function(){
+      resultados.push({ok:false, nombre:file.name, msg:'No se pudo leer el archivo.'});
+      finalizarSiTerminaron();
+    };
+    reader.readAsArrayBuffer(file);
+  });
 };
 
 
