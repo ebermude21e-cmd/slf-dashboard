@@ -33,7 +33,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#EDEAF5;color:var(--
 /* ── NAV TABS ── */
 .sidebar{background:var(--ink2);width:230px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid rgba(255,255,255,.08);overflow-y:auto;position:relative;padding-bottom:64px;transition:width .2s ease,padding .2s ease;}
 .sidebar.oculto{width:0;padding-left:0;padding-right:0;overflow:hidden;border-right:none;white-space:nowrap}
-.sb-toggle-btn{position:fixed;top:10px;left:238px;z-index:500;background:var(--ink2);color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:0 8px 8px 0;width:22px;height:36px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;transition:left .2s ease}
+.sb-toggle-btn{position:fixed;top:50%;transform:translateY(-50%);left:230px;z-index:500;background:var(--ink2);color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:0 8px 8px 0;width:22px;height:44px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;transition:left .2s ease;box-shadow:2px 0 6px rgba(0,0,0,.15)}
 .sb-toggle-btn.oculto{left:0}
 .sb-group{border-bottom:1px solid rgba(255,255,255,.06)}
 .sb-main{width:100%;text-align:left;padding:13px 16px;background:transparent;border:none;color:rgba(255,255,255,.85);font-size:11px;font-weight:700;letter-spacing:.03em;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .15s}
@@ -850,11 +850,11 @@ table.mcc-tbl tbody tr.certificada{background:rgba(13,122,78,.04)}
 /* ── CHIPS DE TASA ───────────────────────────────── */
 .tasa-chips{display:flex;gap:4px;padding:0 16px;background:rgba(0,0,0,.2);height:30px;align-items:center;flex-shrink:0;overflow-x:auto;border-bottom:1px solid rgba(255,255,255,.05)}
 .tasa-chip{display:flex;align-items:center;gap:4px;padding:2px 9px;border-radius:12px;font-size:10px;font-weight:700;white-space:nowrap;color:rgba(255,255,255,.8);background:rgba(255,255,255,.07)}
-.tasa-chip.base{background:rgba(229,194,41,.15);color:var(--ty)}
+.tasa-chip.base{background:#111111;color:#ffffff;font-weight:800;border:1px solid rgba(255,255,255,.25)}
 .tasa-chip.activo{background:rgba(75,45,143,.5);color:#fff}
 .tasa-chip .tasa-mes{opacity:.6;font-weight:500;margin-right:2px}
 .tasa-chip .tasa-val{font-weight:800}
-.tasa-chip .tasa-deval{margin-left:4px;color:#FF8888;font-size:9px}
+.tasa-chip .tasa-deval{margin-left:5px;color:#FFD166;font-size:9px;font-weight:800;background:rgba(0,0,0,.35);padding:1px 6px;border-radius:6px}
 /* ── KPI GRID ────────────────────────────────────── */
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:14px;margin-bottom:20px}
 .kpi-ex{background:var(--tc);border-radius:12px;padding:16px 18px;box-shadow:0 2px 12px rgba(75,45,143,.1);border-top:4px solid var(--tp);position:relative;overflow:hidden;cursor:pointer;transition:transform .15s,box-shadow .15s}
@@ -1285,7 +1285,9 @@ function pct(a,b){return b>0?(a/b*100).toFixed(1)+"%":"--";}
    Tributarios+Bancario = Total Egresos, en los 5 meses).
    Trazabilidad transaccional: window.__TF_RAW.regs (CORE real, ya cargado).
    ══════════════════════════════════════════════════════════════════ */
-(function(){
+/* ══ Datos certificados en ALCANCE GLOBAL — compartidos por Dashboard Ejecutivo
+   Y por la pestaña Flujo de Caja, para que ambas muestren SIEMPRE las mismas
+   cifras de Enero a Mayo (única fuente de verdad, sin duplicar números). ══ */
 var TFD_MESES = ["Enero","Febrero","Marzo","Abril","Mayo"];
 var TFD_BCV = [341.6031,392.7643,446.6732,479.9670,515.7295];
 var TFD_DEVOLUCIONES = [344.19,205.44,191.77,130.80,127.26];
@@ -1318,6 +1320,12 @@ var TFD_PRES = {gastosPresidencia:[9151.763079,9385.164228,14136.222659,11684.00
 var TFD_TOT = {totalEgresos:[287448.210624,187322.05762,206914.054388,259795.413247,209187.248654], pctTotalEgresos:[1.111871,.747831,.734115,.996065,.773957],
   totalEgresosMasPresidencia:[298714.571631,197453.735947,221745.639548,271990.360574,223235.715433]};
 
+// Total Ingresos certificado por mes (Prima Cobrada - Devoluciones) — usado por ambas pestañas
+var TFD_TOTAL_INGRESOS = TFD_MESES.map(function(_,i){ return TFD_PRIMA[i]-TFD_DEVOLUCIONES[i]; });
+// Saldo de Caja certificado = Total Ingresos - (Total Egresos + Presidencia)
+var TFD_SALDO_CAJA = TFD_MESES.map(function(_,i){ return TFD_TOTAL_INGRESOS[i]-TFD_TOT.totalEgresosMasPresidencia[i]; });
+
+(function(){
 var TFD_SELECCION = [3,4]; // Abril, Mayo — por defecto (equivalente al "Mayo vs Abril" que ya existía). Multi-selección en cadena.
 var TFD_NOTAS = {}; // key: nombreLinea__mes__idx -> {texto,fecha,registro,linea,mes}
 var TFD_MODAL_ACTUAL = null;
@@ -1363,8 +1371,6 @@ function tfdConstruirThead(sel){
 function tfdRenderStrip(){
   var sel = TFD_SELECCION;
   var esSolo = (sel.length===1);
-  var ultimoIdx = TFD_BCV.length-1;
-  var pctAcum = ((TFD_BCV[ultimoIdx]-TFD_BCV[0])/TFD_BCV[0]*100);
 
   var html = '';
   if (esSolo){
@@ -1377,7 +1383,6 @@ function tfdRenderStrip(){
       html += '<div class="tfd-stat"><div class="lbl">Var. BCV — '+TFD_MESES[b]+' vs '+TFD_MESES[a]+'</div><div class="val">+'+varPar+'%</div></div>';
     }
   }
-  html += '<div class="tfd-stat hi"><div class="lbl">Depreciación acumulada '+TFD_MESES[0]+' → '+TFD_MESES[ultimoIdx]+'</div><div class="val">+'+pctAcum.toFixed(2)+'%<span class="sub">Bs. '+TFD_BCV[0].toFixed(2)+' → Bs. '+TFD_BCV[ultimoIdx].toFixed(2)+'</span></div></div>';
   document.getElementById("tfd-bar-stats").innerHTML = html;
 }
 
@@ -1608,36 +1613,8 @@ window.tfdAbrirModal = function(idx){
   var body = '<div class="tfd-mb-big">'+tfdFmt(d.monto)+'</div>'
     + '<div class="tfd-mb-sec">Trazabilidad certificada</div>'
     + '<div class="tfd-mb-row"><span>Fuente</span><b>'+d.fuente+'</b></div>'
-    + '<div class="tfd-mb-row"><span>Fórmula / origen de la cifra</span><b>'+d.formula+'</b></div>';
-
-  var catKey = TFD_CORE_MAP[d.nombre];
-  var regs = (catKey && window.__TF_RAW) ? window.__TF_RAW.regs.filter(function(r){return r.mes===(mIdx+1)&&r.cat===catKey;}).sort(function(a,b){return b.usd-a.usd;}).slice(0,8) : null;
-
-  if (regs && regs.length){
-    body += '<div class="tfd-mb-sec">Detalle transaccional real — CORE/Mayor Analítico (top '+regs.length+' por monto) <span style="font-weight:500;text-transform:none;color:var(--ttx3)">— clic en 🗒️ junto a la fecha para dejar una nota</span></div>';
-    body += '<table class="tfd-det-tbl"><thead><tr><th>Fecha</th><th>N° Asiento</th><th>Tipo</th><th>Descripción</th><th>Beneficiario</th><th class="r">Monto Bs.</th><th class="r">Monto USD</th></tr></thead><tbody>';
-    regs.forEach(function(r,i){
-      var rKey = d.nombre+'__'+mIdx+'__'+i;
-      var nota = TFD_NOTAS[rKey];
-      body += '<tr id="tfd-row-'+i+'" class="'+(nota?'tfd-en-revision':'')+'">'
-        + '<td>'+(r.fecha||'—')
-          + '<span class="tfd-nota-ic'+(nota?' activa':'')+'" onclick="tfdTogglePop('+i+')" title="Nota">🗒️</span>'
-          + (nota?'<span class="tfd-chip-rev">✓ En revisión</span>':'')
-          + '<div class="tfd-nota-pop" id="tfd-pop-'+i+'"><textarea id="tfd-pop-in-'+i+'" placeholder="Ej: el accionista pidió ver el físico...">'+(nota?nota.texto:'')+'</textarea>'
-          + '<div class="ac">'+(nota?'<button class="tfd-mini-btn c" onclick="tfdQuitarNota('+i+')">Quitar</button>':'')+'<button class="tfd-mini-btn c" onclick="tfdTogglePop('+i+')">Cerrar</button><button class="tfd-mini-btn g" onclick="tfdGuardarNota('+i+')">Guardar</button></div></div>'
-        + '</td>'
-        + '<td style="font-family:monospace;font-size:9px;color:var(--ttx3)">'+(r.id||'—')+'</td>'
-        + '<td>'+(r.tipo||'—')+'</td>'
-        + '<td>'+(r.conc||r.desc||'—')+(r.desc&&r.conc?' — '+r.desc:'')+'</td>'
-        + '<td>'+(r.benef||'—')+'</td>'
-        + '<td class="r">Bs. '+Number(r.bs||0).toLocaleString('es-VE',{minimumFractionDigits:2})+'</td>'
-        + '<td class="r">'+tfdFmt(r.usd)+'</td></tr>';
-    });
-    body += '</tbody></table>';
-    body += '<p style="font-size:9px;color:var(--ttx3);margin-top:8px">Fuente: Mayor Analítico/CORE ya cargado (window.__TF_RAW) · el monto de esta línea es del modelo oficial certificado; el CORE se usa aquí solo para trazabilidad, no para recalcular el total.</p>';
-  } else {
-    body += '<div class="tfd-mb-pendiente">📌 Esta partida no tiene cobertura completa en el CORE (ej. Grupo Polar, Anticipos, Nómina Gerentes o Presidencia se procesan por canales fuera del CORE) — el monto viene 100% verificado del modelo oficial.</div>';
-  }
+    + '<div class="tfd-mb-row"><span>Fórmula / origen de la cifra</span><b>'+d.formula+'</b></div>'
+    + '<div class="tfd-mb-pendiente">📌 El detalle de esta cifra proviene del Flujo de Caja Histórico certificado ('+TFD_MESES[mIdx]+' 2026) — es el mismo dato que ya usan los accionistas, sin desglose transaccional adicional.</div>';
   document.getElementById("tfd-modal-body").innerHTML = body;
   document.getElementById("tfd-modal").classList.add("open");
 };
@@ -1771,12 +1748,6 @@ function renderTasaChips(){
       +(mi>1?"<span class=\"tasa-deval\">+"+deval+"%</span>":"")
       +"</div>";
   });
-  // Pérdida acumulada total
-  var tot_deval=((TA_BCV["05"]-base)/base*100).toFixed(1);
-  html+="<div class=\"tasa-chip\" style=\"margin-left:auto;background:linear-gradient(90deg,#7A1220,#B0190F);color:#FFD166;box-shadow:0 0 0 1px rgba(255,209,102,.25) inset\">"
-    +"<span style=\"font-size:9px\">Devaluaci&#243;n Ene&#8594;May:</span>"
-    +"<span style=\"font-weight:800;margin-left:4px\">+"+tot_deval+"%</span>"
-    +"</div>";
   document.getElementById("tasa-chips-bar").innerHTML=html;
 }
 
@@ -1888,24 +1859,105 @@ function getPrimaCobradaReal(mesIdx){
 
 function renderFCIngresos(){
   var mes = TF_MES2;
-  var prima = getPrimaCobradaReal(mes);
-  var devolUsd = catVal('devoluciones', mes);
+  var esHistorico = (mes>=0 && mes<=5); // Acumulado + Enero..Mayo -> cifras certificadas (homologadas con el Dashboard Ejecutivo)
+  var prima, devolUsd, esCertificado;
+  if (esHistorico){
+    esCertificado = true;
+    if (mes===0){
+      prima = {usd: TFD_PRIMA.reduce(function(s,v){return s+v;},0)};
+      devolUsd = TFD_DEVOLUCIONES.reduce(function(s,v){return s+v;},0);
+    } else {
+      prima = {usd: TFD_PRIMA[mes-1]};
+      devolUsd = TFD_DEVOLUCIONES[mes-1];
+    }
+  } else {
+    esCertificado = false;
+    prima = getPrimaCobradaReal(mes);
+    devolUsd = catVal('devoluciones', mes);
+  }
   var html = '<div class="fc-card" style="margin-bottom:10px">'
     + '<div class="fc-grp-hdr" style="cursor:default"><div class="fc-grp-title">&#128176; Ingresos</div></div>'
     + '<div class="fc-tot-row" style="background:transparent;color:var(--ttx);border-bottom:1px solid var(--tbd)">'
+      + '<span>Prima Cobrada <span style="font-weight:400;color:var(--ttx3);font-size:10px">'+(esCertificado?'(certificado, histórico del Flujo de Caja)':'(desde Contabilidad)')+'</span></span>'
+      + '<span>'+(prima ? '$ '+fmt(prima.usd) : '<span style="color:var(--ttx3);font-style:italic;font-size:11px">Pendiente de carga en Contabilidad</span>')+'</span></div>'
+    + '<div class="fc-tot-row" style="background:transparent;color:var(--ttx);border-bottom:1px solid var(--tbd)">'
       + '<span>&#8722; Devoluciones de Prima <span style="font-weight:400;color:var(--ttx3);font-size:10px">(certificado, Mayor Anal&#237;tico)</span></span>'
       + '<span style="color:var(--tr)">$ '+fmt(devolUsd)+'</span></div>'
-    + '<div class="fc-tot-row" style="background:transparent;color:var(--ttx);border-bottom:1px solid var(--tbd)">'
-      + '<span>Prima Cobrada <span style="font-weight:400;color:var(--ttx3);font-size:10px">(desde Contabilidad)</span></span>'
-      + '<span>'+(prima ? '$ '+fmt(prima.usd) : '<span style="color:var(--ttx3);font-style:italic;font-size:11px">Pendiente de carga en Contabilidad</span>')+'</span></div>'
     + '<div class="fc-tot-row"><span>Total Ingresos</span>'
       + '<span>'+(prima ? '$ '+fmt(prima.usd-devolUsd) : 'Pendiente')+'</span></div>'
     + '</div>';
   document.getElementById('fc-ingresos').innerHTML = html;
 }
 
+/* ══ Dispatcher: Enero-Mayo (y Acumulado) usan las cifras CERTIFICADAS,
+   idénticas a las del Dashboard Ejecutivo. Junio en adelante sigue
+   alimentándose en vivo del Mayor Analítico + Reporte de Egresos (CORE),
+   exactamente como ya funcionaba — esa parte no se tocó. ══ */
 function renderFCTree(){
   renderFCIngresos();
+  var mes = TF_MES2;
+  var esHistorico = (mes>=0 && mes<=5);
+  if (esHistorico){ renderFCTreeCertificado(mes); return; }
+  renderFCTreeCore();
+}
+
+function renderFCTreeCertificado(mes){
+  // mes: 0=Acumulado, 1..5=Enero..Mayo. Certificado: FLUJO_DE_CAJA_LA_FE_al_31-05-2026.xlsx
+  function valorCert(arr){ return mes===0 ? arr.reduce(function(s,v){return s+v;},0) : arr[mes-1]; }
+  var bloques = [
+    {id:'sin', num:'01', lbl:'Gastos de Siniestros', total:valorCert(TFD_SIN.total)},
+    {id:'com', num:'02', lbl:'Gastos de Comisiones', total:valorCert(TFD_COM.total)},
+    {id:'adm', num:'03', lbl:'Gasto de Administración', total:valorCert(TFD_ADM.total)},
+    {id:'trib', num:'04', lbl:'Costos Tributarios', total:valorCert(TFD_TRIB.total)},
+    {id:'ban', num:'05', lbl:'Costo Bancario', total:valorCert(TFD_BAN.total)}
+  ];
+  var totalEgresos = valorCert(TFD_TOT.totalEgresos);
+  var presTotal = valorCert(TFD_PRES.total);
+  var totalGran = valorCert(TFD_TOT.totalEgresosMasPresidencia);
+  var mesLbl = mes===0 ? 'Acumulado Ene-May' : TFD_MESES[mes-1];
+
+  var html = '';
+  bloques.forEach(function(b){
+    html += '<div class="fc-card">'
+      + '<div class="fc-grp-hdr" onclick="fcToggleGrp(\''+b.id+'\')">'
+        + '<div class="fc-grp-title"><span style="opacity:.4;font-weight:500;margin-right:4px">'+b.num+'</span>'+b.lbl+'</div>'
+        + '<div class="fc-grp-right">'
+          + '<span class="fc-grp-pct">'+pct(b.total,totalEgresos)+'</span>'
+          + '<div class="fc-grp-total">$ '+fmt(b.total)+'</div>'
+          + '<span class="fc-grp-arrow" id="fc-arr-'+b.id+'" style="transform:rotate(90deg)">&#9658;</span>'
+        + '</div></div>'
+      + '<div class="fc-conc-list open" id="fc-cl-'+b.id+'">'
+        + '<div style="padding:12px 16px;font-size:11px;color:var(--ttx2);display:flex;align-items:center;gap:8px">'
+          + '<span>&#9432;</span><span>El detalle de este bloque proviene del histórico certificado del Flujo de Caja ('+mesLbl+').</span>'
+        + '</div>'
+      + '</div>'
+      + '<div class="fc-tot-row"><span>Total '+b.lbl+'</span><span>$ '+fmt(b.total)+'</span></div>'
+      + '</div>';
+  });
+
+  html += '<div class="fc-gran-tot"><span style="font-size:15px">TOTAL EGRESOS</span><span style="display:flex;align-items:center;gap:12px">$ '+fmt(totalEgresos)+'<span style="font-size:11px;opacity:.7">'+pct(totalEgresos,totalGran)+' del total</span></span></div>';
+
+  html += '<div class="fc-card" style="margin-top:12px">'
+    + '<div class="fc-grp-hdr fc-pres-hdr" onclick="fcToggleGrp(\'pres\')">'
+      + '<div class="fc-grp-title">🏛️ Gastos de Presidencia</div>'
+      + '<div class="fc-grp-right">'
+        + '<span class="fc-grp-pct">'+pct(presTotal,totalGran)+'</span>'
+        + '<div class="fc-grp-total" style="color:var(--tgo)">$ '+fmt(presTotal)+'</div>'
+        + '<span class="fc-grp-arrow" id="fc-arr-pres" style="transform:rotate(90deg)">&#9658;</span>'
+      + '</div></div>'
+    + '<div class="fc-conc-list open" id="fc-cl-pres">'
+      + '<div style="padding:12px 16px;font-size:11px;color:var(--ttx2);display:flex;align-items:center;gap:8px">'
+        + '<span>&#9432;</span><span>El detalle de Presidencia proviene del histórico certificado del Flujo de Caja ('+mesLbl+').</span>'
+      + '</div>'
+    + '</div>'
+    + '<div class="fc-tot-row fc-pres-tot"><span>Total Presidencia</span><span>$ '+fmt(presTotal)+'</span></div>'
+    + '</div>';
+
+  html += '<div class="fc-gran-tot fc-gran-tot2"><span style="font-size:15px">TOTAL EGRESOS + PRESIDENCIA</span><span>$ '+fmt(totalGran)+'</span></div>';
+  document.getElementById("fc-tree").innerHTML = html;
+}
+
+function renderFCTreeCore(){
   if(!TF_DATA){document.getElementById("fc-tree").innerHTML="";return;}
   var m=TF_MES2,tot=grandTotal(m),html="";
   FC_BLOQUES.forEach(function(bloque,bi){
