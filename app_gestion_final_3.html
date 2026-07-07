@@ -1130,6 +1130,11 @@ tr.tfd-en-revision{background:var(--tgol)!important;font-weight:700}
 .tfd-mini-btn{padding:5px 10px;border-radius:6px;border:none;font-size:10px;font-weight:700;cursor:pointer}
 .tfd-mini-btn.g{background:var(--tp);color:#fff}
 .tfd-mini-btn.c{background:var(--tbg);color:var(--ttx2)}
+.tfd-nota-box{background:var(--tbg);border-radius:10px;padding:10px;margin-top:6px}
+.tfd-nota-actual{background:#FFF9E6;border:1px solid #F0D896;border-radius:8px;padding:8px 10px;font-size:11px;color:var(--ttx);margin-bottom:8px}
+.tfd-nota-meta{font-size:9px;color:var(--ttx3);margin-top:3px}
+.tfd-nota-box textarea{width:100%;min-height:60px;border:1px solid var(--tbd);border-radius:7px;padding:8px;font-size:11px;font-family:inherit;resize:vertical}
+.tfd-nota-acciones{display:flex;justify-content:flex-end;gap:6px;margin-top:6px}
 .tfd-report-bar{position:fixed;bottom:0;left:0;right:0;background:var(--tp2);color:#fff;padding:10px 24px;display:none;align-items:center;justify-content:space-between;z-index:150;box-shadow:0 -4px 16px rgba(0,0,0,.2)}
 .tfd-report-bar.show{display:flex}
 .tfd-report-bar .n{background:var(--tgo);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;margin-right:6px}
@@ -1332,7 +1337,7 @@ var TFD_NOTAS = {}; // key: nombreLinea__mes__idx -> {texto,fecha,registro,linea
 var TFD_MODAL_ACTUAL = null;
 
 function tfdFmt(v){ return "$"+(v||0).toLocaleString("es-VE",{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function tfdPctf(v){ return (v*100).toFixed(1)+"%"; }
+function tfdPctf(v){ return isNaN(v) ? "N/D" : (v*100).toFixed(1)+"%"; }
 
 function tfdRenderBar(){
   var html = '<span style="font-size:9px;color:rgba(255,255,255,.45);font-weight:700;text-transform:uppercase;margin-right:4px">Comparar meses:</span>';
@@ -1611,35 +1616,38 @@ window.tfdAbrirModal = function(idx){
   TFD_MODAL_ACTUAL = {idx:idx, mIdx:mIdx};
   document.getElementById("tfd-modal-title").textContent = d.nombre;
   document.getElementById("tfd-modal-sub").textContent = TFD_MESES[mIdx]+" 2026";
+  var rKey = d.nombre+'__'+mIdx;
+  var nota = TFD_NOTAS[rKey];
   var body = '<div class="tfd-mb-big">'+tfdFmt(d.monto)+'</div>'
     + '<div class="tfd-mb-sec">Trazabilidad certificada</div>'
     + '<div class="tfd-mb-row"><span>Fuente</span><b>'+d.fuente+'</b></div>'
     + '<div class="tfd-mb-row"><span>Fórmula / origen de la cifra</span><b>'+d.formula+'</b></div>'
-    + '<div class="tfd-mb-pendiente">📌 El detalle de esta cifra proviene del Flujo de Caja Histórico certificado ('+TFD_MESES[mIdx]+' 2026) — es el mismo dato que ya usan los accionistas, sin desglose transaccional adicional.</div>';
+    + '<div class="tfd-mb-pendiente">📌 El detalle de esta cifra proviene del Flujo de Caja Histórico certificado ('+TFD_MESES[mIdx]+' 2026) — es el mismo dato que ya usan los accionistas, sin desglose transaccional adicional.</div>'
+    + '<div class="tfd-mb-sec" style="margin-top:14px">Nota interna <span style="font-weight:500;text-transform:none;color:var(--ttx3)">— uso exclusivo de Contabilidad/Presidencia, nunca visible al accionista</span></div>'
+    + '<div class="tfd-nota-box">'
+    + (nota ? '<div class="tfd-nota-actual">🗒️ '+nota.texto+'<div class="tfd-nota-meta">Anotado '+nota.fecha+'</div></div>' : '')
+    + '<textarea id="tfd-nota-in" placeholder="Ej: el accionista pidió ver el soporte de este gasto — pendiente enviar por correo...">'+(nota?nota.texto:'')+'</textarea>'
+    + '<div class="tfd-nota-acciones">'+(nota?'<button class="tfd-mini-btn c" onclick="tfdQuitarNota()">Quitar nota</button>':'')+'<button class="tfd-mini-btn g" onclick="tfdGuardarNota()">'+(nota?'Actualizar nota':'Guardar nota')+'</button></div>'
+    + '</div>';
   document.getElementById("tfd-modal-body").innerHTML = body;
   document.getElementById("tfd-modal").classList.add("open");
 };
 window.tfdCerrarModal = function(){ document.getElementById("tfd-modal").classList.remove("open"); };
 
-window.tfdTogglePop = function(i){
-  document.querySelectorAll('.tfd-nota-pop.open').forEach(function(p){ if(p.id!=='tfd-pop-'+i) p.classList.remove('open'); });
-  document.getElementById('tfd-pop-'+i).classList.toggle('open');
-};
-window.tfdGuardarNota = function(i){
-  var texto = document.getElementById('tfd-pop-in-'+i).value.trim();
+window.tfdGuardarNota = function(){
+  var texto = document.getElementById('tfd-nota-in').value.trim();
   if(!texto) return;
   var d = TFD_DETALLES[TFD_MODAL_ACTUAL.idx];
-  var rKey = d.nombre+'__'+TFD_MODAL_ACTUAL.mIdx+'__'+i;
+  var mIdx = TFD_MODAL_ACTUAL.mIdx;
+  var rKey = d.nombre+'__'+mIdx;
   var fecha = new Date().toLocaleString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-  var catKey = TFD_CORE_MAP[d.nombre];
-  var regs = window.__TF_RAW.regs.filter(function(r){return r.mes===(TFD_MODAL_ACTUAL.mIdx+1)&&r.cat===catKey;}).sort(function(a,b){return b.usd-a.usd;}).slice(0,8);
-  TFD_NOTAS[rKey] = {texto:texto, fecha:fecha, registro:regs[i], linea:d.nombre, mes:TFD_MESES[TFD_MODAL_ACTUAL.mIdx]};
+  TFD_NOTAS[rKey] = {texto:texto, fecha:fecha, linea:d.nombre, mes:TFD_MESES[mIdx], monto:d.monto};
   tfdAbrirModal(TFD_MODAL_ACTUAL.idx);
   tfdActualizarReportBar();
 };
-window.tfdQuitarNota = function(i){
+window.tfdQuitarNota = function(){
   var d = TFD_DETALLES[TFD_MODAL_ACTUAL.idx];
-  delete TFD_NOTAS[d.nombre+'__'+TFD_MODAL_ACTUAL.mIdx+'__'+i];
+  delete TFD_NOTAS[d.nombre+'__'+TFD_MODAL_ACTUAL.mIdx];
   tfdAbrirModal(TFD_MODAL_ACTUAL.idx);
   tfdActualizarReportBar();
 };
@@ -1652,12 +1660,12 @@ function tfdActualizarReportBar(){
 window.tfdAbrirReporte = function(){
   var html='';
   Object.keys(TFD_NOTAS).forEach(function(k){
-    var n = TFD_NOTAS[k]; var r = n.registro||{};
-    html += '<div class="tfd-reporte-item"><b>'+n.linea+' · '+n.mes+' 2026</b> — '+(r.desc||r.conc||'Movimiento')
+    var n = TFD_NOTAS[k];
+    html += '<div class="tfd-reporte-item"><b>'+n.linea+' · '+n.mes+' 2026</b> — '+tfdFmt(n.monto||0)
       + '<div style="color:var(--ttx2);font-style:italic;margin-top:3px">"'+n.texto+'"</div>'
-      + '<div style="color:var(--ttx3);font-size:9px;margin-top:3px">N° '+ (r.id||'—') +' · '+tfdFmt(r.usd||0)+' · '+n.fecha+'</div></div>';
+      + '<div style="color:var(--ttx3);font-size:9px;margin-top:3px">'+n.fecha+'</div></div>';
   });
-  if(!html) html = '<p style="font-size:11px;color:var(--ttx3)">No hay registros marcados para revisión todavía.</p>';
+  if(!html) html = '<p style="font-size:11px;color:var(--ttx3)">No hay notas registradas todavía.</p>';
   document.getElementById('tfd-reporte-lista').innerHTML = html;
   document.getElementById('tfd-reporte-count').textContent = Object.keys(TFD_NOTAS).length;
   document.getElementById('tfd-reporte-modal').classList.add('open');
@@ -1665,25 +1673,81 @@ window.tfdAbrirReporte = function(){
 window.tfdCerrarReporte = function(){ document.getElementById('tfd-reporte-modal').classList.remove('open'); };
 window.tfdExportarExcel = function(){
   var claves = Object.keys(TFD_NOTAS);
-  if(!claves.length){ alert('No hay registros en revisión para exportar.'); return; }
+  if(!claves.length){ alert('No hay notas para exportar.'); return; }
   var PM='#2D1860',PM2='#4B2D8F',PL='#EDE8F8',PB='#E2DFF0';
   var htmlDoc = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>'
     +'table{border-collapse:collapse;font-size:11pt;font-family:Calibri}.tit{background:'+PM+';color:#fff;font-size:16pt;font-weight:bold;padding:10px}.sub{background:'+PM2+';color:#fff;font-size:10pt;padding:6px 10px}'
     +'th{background:'+PM+';color:#fff;font-weight:bold;padding:8px 10px;border:1px solid '+PB+';text-align:left;font-size:9.5pt;text-transform:uppercase}td{padding:7px 10px;border:1px solid '+PB+';font-size:10.5pt}.par{background:'+PL+'}'
-    +'</style></head><body><table><tr><td class="tit" colspan="8">Reporte de Cierre de Presentación de Cifras</td></tr>'
-    +'<tr><td class="sub" colspan="8">Seguros La Fe, C.A. · '+claves.length+' registro(s) solicitados en revisión</td></tr><tr><td colspan="8" style="padding:4px"></td></tr>'
-    +'<tr><th>Línea</th><th>Mes</th><th>Fecha</th><th>N° Asiento</th><th>Descripción</th><th>Beneficiario</th><th>Monto USD</th><th>Nota</th></tr>';
+    +'</style></head><body><table><tr><td class="tit" colspan="5">Reporte de Cierre de Presentación de Cifras — Notas Internas</td></tr>'
+    +'<tr><td class="sub" colspan="5">Seguros La Fe, C.A. · '+claves.length+' nota(s) — uso interno, no distribuir al accionista</td></tr><tr><td colspan="5" style="padding:4px"></td></tr>'
+    +'<tr><th>Línea</th><th>Mes</th><th>Monto presentado</th><th>Nota (buscar soporte / explicar por correo)</th><th>Fecha de anotación</th></tr>';
   claves.forEach(function(k,i){
-    var n=TFD_NOTAS[k]; var r=n.registro||{};
-    htmlDoc += '<tr class="'+(i%2===1?'par':'')+'"><td>'+n.linea+'</td><td>'+n.mes+' 2026</td><td>'+(r.fecha||'')+'</td><td>'+(r.id||'')+'</td><td>'+(r.desc||r.conc||'')+'</td><td>'+(r.benef||'')+'</td><td>'+tfdFmt(r.usd||0)+'</td><td>'+n.texto+'</td></tr>';
+    var n=TFD_NOTAS[k];
+    htmlDoc += '<tr class="'+(i%2===1?'par':'')+'"><td>'+n.linea+'</td><td>'+n.mes+' 2026</td><td>'+tfdFmt(n.monto||0)+'</td><td>'+n.texto+'</td><td>'+n.fecha+'</td></tr>';
   });
   htmlDoc += '</table></body></html>';
   var blob = new Blob(['\ufeff'+htmlDoc],{type:'application/vnd.ms-excel'});
-  var url = URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download='Reporte_Revision_Accionistas_'+new Date().toISOString().slice(0,10)+'.xls';
+  var url = URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download='Reporte_Notas_Internas_'+new Date().toISOString().slice(0,10)+'.xls';
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 };
 
-window.tfdRenderAll = function(){ TFD_DETALLES=[]; tfdRenderBar(); tfdRenderStrip(); tfdRenderIngresos(); tfdRenderKPIs(); tfdRenderFC(); tfdActualizarReportBar(); };
+/* ══════════════════════════════════════════════════════════════════
+   SINCRONIZACIÓN DE MESES DINÁMICOS (Junio en adelante) — Dashboard Ejecutivo.
+   Los arreglos TFD_ son certificados y fijos para Enero-Mayo (verificados contra
+   el Excel oficial). Para Junio en adelante, se extienden en vivo con los totales
+   calculados desde el CORE/Mayor Analítico ya cargado — NO se inventan ni se
+   reconstruyen los desgloses internos del modelo oficial (ej. Seguros La Fe vs.
+   Grupo Polar), ya que esa granularidad requiere la conciliación que hace
+   Contabilidad. El total sí es exacto; el desglose interno queda pendiente
+   de conciliación oficial hasta que Contabilidad cierre el mes.
+   ══════════════════════════════════════════════════════════════════ */
+function tfdSincronizarMesesDinamicos(){
+  if (typeof getMesesDinamicosDisponibles!=='function') return;
+  var dinamicos = getMesesDinamicosDisponibles();
+  dinamicos.forEach(function(mNum){
+    var idx = mNum-1; // indice 0-based en los arreglos TFD_
+    if (TFD_MESES[idx]) return; // ya sincronizado
+    var nombre = (typeof MESES_NOMBRE_COMPLETO!=='undefined' && MESES_NOMBRE_COMPLETO[mNum]) || ('Mes '+mNum);
+    TFD_MESES[idx] = nombre;
+    var mesPad = String(mNum).padStart(2,'0');
+    TFD_BCV[idx] = (typeof TA_BCV!=='undefined' && TA_BCV[mesPad]) || 0;
+
+    var sin = catVal('siniestros',mNum) + catVal('telemedicina',mNum);
+    var com = catVal('promocion_venta',mNum);
+    var adm = sumCats(['gastos_adm','soporte_tecnico','impuestos','beneficios_emp','nomina_personal','nomina_gerentes','difer_cambiario'],mNum);
+    var trib = 0; // Retenciones: no derivable del CORE/Mayor — pendiente de Contabilidad
+    var ban = catVal('costo_bancario',mNum);
+    var pres = catVal('presidencia',mNum);
+
+    TFD_SIN.segurosLaFe[idx]=sin; TFD_SIN.grupoPolar[idx]=0; TFD_SIN.anticipados[idx]=0; TFD_SIN.grupoNueveOnce[idx]=0; TFD_SIN.total[idx]=sin;
+    TFD_COM.funeasistencia[idx]=0; TFD_COM.callCenter[idx]=0; TFD_COM.promocionVenta[idx]=com; TFD_COM.total[idx]=com;
+    TFD_ADM.gastosAdministracion[idx]=adm; TFD_ADM.anticipoProveedores[idx]=0; TFD_ADM.nominaGerentes[idx]=0; TFD_ADM.diferencialNomina[idx]=0;
+    TFD_ADM.gastosExtraordinarios[idx]=0; TFD_ADM.impuestosVarios[idx]=0; TFD_ADM.islrAnual[idx]=0; TFD_ADM.total[idx]=adm;
+    TFD_TRIB.retenciones[idx]=trib; TFD_TRIB.total[idx]=trib;
+    TFD_BAN.domiciliacion[idx]=ban; TFD_BAN.mantenimiento[idx]=0; TFD_BAN.total[idx]=ban;
+    TFD_PRES.gastosPresidencia[idx]=pres; TFD_PRES.condominios[idx]=0; TFD_PRES.serviciosBasicos[idx]=0;
+    TFD_PRES.gastosDiversos[idx]=0; TFD_PRES.grupoValles[idx]=0; TFD_PRES.lineasCredito[idx]=0; TFD_PRES.zelle[idx]=0; TFD_PRES.total[idx]=pres;
+
+    var totalEgresos = sin+com+adm+trib+ban;
+    TFD_TOT.totalEgresos[idx]=totalEgresos;
+    TFD_TOT.totalEgresosMasPresidencia[idx]=totalEgresos+pres;
+    TFD_TOT.pctTotalEgresos[idx]=0; // requiere Prima Cobrada certificada — ver nota Prima abajo
+
+    // Prima Cobrada: viene de Contabilidad (STATE.months), no del CORE. Si aún no se ha
+    // cargado el balance de Junio en Contabilidad, se deja en 0 con nota transparente.
+    var primaReal = (typeof getPrimaCobradaReal==='function') ? getPrimaCobradaReal(mNum) : null;
+    TFD_PRIMA_INDIVIDUAL[idx] = primaReal ? primaReal.usd : 0;
+    TFD_PRIMA_POLAR[idx] = 0;
+    TFD_PRIMA[idx] = primaReal ? primaReal.usd : 0;
+    TFD_DEVOLUCIONES[idx] = 0;
+    TFD_TOTAL_INGRESOS[idx] = TFD_PRIMA[idx]-TFD_DEVOLUCIONES[idx];
+    TFD_SALDO_CAJA[idx] = TFD_TOTAL_INGRESOS[idx]-TFD_TOT.totalEgresosMasPresidencia[idx];
+    if (!TFD_PRIMA[idx]) TFD_MESES_SIN_PRIMA[mNum] = true;
+  });
+}
+var TFD_MESES_SIN_PRIMA = {}; // meses dinámicos donde aún no hay Prima Cobrada cargada en Contabilidad
+
+window.tfdRenderAll = function(){ tfdSincronizarMesesDinamicos(); TFD_DETALLES=[]; tfdRenderBar(); tfdRenderStrip(); tfdRenderIngresos(); tfdRenderKPIs(); tfdRenderFC(); tfdActualizarReportBar(); };
 })();
 function esc(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function fmtCta(s){
@@ -2367,11 +2431,23 @@ window.tfActualizarDesdeAuditoria=function(){
 <script>
 (function(){
 var DV2_REGS=[];
-var DV2_MN={1:"Enero",2:"Febrero",3:"Marzo",4:"Abril",5:"Mayo"};
+var DV2_MN={1:"Enero",2:"Febrero",3:"Marzo",4:"Abril",5:"Mayo",6:"Junio",7:"Julio",8:"Agosto",9:"Septiembre",10:"Octubre",11:"Noviembre",12:"Diciembre"};
 var DV2_TA={"01": 341.6031, "02": 392.7643, "03": 446.6732, "04": 479.967, "05": 515.7295};
 var DV2_CAT_LBL={nomina_gerentes:"N\u00f3mina Gerentes",difer_cambiario:"Diferencial Cambiario",gastos_adm:"Gastos Administrativos",presidencia:"Gastos de Presidencia",impuestos:"Impuestos"};
 
-window.renderTesoreriaDivisas=function(){dv2RenderResumen();dv2RenderHist();};
+function dv2PoblarMesesDinamicos(){
+  var sel = document.getElementById('dv2-mes');
+  if (!sel) return;
+  var dinamicos = (typeof getMesesDinamicosDisponibles==='function') ? getMesesDinamicosDisponibles() : [];
+  dinamicos.forEach(function(m){
+    if (sel.querySelector('option[value="'+m+'"]')) return; // ya existe, no duplicar
+    var nombre = (typeof MESES_NOMBRE_COMPLETO!=='undefined' && MESES_NOMBRE_COMPLETO[m]) || ('Mes '+m);
+    var opt = document.createElement('option');
+    opt.value = m; opt.textContent = nombre+' 2026';
+    sel.appendChild(opt);
+  });
+}
+window.renderTesoreriaDivisas=function(){dv2PoblarMesesDinamicos();dv2RenderResumen();dv2RenderHist();};
 
 window.dv2Calc=function(){
   var usd=parseFloat(document.getElementById("dv2-usd").value)||0;
@@ -3233,6 +3309,13 @@ table.gm-mov tbody td.r{text-align:right;font-weight:700;color:var(--ink2);white
    ══════════════════════════════════════════════════════════════════ */
 (function(){
 var GM_MESES = ["Enero","Febrero","Marzo","Abril","Mayo"];
+function gmMesesTodos(){
+  var dinamicos = (typeof getMesesDinamicosDisponibles==='function') ? getMesesDinamicosDisponibles() : [];
+  var nombres = GM_MESES.slice();
+  dinamicos.forEach(function(m){ nombres[m-1] = (typeof MESES_NOMBRE_COMPLETO!=='undefined' && MESES_NOMBRE_COMPLETO[m]) || ('Mes '+m); });
+  return nombres;
+}
+function gmNombreMes(mi){ return gmMesesTodos()[mi-1] || ('Mes '+mi); }
 var GM_ESTADOS = {1:'cerrado',2:'cerrado',3:'cerrado',4:'cerrado',5:'en revisión'};
 var GM_MES_ACTIVO = 5;
 
@@ -3289,7 +3372,7 @@ function gmTotalCat(pIdx, catIdx){
 
 function renderGmMesSel(){
   var html = '';
-  GM_MESES.forEach(function(m,i){
+  gmMesesTodos().forEach(function(m,i){
     var mi = i+1;
     html += '<div class="gm-mes-btn'+(mi===GM_MES_ACTIVO?' on':'')+'" onclick="gmSetMes('+mi+')">'+m
       + '<span class="est">'+(GM_ESTADOS[mi]==='cerrado'?'✓ Cerrado':'⏳ En revisión')+'</span></div>';
@@ -3304,7 +3387,9 @@ function renderGmPartidas(){
   GM_PARTIDAS.forEach(function(p, idx){
     var key = GM_MES_ACTIVO+'-'+idx;
     var ajustado = GM_AJUSTES_TOTAL[key]!==undefined;
-    var monto = ajustado ? GM_AJUSTES_TOTAL[key] : p.montos[GM_MES_ACTIVO];
+    var montoCertificado = p.montos[GM_MES_ACTIVO];
+    var montoVivo = p.cats.reduce(function(s,cat,ci){ return s + gmTotalCat(idx, ci); }, 0);
+    var monto = ajustado ? GM_AJUSTES_TOTAL[key] : (montoCertificado!==undefined ? montoCertificado : montoVivo);
     html += '<div class="gm-partida">'
       + '<div class="ic">'+p.ic+'</div>'
       + '<div class="info"><h4>'+p.nombre+(ajustado?'<span class="gm-badge ajustado">Ajustado</span>':'<span class="gm-badge limpio">Sin cambios</span>')+(cerrado?'<span class="gm-badge cerrado">🔒 Cerrado</span>':'')+'</h4><p>'+p.desc+'</p></div>'
@@ -3319,7 +3404,7 @@ window.gmAbrirSub = function(pIdx){
   GM_PARTIDA_ACTUAL = pIdx;
   var p = GM_PARTIDAS[pIdx];
   document.getElementById('gm-titulo').textContent = p.nombre;
-  document.getElementById('gm-sub').textContent = GM_MESES[GM_MES_ACTIVO-1]+' 2026 · Selecciona un subconcepto';
+  document.getElementById('gm-sub').textContent = gmNombreMes(GM_MES_ACTIVO)+' 2026 · Selecciona un subconcepto';
   document.getElementById('gm-back').style.display = 'none';
   document.getElementById('gm-footer').style.display = 'none';
   var html = '';
@@ -3346,7 +3431,7 @@ window.gmAbrirMovs = function(pIdx, catIdx){
   var p = GM_PARTIDAS[pIdx];
   var lbl = (window.__TF_RAW && window.__TF_RAW.resumen[p.cats[catIdx]]) ? window.__TF_RAW.resumen[p.cats[catIdx]].lbl : p.cats[catIdx];
   document.getElementById('gm-titulo').textContent = lbl;
-  document.getElementById('gm-sub').textContent = p.nombre+' · '+GM_MESES[GM_MES_ACTIVO-1]+' 2026';
+  document.getElementById('gm-sub').textContent = p.nombre+' · '+gmNombreMes(GM_MES_ACTIVO)+' 2026';
   document.getElementById('gm-back').style.display = 'inline';
   document.getElementById('gm-footer').style.display = 'flex';
   renderGmMovs();
@@ -3454,7 +3539,7 @@ window.renderGerencialMantenimiento = renderGerencialMantenimiento;
 var GC_FIRMAS = {};
 function renderGcMesSel(){
   var html = '';
-  GM_MESES.forEach(function(m,i){
+  gmMesesTodos().forEach(function(m,i){
     var mi = i+1;
     html += '<div class="gm-mes-btn'+(mi===GM_MES_ACTIVO?' on':'')+'" onclick="gcSetMes('+mi+')">'+m
       + '<span class="est">'+(GM_ESTADOS[mi]==='cerrado'?'✓ Cerrado':'⏳ En revisión')+'</span></div>';
@@ -3468,7 +3553,7 @@ function renderGerencialCierre(){
   var f = GC_FIRMAS[mes] || {contabilidad:false, presidencia:false};
   var cerrado = GM_ESTADOS[mes]==='cerrado';
   var nCambios = GM_CAMBIOS.filter(function(c){return c.mes===mes;}).length;
-  var html = '<h3 style="font-size:13px;font-weight:800;color:var(--ink2);margin-bottom:6px">Estado de '+GM_MESES[mes-1]+' 2026</h3>'
+  var html = '<h3 style="font-size:13px;font-weight:800;color:var(--ink2);margin-bottom:6px">Estado de '+gmNombreMes(mes)+' 2026</h3>'
     + '<p style="font-size:10.5px;color:var(--td);margin-bottom:14px">'+nCambios+' cambio(s) registrados en Mantenimiento para este mes.</p>'
     + '<label style="display:flex;align-items:center;gap:10px;background:var(--s2);padding:11px 15px;border-radius:9px;cursor:pointer;margin-bottom:9px">'
       + '<input type="checkbox" style="width:17px;height:17px" '+(f.contabilidad?'checked':'')+' '+(cerrado?'disabled':'')+' onchange="gcToggleFirma(\'contabilidad\')">'
@@ -3491,7 +3576,7 @@ window.gcToggleFirma = function(quien){
 window.gcAprobar = function(){
   GM_ESTADOS[GM_MES_ACTIVO] = 'cerrado';
   renderGerencialCierre();
-  gmToast(GM_MESES[GM_MES_ACTIVO-1]+' cerrado y aprobado — Mantenimiento bloqueado para este mes');
+  gmToast(gmNombreMes(GM_MES_ACTIVO)+' cerrado y aprobado — Mantenimiento bloqueado para este mes');
 };
 window.renderGerencialCierre = renderGerencialCierre;
 
@@ -3499,7 +3584,7 @@ window.renderGerencialCierre = renderGerencialCierre;
 var GE_MES = GM_MES_ACTIVO;
 function renderGeMesSel(){
   var html = '';
-  GM_MESES.forEach(function(m,i){
+  gmMesesTodos().forEach(function(m,i){
     var mi=i+1;
     html += '<div class="gm-mes-btn'+(mi===GE_MES?' on':'')+'" onclick="geSetMes('+mi+')">'+m
       + '<span class="est">'+(GM_ESTADOS[mi]==='cerrado'?'✓ Cerrado':'⏳ En revisión')+'</span></div>';
@@ -3511,7 +3596,7 @@ function renderGeGerencialExportar(){
   renderGeMesSel();
   var cambios = GM_CAMBIOS.filter(function(c){ return c.mes===GE_MES; });
   var html = '';
-  if(!cambios.length){ html = '<p style="font-size:11px;color:var(--td)">No hay cambios registrados en Mantenimiento para '+GM_MESES[GE_MES-1]+'.</p>'; }
+  if(!cambios.length){ html = '<p style="font-size:11px;color:var(--td)">No hay cambios registrados en Mantenimiento para '+gmNombreMes(GE_MES)+'.</p>'; }
   cambios.forEach(function(c){
     var color = c.accion==='eliminado'?'var(--r)':c.accion==='incluido'?'var(--g)':'#1F497D';
     html += '<div style="border-left:3px solid '+color+';background:var(--s2);border-radius:7px;padding:9px 12px;font-size:10.5px">'
@@ -3524,7 +3609,7 @@ window.renderGerencialExportar = renderGeGerencialExportar;
 function gmCsvEscape(v){ v=(v===null||v===undefined)?'':String(v); if(v.indexOf(',')>-1||v.indexOf('"')>-1||v.indexOf('\n')>-1) v='"'+v.replace(/"/g,'""')+'"'; return v; }
 window.gmExportarExcel = function(){
   var cambios = GM_CAMBIOS.filter(function(c){ return c.mes===GE_MES; });
-  if(!cambios.length){ alert('No hay cambios registrados para '+GM_MESES[GE_MES-1]+'.'); return; }
+  if(!cambios.length){ alert('No hay cambios registrados para '+gmNombreMes(GE_MES)+'.'); return; }
   var PM='#2D1860', PM2='#4B2D8F', PL='#F2EEFB', PB='#E4DCF5';
   var htmlDoc = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">'
     + '<head><meta charset="UTF-8"><style>'
@@ -3537,7 +3622,7 @@ window.gmExportarExcel = function(){
     + '.b-elim{background:#F9E0DD;color:#B0190F;font-weight:bold;text-align:center}.b-inc{background:#DCEFD8;color:#0D7A4E;font-weight:bold;text-align:center}.b-edit{background:#E8F0FB;color:#1F497D;font-weight:bold;text-align:center}'
     + '</style></head><body><table>'
     + '<tr><td class="tit" colspan="8">Reporte de Cambios — Mantenimiento del Flujo de Caja</td></tr>'
-    + '<tr><td class="sub" colspan="8">Seguros La Fe, C.A. · '+GM_MESES[GE_MES-1]+' 2026 · '+cambios.length+' cambio(s)</td></tr>'
+    + '<tr><td class="sub" colspan="8">Seguros La Fe, C.A. · '+gmNombreMes(GE_MES)+' 2026 · '+cambios.length+' cambio(s)</td></tr>'
     + '<tr><td colspan="8" style="padding:4px"></td></tr>'
     + '<tr><th>Partida</th><th>Acción</th><th>Fecha</th><th>N° Asiento</th><th>Descripción</th><th>Beneficiario</th><th>Monto Bs.</th><th>Monto USD</th></tr>';
   cambios.forEach(function(c,i){
@@ -3556,7 +3641,7 @@ window.gmExportarExcel = function(){
   htmlDoc += '</table></body></html>';
   var blob = new Blob(['\ufeff'+htmlDoc], {type:'application/vnd.ms-excel'});
   var url = URL.createObjectURL(blob);
-  var a = document.createElement('a'); a.href=url; a.download='Cambios_Mantenimiento_'+GM_MESES[GE_MES-1]+'_2026.xls';
+  var a = document.createElement('a'); a.href=url; a.download='Cambios_Mantenimiento_'+gmNombreMes(GE_MES)+'_2026.xls';
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
   gmToast('Excel exportado — '+cambios.length+' cambio(s)');
 };
