@@ -2615,6 +2615,9 @@ window.dv2Exportar=function(){
 .cd-drop-txt{font-size:12px;font-weight:600;color:var(--ink2)}
 .cd-drop-sub{font-size:10px;color:var(--txt2);margin-top:3px}
 .cd-status{font-size:11px;margin-top:6px;font-weight:600}
+.cd-archivo-fila{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px;font-weight:600;color:var(--tg);background:var(--tgl);border-radius:8px;padding:8px 12px;margin-top:6px}
+.cd-archivo-del{flex-shrink:0;background:#F9E0DD;color:#B0190F;border:none;border-radius:6px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap}
+.cd-archivo-del:hover{background:#F0C4C0}
 .cd-status.ok{color:var(--g)}.cd-status.err{color:var(--r)}.cd-status.pend{color:var(--txt2)}
 /* Auditoría */
 .aud-banner{background:linear-gradient(135deg,#E8F0FB,#EEF4FF);border-radius:10px;padding:14px 16px;margin-bottom:16px;border-left:4px solid var(--az);display:none}
@@ -2883,7 +2886,7 @@ function procesarFilasCore(rows, nombreArchivo){
     nuevos.push({
       id: 'CORE_'+fi.mes+'_'+i, fecha: fi.fechaISO, mes: fi.mes, mn: MN[fi.mes]||('Mes '+fi.mes),
       tipo: tipo, conc: conc, desc: desc, benef: benef, cta: '', tp:'', nu:String(i),
-      bs: Math.round(bs*100)/100, tasa: tasa, usd: Math.round(usd*100)/100, cat: cat, src: 'CORE'
+      bs: Math.round(bs*100)/100, tasa: tasa, usd: Math.round(usd*100)/100, cat: cat, src: 'CORE', archivo: nombreArchivo
     });
   }
   if (!nuevos.length){
@@ -2957,7 +2960,7 @@ function procesarFilasMayor(rows, nombreArchivo){
       tipo: 'Mayor Analítico', conc: descripcion, desc: descripcion, benef: '',
       cta: cuentaLimpia, tp:'', nu: asiento,
       bs: Math.round(monto*100)/100, tasa: tasaMes, usd: Math.round(montoUsd*100)/100,
-      cat: cat, catInferidaPorDescripcion: !catPorCuenta, src: 'MAYOR'
+      cat: cat, catInferidaPorDescripcion: !catPorCuenta, src: 'MAYOR', archivo: nombreArchivo
     });
   }
   if (!nuevos.length){
@@ -2983,6 +2986,59 @@ function procesarFilasMayor(rows, nombreArchivo){
   return {ok:true, filas:nuevos.length, meses:Object.keys(mesesVistos).map(Number), cuenta:cuentaLimpia, categoria:desgloseCategoria};
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   REGISTRO DE ARCHIVOS CARGADOS — permite eliminar un archivo específico
+   (sus movimientos, su auditoría) y recargarlo, sin afectar los demás
+   archivos ni los meses certificados Enero-Mayo.
+   ══════════════════════════════════════════════════════════════════ */
+var ARCHIVOS_CARGADOS_CD = []; // [{id, nombre, tipo:'core'|'mayor', cuenta, categoria, meses, filas}]
+
+function cdRenderListaArchivos(){
+  var coreEl = document.getElementById('cds-core');
+  var mayorEl = document.getElementById('cds-mayor');
+  function fila(a){
+    return '<div class="cd-archivo-fila">'
+      + '<div class="cd-archivo-info">✓ '+a.nombre+(a.cuenta?' — cuenta '+a.cuenta+' → <b>'+a.categoria+'</b>':'')
+      + ', '+a.filas+' fila(s) ('+a.meses.map(function(m){return MN[m]||m;}).join(', ')+')</div>'
+      + '<button class="cd-archivo-del" onclick="cdEliminarArchivo(\''+a.id+'\')" title="Eliminar este archivo">🗑️ Eliminar</button>'
+      + '</div>';
+  }
+  var coreArchivos = ARCHIVOS_CARGADOS_CD.filter(function(a){return a.tipo==='core';});
+  var mayorArchivos = ARCHIVOS_CARGADOS_CD.filter(function(a){return a.tipo==='mayor';});
+  if (coreEl) coreEl.innerHTML = coreArchivos.map(fila).join('') || '';
+  if (mayorEl) mayorEl.innerHTML = mayorArchivos.map(fila).join('') || '';
+}
+
+window.cdEliminarArchivo = function(archivoId){
+  var archivo = ARCHIVOS_CARGADOS_CD.find(function(a){return a.id===archivoId;});
+  if (!archivo) return;
+  if (!confirm('¿Eliminar "'+archivo.nombre+'"? Se quitarán sus '+archivo.filas+' movimiento(s) y se recalcularán todos los reportes que dependen de esta información.')) return;
+
+  if (window.__TF_RAW){
+    var mesesAfectados = {};
+    window.__TF_RAW.regs.filter(function(r){ return r.archivo===archivo.nombre; }).forEach(function(r){ mesesAfectados[r.mes]=true; });
+    window.__TF_RAW.regs = window.__TF_RAW.regs.filter(function(r){ return r.archivo!==archivo.nombre; });
+    // Quitar también los hallazgos de auditoría que apuntaban a movimientos de este archivo
+    if (typeof AUD_ITEMS!=='undefined') AUD_ITEMS = AUD_ITEMS.filter(function(a){ return !a.r || a.r.archivo!==archivo.nombre; });
+    // Recalcular el resumen de cada mes afectado (ahora sin los movimientos de este archivo)
+    Object.keys(mesesAfectados).forEach(function(m){ recalcularResumenDesdeRegs(parseInt(m,10)); });
+  }
+
+  ARCHIVOS_CARGADOS_CD = ARCHIVOS_CARGADOS_CD.filter(function(a){return a.id!==archivoId;});
+  cdRenderListaArchivos();
+
+  // Permitir volver a seleccionar el mismo archivo (el navegador no dispara onchange si no se limpia)
+  var inputCore = document.getElementById('cdf-core'); if (inputCore) inputCore.value='';
+  var inputMayor = document.getElementById('cdf-mayor'); if (inputMayor) inputMayor.value='';
+
+  // Refrescar todas las pantallas que consumen esta información
+  if (typeof renderFCTree==='function' && document.getElementById('fc-tree')) renderFCTree();
+  if (typeof renderAudit==='function') renderAudit();
+  if (typeof window.tfdRenderAll==='function' && document.getElementById('t2-dashboard') && document.getElementById('t2-dashboard').classList.contains('on')) window.tfdRenderAll();
+  if (typeof renderGerencialMantenimiento==='function' && document.getElementById('pane-gerencial-mantenimiento') && document.getElementById('pane-gerencial-mantenimiento').classList.contains('on')) renderGerencialMantenimiento();
+  if (typeof renderMantenimientoJunio==='function') renderMantenimientoJunio();
+};
+
 window.cdCargarCore=function(input){
   if(!input.files[0])return;
   var file=input.files[0], fn=file.name;
@@ -2995,7 +3051,9 @@ window.cdCargarCore=function(input){
       var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:true});
       var res = procesarFilasCore(rows, fn);
       if (res.ok){
-        document.getElementById("cds-core").innerHTML="<span class=\"cd-status ok\">&#10003; "+fn+" — "+res.filas+" fila(s) procesadas ("+res.meses.map(function(m){return MN[m]||m;}).join(', ')+"). Auditado.</span>";
+        ARCHIVOS_CARGADOS_CD = ARCHIVOS_CARGADOS_CD.filter(function(a){return a.nombre!==fn||a.tipo!=='core';});
+        ARCHIVOS_CARGADOS_CD.push({id:'core_'+Date.now(), nombre:fn, tipo:'core', cuenta:'', categoria:'', meses:res.meses, filas:res.filas});
+        cdRenderListaArchivos();
         if (typeof renderFCTree==='function' && document.getElementById('fc-tree')) renderFCTree();
       } else {
         document.getElementById("cds-core").innerHTML="<span class=\"cd-status err\">&#10007; "+res.msg+"</span>";
@@ -3020,14 +3078,15 @@ window.cdCargarMayor=function(input){
     if (pendientes>0) return;
     var ok = resultados.filter(function(r){return r.ok;});
     var fallidos = resultados.filter(function(r){return !r.ok;});
-    var html = '';
     ok.forEach(function(r){
-      html += '<div class="cd-status ok" style="display:block;margin-bottom:3px">✓ '+r.nombre+' — cuenta '+r.cuenta+' → <b>'+r.categoria+'</b>, '+r.filas+' movimiento(s) ('+r.meses.map(function(m){return MN[m]||m;}).join(', ')+')</div>';
+      ARCHIVOS_CARGADOS_CD = ARCHIVOS_CARGADOS_CD.filter(function(a){return a.nombre!==r.nombre||a.tipo!=='mayor';});
+      ARCHIVOS_CARGADOS_CD.push({id:'mayor_'+Date.now()+'_'+Math.random().toString(36).slice(2,7), nombre:r.nombre, tipo:'mayor', cuenta:r.cuenta, categoria:r.categoria, meses:r.meses, filas:r.filas});
     });
-    fallidos.forEach(function(r){
-      html += '<div class="cd-status err" style="display:block;margin-bottom:3px">✗ '+r.nombre+' — '+r.msg+'</div>';
-    });
-    document.getElementById("cds-mayor").innerHTML = html;
+    cdRenderListaArchivos();
+    if (fallidos.length){
+      var htmlErr = fallidos.map(function(r){ return '<div class="cd-status err" style="display:block;margin-bottom:3px">✗ '+r.nombre+' — '+r.msg+'</div>'; }).join('');
+      document.getElementById("cds-mayor").innerHTML += htmlErr;
+    }
     if (ok.length && typeof renderFCTree==='function' && document.getElementById('fc-tree')) renderFCTree();
   }
 
