@@ -1187,6 +1187,7 @@ tr.tfd-en-revision{background:var(--tgol)!important;font-weight:700}
     <button class="t2-mes" onclick="tfSetMes2(3,this)">Marzo</button>
     <button class="t2-mes" onclick="tfSetMes2(4,this)">Abril</button>
     <button class="t2-mes" onclick="tfSetMes2(5,this)">Mayo</button>
+    <div id="t2-mes2-dinamicos" style="display:contents"></div>
     <div style="margin-left:auto;display:flex;gap:6px">
       <button class="t2-bs" style="font-size:10px;padding:5px 12px" onclick="tfExpandirTodo()">&#8862; Expandir todo</button>
       <button class="t2-bp" style="font-size:10px;padding:5px 12px" onclick="tfExportarCSV()">&#8659; CSV</button>
@@ -1691,6 +1692,51 @@ function fmtCta(s){
   return s.substring(0,24);
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   INGESTA DE MESES NUEVOS (Junio en adelante) — motor de agregación.
+   Reutiliza la infraestructura YA EXISTENTE (catVal/sumCats/grandTotal/
+   FC_BLOQUES) que ya soportaba cualquier mes vía TF_DATA.resumen[cat].m[mes].
+   Lo único que faltaba era la función que RECALCULA ese resumen a partir
+   de los registros (regs) reales — antes venía pre-calculado desde Python
+   para Enero-Mayo; ahora se calcula en vivo en el navegador para Junio+.
+   ══════════════════════════════════════════════════════════════════ */
+function recalcularResumenDesdeRegs(mesNum){
+  if (!TF_DATA) return;
+  Object.keys(CAT_LBL).forEach(function(cat){
+    var suma = TF_DATA.regs.filter(function(r){ return r.mes===mesNum && r.cat===cat; })
+      .reduce(function(s,r){ return s+(r.usd||0); }, 0);
+    if (!TF_DATA.resumen[cat]) TF_DATA.resumen[cat] = {lbl:CAT_LBL[cat], m:{}, tot:0};
+    TF_DATA.resumen[cat].m[String(mesNum)] = suma;
+    // El acumulado (tot) se recalcula sumando TODOS los meses presentes en m,
+    // incluyendo los certificados Enero-Mayo (que ya vienen en TF_DATA.resumen)
+    // y los nuevos meses dinámicos.
+    var tot = 0;
+    Object.keys(TF_DATA.resumen[cat].m).forEach(function(k){ tot += TF_DATA.resumen[cat].m[k]||0; });
+    TF_DATA.resumen[cat].tot = tot;
+  });
+}
+
+/* Meses dinámicos detectados en los datos (más allá de Enero-Mayo).
+   Se usa para pintar el botón de Período correspondiente automáticamente. */
+function getMesesDinamicosDisponibles(){
+  if (!TF_DATA || !TF_DATA.regs) return [];
+  var set = {};
+  TF_DATA.regs.forEach(function(r){ if (r.mes>5) set[r.mes]=true; });
+  return Object.keys(set).map(Number).sort(function(a,b){return a-b;});
+}
+var MESES_NOMBRE_COMPLETO = {6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+
+function renderBotonesPeriodoDinamicos(){
+  var cont = document.getElementById('t2-mes2-dinamicos');
+  if (!cont) return;
+  var meses = getMesesDinamicosDisponibles();
+  var html = '';
+  meses.forEach(function(m){
+    html += '<button class="t2-mes'+(TF_MES2===m?' on':'')+'" onclick="tfSetMes2('+m+',this)">'+(MESES_NOMBRE_COMPLETO[m]||('Mes '+m))+'</button>';
+  });
+  cont.innerHTML = html;
+}
+
 function catVal(cat,mes){
   if(!TF_DATA)return 0;
   var base=(TF_DATA.resumen[cat]||{m:{},tot:0});
@@ -1895,11 +1941,18 @@ function renderFCIngresos(){
    exactamente como ya funcionaba — esa parte no se tocó. ══ */
 function renderFCTree(){
   renderFCIngresos();
+  renderBotonesPeriodoDinamicos();
   var mes = TF_MES2;
   var esHistorico = (mes>=0 && mes<=5);
   if (esHistorico){ renderFCTreeCertificado(mes); return; }
   renderFCTreeCore();
 }
+// Se expone para poder refrescar el Flujo de Caja desde la pantalla de Carga de Datos +
+// Auditoría (vive en otra IIFE/pane distinta) tras procesar un archivo nuevo.
+window.renderFCTree = renderFCTree;
+window.recalcularResumenDesdeRegs = recalcularResumenDesdeRegs;
+window.getMesesDinamicosDisponibles = getMesesDinamicosDisponibles;
+window.MESES_NOMBRE_COMPLETO = MESES_NOMBRE_COMPLETO;
 
 function renderFCTreeCertificado(mes){
   // mes: 0=Acumulado, 1..5=Enero..Mayo. Certificado: FLUJO_DE_CAJA_LA_FE_al_31-05-2026.xlsx
@@ -2180,7 +2233,11 @@ function _t2DL(content,filename){
 // Función para que los panes de Divisas y Carga actualicen el FC
 window.tfActualizarDesdeDivisas=function(reg){
   TF_DIVISAS_EXT.push(reg);
-  if(TF_DATA)renderKPIs();
+  if(TF_DATA){
+    renderKPIs();
+    renderChart();
+    if (document.getElementById('fc-tree')) renderFCTree();
+  }
 };
 window.tfActualizarDesdeAuditoria=function(){
   if(TF_DATA){renderKPIs();renderChart();renderFCTree();}
@@ -2553,12 +2610,109 @@ window.dv2Exportar=function(){
     <button class="btn" onclick="audAplicarAprobados()" style="font-size:10px;padding:5px 14px;border-color:var(--g);color:var(--g)">&#9889; Aplicar aprobados al FC</button>
   </div>
   <div id="aud-list"></div>
+
+  <!-- ══ MANTENIMIENTO DE TRANSACCIONES — MESES DINÁMICOS (JUNIO EN ADELANTE) ══ -->
+  <div class="mj-card" id="mj-card" style="display:none">
+    <div class="mj-hdr">
+      <h3>🛠️ Mantenimiento de Transacciones — <span id="mj-mes-nombre">—</span></h3>
+      <p>Agrega, edita o elimina movimientos de este mes. Los cambios se reflejan de inmediato en el Dashboard y el Flujo de Caja.</p>
+    </div>
+    <div class="mj-mes-sel" id="mj-mes-sel"></div>
+    <table class="mj-tbl">
+      <thead><tr><th>Concepto</th><th>Descripción</th><th>Categoría</th><th class="c">Monto Bs.</th><th class="c">Monto USD</th><th class="c">Origen</th><th class="c">Acción</th></tr></thead>
+      <tbody id="mj-body"></tbody>
+    </table>
+    <button class="mj-btn-add" onclick="mjAgregarFila()">➕ Agregar movimiento</button>
+  </div>
 </div>
 
 <script>
 (function(){
+var MJ_MES_ACTIVO = null;
+
+function mjMesesDisponibles(){
+  if (!window.__TF_RAW) return [];
+  var set = {};
+  window.__TF_RAW.regs.forEach(function(r){ if (r.mes>5) set[r.mes]=true; });
+  return Object.keys(set).map(Number).sort(function(a,b){return a-b;});
+}
+function mjNombreMes(m){ return (typeof MESES_NOMBRE_COMPLETO!=='undefined' && MESES_NOMBRE_COMPLETO[m]) || ('Mes '+m); }
+
+function renderMantenimientoJunio(){
+  var meses = mjMesesDisponibles();
+  var card = document.getElementById('mj-card');
+  if (!meses.length){ card.style.display='none'; return; }
+  card.style.display='block';
+  if (!MJ_MES_ACTIVO || meses.indexOf(MJ_MES_ACTIVO)===-1) MJ_MES_ACTIVO = meses[meses.length-1];
+  document.getElementById('mj-mes-nombre').textContent = mjNombreMes(MJ_MES_ACTIVO);
+
+  var htmlSel = '';
+  meses.forEach(function(m){
+    htmlSel += '<div class="mj-mes-chip'+(MJ_MES_ACTIVO===m?' on':'')+'" onclick="mjSetMes('+m+')">'+mjNombreMes(m)+'</div>';
+  });
+  document.getElementById('mj-mes-sel').innerHTML = htmlSel;
+
+  var regsMes = window.__TF_RAW.regs.filter(function(r){ return r.mes===MJ_MES_ACTIVO; });
+  var opcionesCategoria = Object.keys(CAT_LBL).map(function(c){ return '<option value="'+c+'">'+CAT_LBL[c]+'</option>'; }).join('');
+  var html = '';
+  regsMes.forEach(function(r){
+    html += '<tr data-id="'+r.id+'">'
+      + '<td><input type="text" class="mj-inp" value="'+(r.conc||'').replace(/"/g,'&quot;')+'" onchange="mjEditar(\''+r.id+'\',\'conc\',this.value)"></td>'
+      + '<td><input type="text" class="mj-inp" value="'+(r.desc||'').replace(/"/g,'&quot;')+'" onchange="mjEditar(\''+r.id+'\',\'desc\',this.value)"></td>'
+      + '<td><select class="mj-inp" onchange="mjEditar(\''+r.id+'\',\'cat\',this.value)">'+opcionesCategoria.replace('value="'+r.cat+'"','value="'+r.cat+'" selected')+'</select></td>'
+      + '<td class="c"><input type="number" step="0.01" class="mj-inp mj-num" value="'+(r.bs||0)+'" onchange="mjEditar(\''+r.id+'\',\'bs\',this.value)"></td>'
+      + '<td class="c"><input type="number" step="0.01" class="mj-inp mj-num" value="'+(r.usd||0)+'" onchange="mjEditar(\''+r.id+'\',\'usd\',this.value)"></td>'
+      + '<td class="c"><span class="mj-badge-src mj-'+(r.src||'').toLowerCase()+'">'+(r.src||'—')+'</span></td>'
+      + '<td class="c"><button class="mj-btn-del" onclick="mjEliminar(\''+r.id+'\')" title="Eliminar">🗑️</button></td>'
+      + '</tr>';
+  });
+  document.getElementById('mj-body').innerHTML = html || '<tr><td colspan="7" style="text-align:center;color:var(--tm);padding:14px">Sin movimientos para este mes todavía.</td></tr>';
+}
+window.renderMantenimientoJunio = renderMantenimientoJunio;
+
+window.mjSetMes = function(m){ MJ_MES_ACTIVO = m; renderMantenimientoJunio(); };
+
+window.mjEditar = function(id, campo, valor){
+  var reg = window.__TF_RAW.regs.find(function(r){ return r.id===id; });
+  if (!reg) return;
+  if (campo==='bs' || campo==='usd') reg[campo] = parseFloat(valor)||0;
+  else reg[campo] = valor;
+  reg.editado_manualmente_el = new Date().toLocaleString('es-VE');
+  recalcularResumenDesdeRegs(MJ_MES_ACTIVO);
+  if (typeof window.tfActualizarDesdeAuditoria==='function') window.tfActualizarDesdeAuditoria();
+  renderMantenimientoJunio();
+};
+window.mjEliminar = function(id){
+  if (!confirm('¿Eliminar este movimiento? Esta acción no se puede deshacer.')) return;
+  var idx = window.__TF_RAW.regs.findIndex(function(r){ return r.id===id; });
+  if (idx>=0) window.__TF_RAW.regs.splice(idx,1);
+  recalcularResumenDesdeRegs(MJ_MES_ACTIVO);
+  if (typeof window.tfActualizarDesdeAuditoria==='function') window.tfActualizarDesdeAuditoria();
+  renderMantenimientoJunio();
+};
+window.mjAgregarFila = function(){
+  if (!MJ_MES_ACTIVO){ alert('No hay un mes dinámico activo — carga primero un archivo de CORE o Mayor Analítico.'); return; }
+  var nuevo = {
+    id: 'MANUAL_'+Date.now(), fecha:'', mes: MJ_MES_ACTIVO, mn: mjNombreMes(MJ_MES_ACTIVO),
+    tipo:'Manual', conc:'', desc:'', benef:'', cta:'', tp:'', nu:'',
+    bs:0, tasa:0, usd:0, cat:'gastos_adm', src:'MANUAL'
+  };
+  window.__TF_RAW.regs.push(nuevo);
+  renderMantenimientoJunio();
+};
+})();
+</script>
+
+<script>
+(function(){
 var AUD_ITEMS=[];
-var REGLAS={"kw":{"SINIESTRO":"siniestros","FUNERARIO":"siniestros","CEMENTERIO":"siniestros","PARCELA":"siniestros","VIDA IND":"siniestros","INDEMNIZACION":"siniestros","FUNEASISTENCIA":"siniestros","ASOPROINFU":"siniestros","TELEMEDICINA":"telemedicina","NUEVE ONCE":"telemedicina","PROMOCION":"promocion_venta","COMISION EJECUTIVO":"promocion_venta","SUDEASEG":"impuestos","SUPERINTENDENCIA":"impuestos","PATENTE":"impuestos","ISLR":"impuestos","SOPORTE TEC":"soporte_tecnico","MANTENIMIENTO APLIC":"soporte_tecnico","ORACLE":"soporte_tecnico","TKONEKTO":"soporte_tecnico","PRESIDENCIA":"presidencia","REINTEGRO":"devoluciones","DEVOLUCION":"devoluciones","COBROS NO APLIC":"devoluciones"},"cta":{"3381010101":"nomina_personal","3381010102":"nomina_personal","3381010103":"nomina_personal","3381010104":"nomina_personal","3381010105":"nomina_personal","3381010108":"nomina_personal","3381010805":"nomina_personal","3381010804":"nomina_personal","3381010809":"nomina_personal","338102":"costo_bancario"},"asientos":{"202604000007":"E6/E8 - Asiento mecanico nomina (haber interno)","202605000186":"E7 - Reintegro San German en Sueldos","202604000010":"E9 - Reclasificacion IVA en Valores","202601010076":"E5 - Utilidades Enero (verificar politica)","202605000152":"E5 - Reverso Utilidades Mayo","202605000118":"E3 - Posible duplicado HCM Mayo","202605000038":"E3 - Posible duplicado HCM Mayo"}};
+var REGLAS={"kw":{"SINIESTRO":"siniestros","FUNERARIO":"siniestros","CEMENTERIO":"siniestros","PARCELA":"siniestros","VIDA IND":"siniestros","INDEMNIZACION":"siniestros","FUNEASISTENCIA":"siniestros","ASOPROINFU":"siniestros","TELEMEDICINA":"telemedicina","NUEVE ONCE":"telemedicina","PROMOCION":"promocion_venta","COMISION EJECUTIVO":"promocion_venta","SUDEASEG":"impuestos","SUPERINTENDENCIA":"impuestos","PATENTE":"impuestos","ISLR":"impuestos","IVA":"impuestos","SOPORTE TEC":"soporte_tecnico","MANTENIMIENTO APLIC":"soporte_tecnico","ORACLE":"soporte_tecnico","TKONEKTO":"soporte_tecnico","PRESIDENCIA":"presidencia","REINTEGRO":"devoluciones","DEVOLUCION":"devoluciones","COBROS NO APLIC":"devoluciones",
+  "CESTA TICKET":"beneficios_emp","MANUTENCION":"beneficios_emp","TRANSPORTE PERSONAL":"beneficios_emp","GUARDERIA":"beneficios_emp","BONO":"nomina_personal",
+  "UNIFORME":"gastos_adm","BORDADO":"gastos_adm","MOBILIARIO":"gastos_adm","MICROONDAS":"gastos_adm",
+  "HCM":"gastos_adm","QUALITAS":"gastos_adm","UTILIDADES":"nomina_personal"},
+  "cta":{"3381010101":"nomina_personal","3381010102":"nomina_personal","3381010103":"nomina_personal","3381010104":"nomina_personal","3381010105":"nomina_personal","3381010108":"nomina_personal","3381010805":"nomina_personal","3381010804":"nomina_personal","3381010809":"nomina_personal","338102":"costo_bancario"},
+  "revisar":["HCM","QUALITAS","UTILIDADES","UNIFORME","BORDADO","MOBILIARIO","MICROONDAS"],
+  "asientos":{"202604000007":"E6/E8 - Asiento mecanico nomina (haber interno)","202605000186":"E7 - Reintegro San German en Sueldos","202604000010":"E9 - Reclasificacion IVA en Valores","202601010076":"E5 - Utilidades Enero (verificar politica)","202605000152":"E5 - Reverso Utilidades Mayo","202605000118":"E3 - Posible duplicado HCM Mayo","202605000038":"E3 - Posible duplicado HCM Mayo"}};
 var CAT_LBL_CD={"siniestros":"Siniestros Pagados","telemedicina":"Gastos Gpo. Nueve Once","promocion_venta":"Gastos de Promocion y Venta","nomina_personal":"Nomina Personal","nomina_gerentes":"Nomina Gerentes (Divisas)","difer_cambiario":"Diferencial Cambiario","gastos_adm":"Gastos de Administracion","impuestos":"Impuestos y Contribuciones","soporte_tecnico":"Soporte Tecnico","costo_bancario":"Costo Bancario","presidencia":"Gastos de Presidencia","devoluciones":"Devoluciones / Reintegros","beneficios_emp":"Beneficios Empleados"};
 
 window.renderTesoreriaCarga=function(){};
@@ -2571,27 +2725,193 @@ window.renderTesoreriaCarga=function(){};
   z.addEventListener("drop",function(e){e.preventDefault();z.classList.remove("drag");});
 });
 
+/* ══════════════════════════════════════════════════════════════════
+   PARSING REAL — Extracción de Egresos (CORE) y Mayor Analítico.
+   Antes estos botones solo re-auditaban los datos viejos embebidos;
+   ahora sí leen el archivo, lo categorizan con REGLAS, lo agregan al
+   resumen y refrescan el Flujo de Caja / Dashboard automáticamente.
+   ══════════════════════════════════════════════════════════════════ */
+function _mapearColumnas(headerRow){
+  var mapa = {};
+  headerRow.forEach(function(h, i){
+    var key = String(h||'').trim().toUpperCase().replace(/\s+/g,'_');
+    if (key) mapa[key] = i;
+  });
+  return mapa;
+}
+function _buscarCol(mapa, posibles){
+  for (var i=0;i<posibles.length;i++){ if (mapa[posibles[i]]!==undefined) return mapa[posibles[i]]; }
+  return -1;
+}
+function _categorizar(descCompleta){
+  var desc_up = descCompleta.toUpperCase();
+  var cat = null;
+  Object.keys(REGLAS.kw).forEach(function(kw){
+    if (!cat && desc_up.indexOf(kw)>=0) cat = REGLAS.kw[kw];
+  });
+  return cat || 'gastos_adm'; // si ninguna regla aplica, cae en el bucket general (revisar en auditoría)
+}
+function _mesDesdeFecha(fechaVal){
+  // Admite fecha como texto (YYYY-MM-DD, DD/MM/YYYY) o número de serie de Excel
+  var d;
+  if (typeof fechaVal === 'number'){
+    d = new Date(Math.round((fechaVal - 25569) * 86400 * 1000));
+  } else {
+    var s = String(fechaVal||'').trim();
+    var m1 = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    var m2 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (m1) d = new Date(+m1[1], +m1[2]-1, +m1[3]);
+    else if (m2) d = new Date(+m2[3], +m2[2]-1, +m2[1]);
+    else return null;
+  }
+  if (isNaN(d.getTime())) return null;
+  return { anio: d.getFullYear(), mes: d.getMonth()+1, fechaISO: d.toISOString().slice(0,10) };
+}
+
+function procesarFilasCore(rows, nombreArchivo){
+  if (!rows.length) return {ok:false, msg:'Archivo vacío.'};
+  var mapa = _mapearColumnas(rows[0]);
+  var colFecha = _buscarCol(mapa, ['FECHA']);
+  var colTipo = _buscarCol(mapa, ['TIPO_EGRESO']);
+  var colConc = _buscarCol(mapa, ['DESC_CONCEPTO_PAGO','CONCEPTO_PAGO']);
+  var colDesc = _buscarCol(mapa, ['DESCRIPCION']);
+  var colMontoBs = _buscarCol(mapa, ['MONTO']);
+  var colTasa = _buscarCol(mapa, ['TASA']);
+  var colMontoUsd = _buscarCol(mapa, ['MONTO_DOLARES','MONTO_USD','MONTO_DÓLARES']);
+  var colBenef = _buscarCol(mapa, ['NM_BENEFICIARIO','BENEFICIARIO']);
+  if (colFecha===-1 || colMontoBs===-1){
+    return {ok:false, msg:'No se reconocen las columnas esperadas (FECHA, MONTO...). Verifica que sea el archivo de Extracción de Egresos del CORE.'};
+  }
+  var nuevos = [], mesesVistos = {};
+  for (var i=1;i<rows.length;i++){
+    var row = rows[i];
+    if (!row || !row[colFecha]) continue;
+    var fi = _mesDesdeFecha(row[colFecha]);
+    if (!fi) continue;
+    mesesVistos[fi.mes] = true;
+    var conc = colConc>=0 ? String(row[colConc]||'') : '';
+    var desc = colDesc>=0 ? String(row[colDesc]||'') : '';
+    var tipo = colTipo>=0 ? String(row[colTipo]||'') : '';
+    var bs = colMontoBs>=0 ? parseFloat(row[colMontoBs])||0 : 0;
+    var tasa = colTasa>=0 ? parseFloat(row[colTasa])||0 : 0;
+    var usd = colMontoUsd>=0 ? parseFloat(row[colMontoUsd])||0 : (tasa>0 ? bs/tasa : 0);
+    var benef = colBenef>=0 ? String(row[colBenef]||'') : '';
+    var cat = _categorizar(conc+' '+desc+' '+tipo);
+    nuevos.push({
+      id: 'CORE_'+fi.mes+'_'+i, fecha: fi.fechaISO, mes: fi.mes, mn: MN[fi.mes]||('Mes '+fi.mes),
+      tipo: tipo, conc: conc, desc: desc, benef: benef, cta: '', tp:'', nu:String(i),
+      bs: Math.round(bs*100)/100, tasa: tasa, usd: Math.round(usd*100)/100, cat: cat, src: 'CORE'
+    });
+  }
+  if (!nuevos.length) return {ok:false, msg:'No se encontraron filas válidas con fecha reconocible.'};
+  if (!window.__TF_RAW) window.__TF_RAW = {meta:{}, regs:[], resumen:{}};
+  window.__TF_RAW.regs = window.__TF_RAW.regs.concat(nuevos);
+  TF_DATA = window.__TF_RAW;
+  Object.keys(mesesVistos).forEach(function(m){ recalcularResumenDesdeRegs(parseInt(m,10)); });
+  auditar(nuevos, nuevos.length);
+  return {ok:true, filas:nuevos.length, meses:Object.keys(mesesVistos).map(Number)};
+}
+
+function procesarFilasMayor(rows, nombreArchivo){
+  if (!rows.length) return {ok:false, msg:'Archivo vacío.'};
+  // Formato documentado: col.2 = CTA o N° de asiento (12 dígitos); DEBITO=col.13; CREDITO=col.14
+  // Se usan índices 0-based: col.2 -> índice 1; col.13 -> índice 12; col.14 -> índice 13
+  var IDX_CTA = 1, IDX_DEBITO = 12, IDX_CREDITO = 13;
+  var nuevos = [], mesesVistos = {}, asientoActual = null;
+  for (var i=0;i<rows.length;i++){
+    var row = rows[i];
+    if (!row || row[IDX_CTA]===undefined) continue;
+    var celda = String(row[IDX_CTA]||'').trim();
+    if (/^\d{12}$/.test(celda)){
+      asientoActual = celda; // fila de encabezado del asiento — no tiene monto propio
+      continue;
+    }
+    var ctaLimpia = celda.replace(/\D/g,'');
+    if (!ctaLimpia || !asientoActual) continue;
+    var esPersonal = ctaLimpia.indexOf('3381010')===0;
+    var esEF = ctaLimpia.indexOf('338102')===0;
+    if (!esPersonal && !esEF) continue; // esta carga solo cubre Personal y EF, por diseño documentado
+    var debito = parseFloat(row[IDX_DEBITO])||0, credito = parseFloat(row[IDX_CREDITO])||0;
+    var monto = debito - credito; // movimiento neto de la cuenta
+    if (!monto) continue;
+    // El año/mes del asiento viene codificado en el propio número: AAAAMM######
+    var anio = parseInt(asientoActual.substring(0,4),10), mes = parseInt(asientoActual.substring(4,6),10);
+    if (!mes || mes<1 || mes>12) continue;
+    mesesVistos[mes] = true;
+    var cat = esPersonal ? 'nomina_personal' : 'costo_bancario';
+    var asientoFlag = REGLAS.asientos[asientoActual];
+    var mesPad = String(mes).padStart(2,'0');
+    var tasaMes = (typeof TA_BCV!=='undefined' && TA_BCV[mesPad]) ? TA_BCV[mesPad] : 0;
+    // IMPORTANTE: se preserva el signo (débito=+, crédito=− como reverso) para que el
+    // resumen agregado NETEE correctamente en vez de sumar todo como positivo.
+    var montoUsd = tasaMes>0 ? monto/tasaMes : 0;
+    nuevos.push({
+      id: asientoActual+'_'+i, fecha:'', mes: mes, mn: MN[mes]||('Mes '+mes),
+      tipo: esPersonal?'Nómina Personal':'Egresos Financieros', conc:'', desc: asientoFlag||'', benef:'',
+      cta: celda, tp:'', nu: asientoActual,
+      bs: Math.round(monto*100)/100, tasa: tasaMes, usd: Math.round(montoUsd*100)/100, cat: cat, src: 'MAYOR'
+    });
+  }
+  if (!nuevos.length) return {ok:false, msg:'No se encontraron movimientos de Nómina Personal (3 381 01 01) o Costo Bancario/EF (3 381 02) reconocibles.'};
+  if (!window.__TF_RAW) window.__TF_RAW = {meta:{}, regs:[], resumen:{}};
+  window.__TF_RAW.regs = window.__TF_RAW.regs.concat(nuevos);
+  TF_DATA = window.__TF_RAW;
+  Object.keys(mesesVistos).forEach(function(m){ recalcularResumenDesdeRegs(parseInt(m,10)); });
+  auditar(nuevos, nuevos.length);
+  return {ok:true, filas:nuevos.length, meses:Object.keys(mesesVistos).map(Number)};
+}
+
 window.cdCargarCore=function(input){
   if(!input.files[0])return;
-  var fn=input.files[0].name;
-  document.getElementById("cds-core").innerHTML="<span class=\"cd-status ok\">&#10003; "+fn+" seleccionado. Auditando datos del CORE...</span>";
+  var file=input.files[0], fn=file.name;
+  document.getElementById("cds-core").innerHTML="<span class=\"cd-status pend\">Leyendo "+fn+"...</span>";
+  var reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      var wb = XLSX.read(e.target.result, {type:'array'});
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:true});
+      var res = procesarFilasCore(rows, fn);
+      if (res.ok){
+        document.getElementById("cds-core").innerHTML="<span class=\"cd-status ok\">&#10003; "+fn+" — "+res.filas+" fila(s) procesadas ("+res.meses.map(function(m){return MN[m]||m;}).join(', ')+"). Auditado.</span>";
+        if (typeof renderFCTree==='function' && document.getElementById('fc-tree')) renderFCTree();
+      } else {
+        document.getElementById("cds-core").innerHTML="<span class=\"cd-status err\">&#10007; "+res.msg+"</span>";
+      }
+    }catch(err){
+      document.getElementById("cds-core").innerHTML="<span class=\"cd-status err\">&#10007; Error leyendo el archivo: "+err.message+"</span>";
+    }
+  };
+  reader.onerror = function(){ document.getElementById("cds-core").innerHTML="<span class=\"cd-status err\">&#10007; No se pudo leer el archivo.</span>"; };
   document.getElementById("cdz-core").querySelector(".cd-drop-sub").textContent=fn;
-  // Auditar datos embebidos actuales del CORE
-  if(typeof window.__TF_RAW!=="undefined"){
-    var regs=window.__TF_RAW.regs.filter(function(r){return r.src==="CORE";});
-    auditar(regs,regs.length);
-  }
+  reader.readAsArrayBuffer(file);
 };
 window.cdCargarMayor=function(input){
   if(!input.files[0])return;
-  var fn=input.files[0].name;
-  document.getElementById("cds-mayor").innerHTML="<span class=\"cd-status ok\">&#10003; "+fn+" seleccionado. Auditando Mayor Anal&#237;tico...</span>";
+  var file=input.files[0], fn=file.name;
+  document.getElementById("cds-mayor").innerHTML="<span class=\"cd-status pend\">Leyendo "+fn+"...</span>";
+  var reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      var wb = XLSX.read(e.target.result, {type:'array'});
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:true});
+      var res = procesarFilasMayor(rows, fn);
+      if (res.ok){
+        document.getElementById("cds-mayor").innerHTML="<span class=\"cd-status ok\">&#10003; "+fn+" — "+res.filas+" movimiento(s) de Personal/EF procesados ("+res.meses.map(function(m){return MN[m]||m;}).join(', ')+"). Auditado.</span>";
+        if (typeof renderFCTree==='function' && document.getElementById('fc-tree')) renderFCTree();
+      } else {
+        document.getElementById("cds-mayor").innerHTML="<span class=\"cd-status err\">&#10007; "+res.msg+"</span>";
+      }
+    }catch(err){
+      document.getElementById("cds-mayor").innerHTML="<span class=\"cd-status err\">&#10007; Error leyendo el archivo: "+err.message+"</span>";
+    }
+  };
+  reader.onerror = function(){ document.getElementById("cds-mayor").innerHTML="<span class=\"cd-status err\">&#10007; No se pudo leer el archivo.</span>"; };
   document.getElementById("cdz-mayor").querySelector(".cd-drop-sub").textContent=fn;
-  if(typeof window.__TF_RAW!=="undefined"){
-    var regs=window.__TF_RAW.regs.filter(function(r){return r.src==="MAYOR";});
-    auditar(regs,window.__TF_RAW.regs.length);
-  }
+  reader.readAsArrayBuffer(file);
 };
+
 
 function auditar(regs,totalRev){
   AUD_ITEMS=[];
@@ -2677,10 +2997,17 @@ window.audAplicarAprobados=function(){
   if(!window.__TF_RAW){alert("Datos no disponibles.");return;}
   apro.forEach(function(a){
     var orig=window.__TF_RAW.regs.find(function(r){return r.id===a.r.id;});
-    if(orig)orig.cat=a.cat_sug;
+    if(orig){
+      orig.cat_original_pre_reclasif = orig.cat_original_pre_reclasif || orig.cat; // trazabilidad de la reclasificación
+      orig.cat=a.cat_sug;
+      orig.reclasificado_el = new Date().toLocaleString('es-VE');
+    }
   });
-  // Recalcular resumen
-  var ML=[1,2,3,4,5];
+  // Recalcular resumen — TODOS los meses presentes en los datos (Enero-Mayo certificados + Junio en adelante),
+  // no solo un rango fijo, para que una reclasificación de un mes dinámico también se refleje.
+  var mesesPresentes = {};
+  window.__TF_RAW.regs.forEach(function(r){ if(r.mes) mesesPresentes[r.mes]=true; });
+  var ML = Object.keys(mesesPresentes).map(Number).sort(function(a,b){return a-b;});
   Object.keys(window.__TF_RAW.resumen).forEach(function(cat){
     ML.forEach(function(mi){
       window.__TF_RAW.resumen[cat].m[mi]=Math.round(
@@ -2691,6 +3018,7 @@ window.audAplicarAprobados=function(){
   });
   // Notificar al FC
   if(typeof window.tfActualizarDesdeAuditoria==="function")window.tfActualizarDesdeAuditoria();
+  if(typeof renderMantenimientoJunio==="function")renderMantenimientoJunio();
   var n=apro.length;
   alert(n+" reclasificaci"+( n===1?"on":"ones")+" aplicada"+(n===1?"":"s")+" al Dashboard de Flujo de Caja.");
   renderAudit();
