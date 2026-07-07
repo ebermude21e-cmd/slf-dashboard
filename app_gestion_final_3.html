@@ -1248,11 +1248,11 @@ tr.tfd-en-revision{background:var(--tgol)!important;font-weight:700}
 <script>
 (function(){
 "use strict";
-var ML=[1,2,3,4,5];
-var MN={1:"Enero",2:"Febrero",3:"Marzo",4:"Abril",5:"Mayo"};
-var TA_BCV={"01": 341.6031, "02": 392.7643, "03": 446.6732, "04": 479.967, "05": 515.7295};
-var CAT_COLS={siniestros:"#8B0000",telemedicina:"#2E7D32",promocion_venta:"#1F497D",nomina_personal:"#4B2D8F",nomina_gerentes:"#7B1FA2",difer_cambiario:"#E65100",gastos_adm:"#37474F",impuestos:"#5C3317",soporte_tecnico:"#1565C0",costo_bancario:"#00695C",presidencia:"#B07A00",devoluciones:"#78909C",beneficios_emp:"#2E7D32"};
-var CAT_LBL={siniestros:"Siniestros Pagados",telemedicina:"Gastos Gpo. Nueve Once (Telemedicina)",promocion_venta:"Gastos de Promoción y Venta",nomina_personal:"Nómina Personal (Mayor Analítico)",nomina_gerentes:"Nómina Gerentes (Divisas)",difer_cambiario:"Diferencial Cambiario Nómina",gastos_adm:"Gastos de Administración",impuestos:"Impuestos y Contribuciones",soporte_tecnico:"Soporte Técnico y Sistemas",costo_bancario:"Costo Bancario",presidencia:"Gastos de Presidencia",devoluciones:"Devoluciones / Reintegros",beneficios_emp:"Beneficios Empleados"};
+window.ML=[1,2,3,4,5];
+window.MN={1:"Enero",2:"Febrero",3:"Marzo",4:"Abril",5:"Mayo"};
+window.TA_BCV={"01": 341.6031, "02": 392.7643, "03": 446.6732, "04": 479.967, "05": 515.7295};
+window.CAT_COLS={siniestros:"#8B0000",telemedicina:"#2E7D32",promocion_venta:"#1F497D",nomina_personal:"#4B2D8F",nomina_gerentes:"#7B1FA2",difer_cambiario:"#E65100",gastos_adm:"#37474F",impuestos:"#5C3317",soporte_tecnico:"#1565C0",costo_bancario:"#00695C",presidencia:"#B07A00",devoluciones:"#78909C",beneficios_emp:"#2E7D32"};
+window.CAT_LBL={siniestros:"Siniestros Pagados",telemedicina:"Gastos Gpo. Nueve Once (Telemedicina)",promocion_venta:"Gastos de Promoción y Venta",nomina_personal:"Nómina Personal (Mayor Analítico)",nomina_gerentes:"Nómina Gerentes (Divisas)",difer_cambiario:"Diferencial Cambiario Nómina",gastos_adm:"Gastos de Administración",impuestos:"Impuestos y Contribuciones",soporte_tecnico:"Soporte Técnico y Sistemas",costo_bancario:"Costo Bancario",presidencia:"Gastos de Presidencia",devoluciones:"Devoluciones / Reintegros",beneficios_emp:"Beneficios Empleados"};
 var CAT_ICONS={siniestros:"",telemedicina:"",promocion_venta:"",nomina_personal:"",nomina_gerentes:"",difer_cambiario:"",gastos_adm:"",impuestos:"",soporte_tecnico:"",costo_bancario:"",presidencia:"",devoluciones:"",beneficios_emp:""};
 var FC_BLOQUES=[{lbl:"1. Gastos de Siniestros",cats:["siniestros","telemedicina"],tot_lbl:"Total Siniestros Incurridos"},{lbl:"2. Gastos de Comisiones",cats:["promocion_venta"],tot_lbl:"Total Comisiones"},{lbl:"3. Gasto de Administración",cats:["nomina_personal","nomina_gerentes","difer_cambiario","gastos_adm","soporte_tecnico","beneficios_emp","impuestos"],tot_lbl:"Total Gasto de Administración"},{lbl:"4. Costo Bancario",cats:["costo_bancario"],tot_lbl:"Total Costo Bancario"}];
 var TF_MES=0,TF_MES2=0,TF_DATA=null,TF_DIVISAS_EXT=[];
@@ -1695,33 +1695,33 @@ function fmtCta(s){
 /* ══════════════════════════════════════════════════════════════════
    INGESTA DE MESES NUEVOS (Junio en adelante) — motor de agregación.
    Reutiliza la infraestructura YA EXISTENTE (catVal/sumCats/grandTotal/
-   FC_BLOQUES) que ya soportaba cualquier mes vía TF_DATA.resumen[cat].m[mes].
+   FC_BLOQUES) que ya soportaba cualquier mes vía window.TF_DATA.resumen[cat].m[mes].
    Lo único que faltaba era la función que RECALCULA ese resumen a partir
    de los registros (regs) reales — antes venía pre-calculado desde Python
    para Enero-Mayo; ahora se calcula en vivo en el navegador para Junio+.
    ══════════════════════════════════════════════════════════════════ */
 function recalcularResumenDesdeRegs(mesNum){
-  if (!TF_DATA) return;
+  if (!window.TF_DATA) return;
   Object.keys(CAT_LBL).forEach(function(cat){
-    var suma = TF_DATA.regs.filter(function(r){ return r.mes===mesNum && r.cat===cat; })
+    var suma = window.TF_DATA.regs.filter(function(r){ return r.mes===mesNum && r.cat===cat; })
       .reduce(function(s,r){ return s+(r.usd||0); }, 0);
-    if (!TF_DATA.resumen[cat]) TF_DATA.resumen[cat] = {lbl:CAT_LBL[cat], m:{}, tot:0};
-    TF_DATA.resumen[cat].m[String(mesNum)] = suma;
+    if (!window.TF_DATA.resumen[cat]) window.TF_DATA.resumen[cat] = {lbl:CAT_LBL[cat], m:{}, tot:0};
+    window.TF_DATA.resumen[cat].m[String(mesNum)] = suma;
     // El acumulado (tot) se recalcula sumando TODOS los meses presentes en m,
-    // incluyendo los certificados Enero-Mayo (que ya vienen en TF_DATA.resumen)
+    // incluyendo los certificados Enero-Mayo (que ya vienen en window.TF_DATA.resumen)
     // y los nuevos meses dinámicos.
     var tot = 0;
-    Object.keys(TF_DATA.resumen[cat].m).forEach(function(k){ tot += TF_DATA.resumen[cat].m[k]||0; });
-    TF_DATA.resumen[cat].tot = tot;
+    Object.keys(window.TF_DATA.resumen[cat].m).forEach(function(k){ tot += window.TF_DATA.resumen[cat].m[k]||0; });
+    window.TF_DATA.resumen[cat].tot = tot;
   });
 }
 
 /* Meses dinámicos detectados en los datos (más allá de Enero-Mayo).
    Se usa para pintar el botón de Período correspondiente automáticamente. */
 function getMesesDinamicosDisponibles(){
-  if (!TF_DATA || !TF_DATA.regs) return [];
+  if (!window.TF_DATA || !window.TF_DATA.regs) return [];
   var set = {};
-  TF_DATA.regs.forEach(function(r){ if (r.mes>5) set[r.mes]=true; });
+  window.TF_DATA.regs.forEach(function(r){ if (r.mes>5) set[r.mes]=true; });
   return Object.keys(set).map(Number).sort(function(a,b){return a-b;});
 }
 var MESES_NOMBRE_COMPLETO = {6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
@@ -1738,8 +1738,8 @@ function renderBotonesPeriodoDinamicos(){
 }
 
 function catVal(cat,mes){
-  if(!TF_DATA)return 0;
-  var base=(TF_DATA.resumen[cat]||{m:{},tot:0});
+  if(!window.TF_DATA)return 0;
+  var base=(window.TF_DATA.resumen[cat]||{m:{},tot:0});
   var rv=mes===0?base.tot:(base.m[mes]||0);
   // Sumar divisas externas registradas
   TF_DIVISAS_EXT.forEach(function(d){
@@ -1750,8 +1750,8 @@ function catVal(cat,mes){
 function sumCats(cats,mes){return cats.reduce(function(s,c){return s+catVal(c,mes);},0);}
 function grandTotal(mes){return Object.keys(CAT_LBL).filter(function(c){return c!=='devoluciones';}).reduce(function(s,c){return s+catVal(c,mes);},0);}
 function regsParaCat(cat,mes){
-  if(!TF_DATA)return[];
-  var r=TF_DATA.regs.filter(function(x){return x.cat===cat;});
+  if(!window.TF_DATA)return[];
+  var r=window.TF_DATA.regs.filter(function(x){return x.cat===cat;});
   TF_DIVISAS_EXT.forEach(function(d){if(d.cat_fc===cat)r.push(d);});
   if(mes>0)r=r.filter(function(x){return x.mes===mes;});
   return r;
@@ -1799,7 +1799,7 @@ function renderTasaChips(){
 
 // KPIs EJECUTIVOS
 function renderKPIs(){
-  if(!TF_DATA)return;
+  if(!window.TF_DATA)return;
   var m=TF_MES;
   var tot=grandTotal(m);
   var sin=catVal("siniestros",m)+catVal("telemedicina",m);
@@ -1817,7 +1817,8 @@ function renderKPIs(){
   html+=kpiCard("azul","&#127974;","Costo Bancario","$"+fmt(ef),"Comisiones y financiero",(ef/tot*100).toFixed(1),"ok","costo_bancario");
   html+=kpiCard("dorado","&#11088;","Gastos de Presidencia","$"+fmt(pres),"Separado del total operacional",(pres/tot*100).toFixed(1),"warn","presidencia");
   html+=kpiCard("rojo","&#128202;","TOTAL EGRESOS","$"+fmt(tot),"Prom. mensual $"+fmt(tot/n),100,"","");
-  document.getElementById("kpi-grid").innerHTML=html;
+  var kpiGridEl = document.getElementById("kpi-grid");
+  if (kpiGridEl) kpiGridEl.innerHTML=html;
 }
 function kpiCard(tipo,icon,lbl,val,sub,pv,sem,cat){
   var p=parseFloat(pv)||0;
@@ -1846,7 +1847,7 @@ window.tfSetMes2=function(m,btn){
 
 // GRÁFICO
 function renderChart(){
-  if(!TF_DATA)return;
+  if(!window.TF_DATA)return;
   var CATS_G=["siniestros","telemedicina","promocion_venta","nomina_personal","nomina_gerentes","gastos_adm","impuestos","costo_bancario","presidencia"];
   var meses=TF_MES===0?ML:[TF_MES];
   var maxV=0;
@@ -1865,14 +1866,16 @@ function renderChart(){
          +"<div class=\"bar-lbl\">"+MN[mi].substring(0,3)+"</div>"
          +"<div class=\"bar-val\">$"+fmtK(tot)+"</div></div>";
   });
-  document.getElementById("tf-bars").innerHTML=html;
+  var barsEl = document.getElementById("tf-bars");
+  if (barsEl) barsEl.innerHTML=html;
   var ley="";
   CATS_G.forEach(function(c){
     ley+="<div class=\"ley-item\" onclick=\"t2AbrirModal('"+c+"',TF_MES)\">"
         +"<div class=\"ley-dot\" style=\"background:"+CAT_COLS[c]+"\"></div>"
         +CAT_LBL[c]+"</div>";
   });
-  document.getElementById("tf-leyenda").innerHTML=ley;
+  var leyEl = document.getElementById("tf-leyenda");
+  if (leyEl) leyEl.innerHTML=ley;
 }
 
 // ÁRBOL FC JERÁRQUICO
@@ -2011,7 +2014,7 @@ function renderFCTreeCertificado(mes){
 }
 
 function renderFCTreeCore(){
-  if(!TF_DATA){document.getElementById("fc-tree").innerHTML="";return;}
+  if(!window.TF_DATA){document.getElementById("fc-tree").innerHTML="";return;}
   var m=TF_MES2,tot=grandTotal(m),html="";
   FC_BLOQUES.forEach(function(bloque,bi){
     var bloque_tot=sumCats(bloque.cats,m);
@@ -2151,7 +2154,7 @@ window.t2AbrirModal=function(cat,mes){
   document.getElementById("t2-buscar").value="";
   document.getElementById("t2-mes-f").value=mes>0?String(mes):"";
   document.getElementById("t2-src-f").value="";
-  T2_MODAL_REGS=cat?regsParaCat(cat,mes):(TF_DATA?TF_DATA.regs.filter(function(r){return mes===0||r.mes===mes;}):[]);
+  T2_MODAL_REGS=cat?regsParaCat(cat,mes):(window.TF_DATA?window.TF_DATA.regs.filter(function(r){return mes===0||r.mes===mes;}):[]);
   t2Filtrar();
   document.getElementById("t2-modal-ov").classList.add("open");
 };
@@ -2214,9 +2217,9 @@ window.t2IrPag=function(p){T2_PAG=p;_t2det();};
 
 // EXPORTAR
 window.tfExportarCSV=function(){
-  if(!TF_DATA){alert("Sin datos");return;}
+  if(!window.TF_DATA){alert("Sin datos");return;}
   var csv="Fecha,Mes,N Egreso,Concepto,Tipo,Descripcion,Beneficiario,Cta. Contable,TP Doc.,N Documento,Monto Bs.,Tasa,Monto USD,Categoria FC,Fuente\n";
-  TF_DATA.regs.forEach(function(x){csv+='"'+x.fecha+'","'+x.mn+'","'+x.id+'","'+x.conc+'","'+x.tipo+'","'+x.desc+'","'+x.benef+'","'+x.cta+'","'+x.tp+'","'+x.nu+'",'+x.bs+","+x.tasa+","+x.usd+',"'+(CAT_LBL[x.cat]||x.cat)+'","'+x.src+'"\n';});
+  window.TF_DATA.regs.forEach(function(x){csv+='"'+x.fecha+'","'+x.mn+'","'+x.id+'","'+x.conc+'","'+x.tipo+'","'+x.desc+'","'+x.benef+'","'+x.cta+'","'+x.tp+'","'+x.nu+'",'+x.bs+","+x.tasa+","+x.usd+',"'+(CAT_LBL[x.cat]||x.cat)+'","'+x.src+'"\n';});
   _t2DL(csv,"SLF_FlujoCaja.csv");
 };
 window.t2ExportarDet=function(){
@@ -2233,14 +2236,14 @@ function _t2DL(content,filename){
 // Función para que los panes de Divisas y Carga actualicen el FC
 window.tfActualizarDesdeDivisas=function(reg){
   TF_DIVISAS_EXT.push(reg);
-  if(TF_DATA){
+  if(window.TF_DATA){
     renderKPIs();
     renderChart();
     if (document.getElementById('fc-tree')) renderFCTree();
   }
 };
 window.tfActualizarDesdeAuditoria=function(){
-  if(TF_DATA){renderKPIs();renderChart();renderFCTree();}
+  if(window.TF_DATA){renderKPIs();renderChart();renderFCTree();}
 };
 
 })();
@@ -2815,7 +2818,7 @@ function procesarFilasCore(rows, nombreArchivo){
   }
   if (!window.__TF_RAW) window.__TF_RAW = {meta:{}, regs:[], resumen:{}};
   window.__TF_RAW.regs = window.__TF_RAW.regs.concat(nuevos);
-  TF_DATA = window.__TF_RAW;
+  window.TF_DATA = window.__TF_RAW;
   Object.keys(mesesVistos).forEach(function(m){ recalcularResumenDesdeRegs(parseInt(m,10)); });
   auditar(nuevos, nuevos.length);
   return {ok:true, filas:nuevos.length, meses:Object.keys(mesesVistos).map(Number)};
@@ -2889,7 +2892,7 @@ function procesarFilasMayor(rows, nombreArchivo){
   }
   if (!window.__TF_RAW) window.__TF_RAW = {meta:{}, regs:[], resumen:{}};
   window.__TF_RAW.regs = window.__TF_RAW.regs.concat(nuevos);
-  TF_DATA = window.__TF_RAW;
+  window.TF_DATA = window.__TF_RAW;
   Object.keys(mesesVistos).forEach(function(m){ recalcularResumenDesdeRegs(parseInt(m,10)); });
   auditar(nuevos, nuevos.length);
   var desgloseCategoria;
