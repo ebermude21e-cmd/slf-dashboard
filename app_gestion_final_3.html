@@ -1791,8 +1791,18 @@ function tfdSincronizarMesesDinamicos(){
     if (!TFD_MESES[TFD_SELECCION[i]]) TFD_SELECCION.splice(i,1);
   }
   if (!TFD_SELECCION.length) TFD_SELECCION.push(TFD_MESES.length-1>0?TFD_MESES.length-2:0, TFD_MESES.length-1);
+  // La primera vez que aparece un mes dinámico (Junio+), agregarlo automáticamente a la
+  // comparación para que se vea sin tener que hacer clic manualmente en su chip.
+  if (dinamicos.length){
+    var idxMasReciente = Math.max.apply(null, dinamicos)-1;
+    if (!TFD_MESES_YA_AGREGADOS_A_SELECCION[idxMasReciente] && TFD_SELECCION.indexOf(idxMasReciente)===-1){
+      TFD_SELECCION.push(idxMasReciente);
+      TFD_MESES_YA_AGREGADOS_A_SELECCION[idxMasReciente] = true;
+    }
+  }
 }
 var TFD_MESES_SIN_PRIMA = {}; // meses dinámicos donde aún no hay Prima Cobrada cargada en Contabilidad
+var TFD_MESES_YA_AGREGADOS_A_SELECCION = {}; // evita re-agregar el mes si el usuario lo quitó a propósito
 
 window.tfdRenderAll = function(){ tfdSincronizarMesesDinamicos(); TFD_DETALLES=[]; tfdRenderBar(); tfdRenderStrip(); tfdRenderIngresos(); tfdRenderKPIs(); tfdRenderFC(); tfdActualizarReportBar(); };
 })();
@@ -2411,7 +2421,7 @@ window.tfActualizarDesdeAuditoria=function(){
         <input type="number" id="dv2-tpar" placeholder="0.0000" step="0.0001" oninput="dv2Calc()"></div>
       <div class="dv-fld"><label>Tasa BCV Promedio del Mes</label>
         <input type="number" id="dv2-tbcv" placeholder="0.0000" step="0.0001" oninput="dv2Calc()">
-        <div style="font-size:9px;color:var(--txt2);margin-top:3px">Referencia: Ene 341.60 &middot; Feb 392.76 &middot; Mar 446.67 &middot; Abr 479.97 &middot; May 515.73</div>
+        <div id="dv2-tbcv-estado" style="font-size:9px;margin-top:3px"></div>
       </div>
       <div class="dv-fld"><label>Concepto (Flujo de Caja)</label>
         <select id="dv2-concepto" onchange="dv2PoblarSubconceptos()"></select></div>
@@ -2497,7 +2507,10 @@ window.renderTesoreriaDivisas=function(){dv2PoblarMesesDinamicos();dv2PoblarConc
 var FC_BLOQUES_CON_PRESIDENCIA = null; // se arma una sola vez, sin tocar el arreglo FC_BLOQUES certificado
 window._fcBloquesParaSelector = function _fcBloquesParaSelector(){
   if (FC_BLOQUES_CON_PRESIDENCIA) return FC_BLOQUES_CON_PRESIDENCIA;
-  FC_BLOQUES_CON_PRESIDENCIA = FC_BLOQUES.concat([{lbl:'5. Gastos de Presidencia', cats:['presidencia'], tot_lbl:'Total Presidencia'}]);
+  FC_BLOQUES_CON_PRESIDENCIA = FC_BLOQUES.concat([
+    {lbl:'5. Gastos de Presidencia', cats:['presidencia'], tot_lbl:'Total Presidencia'},
+    {lbl:'6. Devoluciones y Reintegros', cats:['devoluciones'], tot_lbl:'Total Devoluciones'}
+  ]);
   return FC_BLOQUES_CON_PRESIDENCIA;
 }
 function dv2PoblarConceptos(){
@@ -2540,16 +2553,19 @@ window.dv2PoblarConceptosPagoReales = function(){
 };
 window.dv2AutoTasaBcv = function(){
   var fechaVal = document.getElementById('dv2-fecha').value; // formato YYYY-MM-DD
+  var estadoEl = document.getElementById('dv2-tbcv-estado');
   if (!fechaVal) return;
   var mesNum = parseInt(fechaVal.split('-')[1],10);
+  var nombreMes = (typeof MESES_NOMBRE_COMPLETO!=='undefined' && MESES_NOMBRE_COMPLETO[mesNum]) || (typeof MN!=='undefined' && MN[mesNum]) || ('mes '+mesNum);
   var tasa = _tasaBcvDelMes(mesNum);
   var campoTasa = document.getElementById('dv2-tbcv');
   if (tasa){
     campoTasa.value = tasa.toFixed(4);
-    campoTasa.style.background = ''; campoTasa.title = 'Autocompletada: tasa BCV promedio del mes ya cargada en el sistema';
+    campoTasa.style.background = '';
+    if (estadoEl) estadoEl.innerHTML = '<span style="color:var(--g);font-weight:700">✓ Tasa BCV de '+nombreMes+' cargada automáticamente: Bs. '+tasa.toFixed(4)+'</span>';
   } else {
     campoTasa.value = '';
-    campoTasa.title = 'No hay tasa BCV cargada para este mes — cárgala primero en Carga de Tasas BCV';
+    if (estadoEl) estadoEl.innerHTML = '<span style="color:var(--r);font-weight:700">⚠ No hay tasa BCV cargada para '+nombreMes+' todavía — súbela primero en "Carga de Tasas BCV" y vuelve a elegir la fecha.</span>';
   }
   // Sincronizar tambien el select de "Mes a Imputar" con el mes de la fecha elegida
   var selMes = document.getElementById('dv2-mes');
@@ -3808,7 +3824,17 @@ window.gmGuardar = function(){
   gmToast('Movimientos guardados — Dashboard de Flujo de Caja actualizado');
 };
 
-function renderGerencialMantenimiento(){ renderGmMesSel(); renderGmPartidas(); }
+var GM_AUTO_SALTO_HECHO = false;
+function renderGerencialMantenimiento(){
+  if (!GM_AUTO_SALTO_HECHO){
+    var dinamicos = (typeof getMesesDinamicosDisponibles==='function') ? getMesesDinamicosDisponibles() : [];
+    if (dinamicos.length){
+      GM_MES_ACTIVO = Math.max.apply(null, dinamicos); // primera vez: saltar al mes más reciente cargado
+      GM_AUTO_SALTO_HECHO = true;
+    }
+  }
+  renderGmMesSel(); renderGmPartidas();
+}
 window.renderGerencialMantenimiento = renderGerencialMantenimiento;
 
 /* ══════════ CIERRE Y APROBACIÓN ══════════ */
