@@ -1259,7 +1259,7 @@ window.TA_BCV={"01": 341.6031, "02": 392.7643, "03": 446.6732, "04": 479.967, "0
 window.CAT_COLS={siniestros:"#8B0000",telemedicina:"#2E7D32",promocion_venta:"#1F497D",nomina_personal:"#4B2D8F",nomina_gerentes:"#7B1FA2",difer_cambiario:"#E65100",gastos_adm:"#37474F",impuestos:"#5C3317",soporte_tecnico:"#1565C0",costo_bancario:"#00695C",presidencia:"#B07A00",devoluciones:"#78909C",beneficios_emp:"#2E7D32"};
 window.CAT_LBL={siniestros:"Siniestros Pagados",telemedicina:"Gastos Gpo. Nueve Once (Telemedicina)",promocion_venta:"Gastos de Promoción y Venta",nomina_personal:"Nómina Personal (Mayor Analítico)",nomina_gerentes:"Nómina Gerentes (Divisas)",difer_cambiario:"Diferencial Cambiario Nómina",gastos_adm:"Gastos de Administración",impuestos:"Impuestos y Contribuciones",soporte_tecnico:"Soporte Técnico y Sistemas",costo_bancario:"Costo Bancario",presidencia:"Gastos de Presidencia",devoluciones:"Devoluciones / Reintegros",beneficios_emp:"Beneficios Empleados"};
 var CAT_ICONS={siniestros:"",telemedicina:"",promocion_venta:"",nomina_personal:"",nomina_gerentes:"",difer_cambiario:"",gastos_adm:"",impuestos:"",soporte_tecnico:"",costo_bancario:"",presidencia:"",devoluciones:"",beneficios_emp:""};
-var FC_BLOQUES=[{lbl:"1. Gastos de Siniestros",cats:["siniestros","telemedicina"],tot_lbl:"Total Siniestros Incurridos"},{lbl:"2. Gastos de Comisiones",cats:["promocion_venta"],tot_lbl:"Total Comisiones"},{lbl:"3. Gasto de Administración",cats:["nomina_personal","nomina_gerentes","difer_cambiario","gastos_adm","soporte_tecnico","beneficios_emp","impuestos"],tot_lbl:"Total Gasto de Administración"},{lbl:"4. Costo Bancario",cats:["costo_bancario"],tot_lbl:"Total Costo Bancario"}];
+window.FC_BLOQUES=[{lbl:"1. Gastos de Siniestros",cats:["siniestros","telemedicina"],tot_lbl:"Total Siniestros Incurridos"},{lbl:"2. Gastos de Comisiones",cats:["promocion_venta"],tot_lbl:"Total Comisiones"},{lbl:"3. Gasto de Administración",cats:["nomina_personal","nomina_gerentes","difer_cambiario","gastos_adm","soporte_tecnico","beneficios_emp","impuestos"],tot_lbl:"Total Gasto de Administración"},{lbl:"4. Costo Bancario",cats:["costo_bancario"],tot_lbl:"Total Costo Bancario"}];
 var TF_MES=0,TF_MES2=0,TF_DATA=null,TF_DIVISAS_EXT=[];
 var T2_MODAL_REGS=[],T2_PAG=1,T2_POR_PAG=50,T2_DET_CACHE=[],T2_MODAL_CAT=null;
 
@@ -1703,10 +1703,25 @@ window.tfdExportarExcel = function(){
    ══════════════════════════════════════════════════════════════════ */
 function tfdSincronizarMesesDinamicos(){
   if (typeof getMesesDinamicosDisponibles!=='function') return;
-  var dinamicos = getMesesDinamicosDisponibles();
+  var dinamicos = getMesesDinamicosDisponibles(); // ej. [6] o [] si ya no hay datos de Junio+
+
+  // Truncar TODOS los arreglos de vuelta a 5 (Enero-Mayo certificado) — así, si un mes
+  // dinámico ya no tiene datos (se eliminó el archivo), desaparece del Dashboard también.
+  var arrays = [TFD_MESES,TFD_BCV,TFD_DEVOLUCIONES,TFD_PRIMA_INDIVIDUAL,TFD_PRIMA_POLAR,TFD_PRIMA,
+    TFD_SIN.segurosLaFe,TFD_SIN.grupoPolar,TFD_SIN.anticipados,TFD_SIN.grupoNueveOnce,TFD_SIN.total,
+    TFD_COM.funeasistencia,TFD_COM.callCenter,TFD_COM.promocionVenta,TFD_COM.total,
+    TFD_ADM.gastosAdministracion,TFD_ADM.anticipoProveedores,TFD_ADM.nominaGerentes,TFD_ADM.diferencialNomina,
+    TFD_ADM.gastosExtraordinarios,TFD_ADM.impuestosVarios,TFD_ADM.islrAnual,TFD_ADM.total,
+    TFD_TRIB.retenciones,TFD_TRIB.total,TFD_BAN.domiciliacion,TFD_BAN.mantenimiento,TFD_BAN.total,
+    TFD_PRES.gastosPresidencia,TFD_PRES.condominios,TFD_PRES.serviciosBasicos,TFD_PRES.gastosDiversos,
+    TFD_PRES.grupoValles,TFD_PRES.lineasCredito,TFD_PRES.zelle,TFD_PRES.total,
+    TFD_TOT.totalEgresos,TFD_TOT.totalEgresosMasPresidencia,TFD_TOT.pctTotalEgresos,
+    TFD_TOTAL_INGRESOS,TFD_SALDO_CAJA];
+  arrays.forEach(function(arr){ arr.length = 5; });
+  TFD_MESES_SIN_PRIMA = {};
+
   dinamicos.forEach(function(mNum){
     var idx = mNum-1; // indice 0-based en los arreglos TFD_
-    if (TFD_MESES[idx]) return; // ya sincronizado
     var nombre = (typeof MESES_NOMBRE_COMPLETO!=='undefined' && MESES_NOMBRE_COMPLETO[mNum]) || ('Mes '+mNum);
     TFD_MESES[idx] = nombre;
     var mesPad = String(mNum).padStart(2,'0');
@@ -1744,6 +1759,12 @@ function tfdSincronizarMesesDinamicos(){
     TFD_SALDO_CAJA[idx] = TFD_TOTAL_INGRESOS[idx]-TFD_TOT.totalEgresosMasPresidencia[idx];
     if (!TFD_PRIMA[idx]) TFD_MESES_SIN_PRIMA[mNum] = true;
   });
+
+  // Limpiar la selección de comparación: quitar índices que ya no existen (mes eliminado)
+  for (var i=TFD_SELECCION.length-1; i>=0; i--){
+    if (!TFD_MESES[TFD_SELECCION[i]]) TFD_SELECCION.splice(i,1);
+  }
+  if (!TFD_SELECCION.length) TFD_SELECCION.push(TFD_MESES.length-1>0?TFD_MESES.length-2:0, TFD_MESES.length-1);
 }
 var TFD_MESES_SIN_PRIMA = {}; // meses dinámicos donde aún no hay Prima Cobrada cargada en Contabilidad
 
@@ -2351,7 +2372,7 @@ window.tfActualizarDesdeAuditoria=function(){
   <div class="dv-form-card">
     <h3>&#128181; Registro de Compra de Divisas</h3>
     <div class="dv-fld-grid">
-      <div class="dv-fld"><label>Fecha de Compra</label><input type="date" id="dv2-fecha"></div>
+      <div class="dv-fld"><label>Fecha de Compra</label><input type="date" id="dv2-fecha" onchange="dv2AutoTasaBcv()"></div>
       <div class="dv-fld"><label>Mes a Imputar</label>
         <select id="dv2-mes">
           <option value="1">Enero 2026</option><option value="2">Febrero 2026</option>
@@ -2366,20 +2387,12 @@ window.tfActualizarDesdeAuditoria=function(){
         <input type="number" id="dv2-tbcv" placeholder="0.0000" step="0.0001" oninput="dv2Calc()">
         <div style="font-size:9px;color:var(--txt2);margin-top:3px">Referencia: Ene 341.60 &middot; Feb 392.76 &middot; Mar 446.67 &middot; Abr 479.97 &middot; May 515.73</div>
       </div>
-      <div class="dv-fld"><label>Tipo de Gasto a Imputar en FC</label>
-        <select id="dv2-tipo">
-          <option value="nomina_gerentes">N&#243;mina Gerentes</option>
-          <option value="difer_cambiario">Diferencial Cambiario</option>
-          <option value="gastos_adm">Gastos Administrativos</option>
-          <option value="presidencia">Gastos de Presidencia</option>
-          <option value="impuestos">Impuestos</option>
-        </select></div>
-      <div class="dv-fld"><label>Concepto de Pago en FC</label>
-        <input type="text" id="dv2-conc" placeholder="Ej: N&#243;mina gerencial enero..."></div>
+      <div class="dv-fld"><label>Concepto (Flujo de Caja)</label>
+        <select id="dv2-concepto" onchange="dv2PoblarSubconceptos()"></select></div>
+      <div class="dv-fld"><label>Subconcepto</label>
+        <select id="dv2-tipo"></select></div>
       <div class="dv-fld"><label>Descripci&#243;n</label>
         <input type="text" id="dv2-desc" placeholder="Descripci&#243;n breve..."></div>
-      <div class="dv-fld"><label>Beneficiario</label>
-        <input type="text" id="dv2-benef" placeholder="Nombre..."></div>
     </div>
 
     <!-- C&#193;LCULO EXPRESS CAMBIARIO EN TIEMPO REAL -->
@@ -2439,6 +2452,11 @@ function dv2PoblarMesesDinamicos(){
   var sel = document.getElementById('dv2-mes');
   if (!sel) return;
   var dinamicos = (typeof getMesesDinamicosDisponibles==='function') ? getMesesDinamicosDisponibles() : [];
+  // Quitar opciones dinámicas (value > 5) que ya no tienen datos (archivo eliminado)
+  Array.prototype.slice.call(sel.querySelectorAll('option')).forEach(function(opt){
+    var v = parseInt(opt.value,10);
+    if (v>5 && dinamicos.indexOf(v)===-1) opt.remove();
+  });
   dinamicos.forEach(function(m){
     if (sel.querySelector('option[value="'+m+'"]')) return; // ya existe, no duplicar
     var nombre = (typeof MESES_NOMBRE_COMPLETO!=='undefined' && MESES_NOMBRE_COMPLETO[m]) || ('Mes '+m);
@@ -2447,8 +2465,56 @@ function dv2PoblarMesesDinamicos(){
     sel.appendChild(opt);
   });
 }
-window.renderTesoreriaDivisas=function(){dv2PoblarMesesDinamicos();dv2RenderResumen();dv2RenderHist();};
+window.renderTesoreriaDivisas=function(){dv2PoblarMesesDinamicos();dv2PoblarConceptos();dv2RenderResumen();dv2RenderHist();};
 
+var FC_BLOQUES_CON_PRESIDENCIA = null; // se arma una sola vez, sin tocar el arreglo FC_BLOQUES certificado
+window._fcBloquesParaSelector = function _fcBloquesParaSelector(){
+  if (FC_BLOQUES_CON_PRESIDENCIA) return FC_BLOQUES_CON_PRESIDENCIA;
+  FC_BLOQUES_CON_PRESIDENCIA = FC_BLOQUES.concat([{lbl:'5. Gastos de Presidencia', cats:['presidencia'], tot_lbl:'Total Presidencia'}]);
+  return FC_BLOQUES_CON_PRESIDENCIA;
+}
+function dv2PoblarConceptos(){
+  var selC = document.getElementById('dv2-concepto');
+  if (!selC || typeof FC_BLOQUES==='undefined') return;
+  if (selC.options.length) return; // ya poblado
+  _fcBloquesParaSelector().forEach(function(b,i){
+    var opt = document.createElement('option');
+    opt.value = i; opt.textContent = b.lbl;
+    selC.appendChild(opt);
+  });
+  dv2PoblarSubconceptos();
+}
+window.dv2PoblarSubconceptos = function(){
+  var selC = document.getElementById('dv2-concepto');
+  var selS = document.getElementById('dv2-tipo');
+  if (!selC || !selS || typeof FC_BLOQUES==='undefined') return;
+  var bloque = _fcBloquesParaSelector()[parseInt(selC.value,10)||0];
+  selS.innerHTML = '';
+  bloque.cats.forEach(function(cat){
+    var opt = document.createElement('option');
+    opt.value = cat; opt.textContent = (typeof CAT_LBL!=='undefined' && CAT_LBL[cat]) || cat;
+    selS.appendChild(opt);
+  });
+};
+window.dv2AutoTasaBcv = function(){
+  var fechaVal = document.getElementById('dv2-fecha').value; // formato YYYY-MM-DD
+  if (!fechaVal) return;
+  var mes = fechaVal.split('-')[1]; // '01'..'12'
+  var tasa = (typeof TA_BCV!=='undefined') ? TA_BCV[mes] : null;
+  var campoTasa = document.getElementById('dv2-tbcv');
+  if (tasa){
+    campoTasa.value = tasa.toFixed(4);
+    campoTasa.style.background = ''; campoTasa.title = 'Autocompletada: tasa BCV promedio del mes (no hay tasa diaria cargada)';
+  } else {
+    campoTasa.value = '';
+    campoTasa.title = 'No hay tasa BCV cargada para este mes — cárgala primero en Carga de Tasas BCV';
+  }
+  // Sincronizar tambien el select de "Mes a Imputar" con el mes de la fecha elegida
+  var selMes = document.getElementById('dv2-mes');
+  var mesNum = parseInt(mes,10);
+  if (selMes && selMes.querySelector('option[value="'+mesNum+'"]')) selMes.value = String(mesNum);
+  dv2Calc();
+};
 window.dv2Calc=function(){
   var usd=parseFloat(document.getElementById("dv2-usd").value)||0;
   var tpar=parseFloat(document.getElementById("dv2-tpar").value)||0;
@@ -2478,12 +2544,11 @@ window.dv2Registrar=function(){
   var tpar=parseFloat(document.getElementById("dv2-tpar").value)||0;
   var tbcv=parseFloat(document.getElementById("dv2-tbcv").value)||0;
   var tipo=document.getElementById("dv2-tipo").value;
-  var conc=document.getElementById("dv2-conc").value.trim();
+  var conc=(typeof CAT_LBL!=='undefined' && CAT_LBL[tipo]) || tipo; // el concepto es el subconcepto elegido, sin texto libre
   var desc=document.getElementById("dv2-desc").value.trim();
-  var benef=document.getElementById("dv2-benef").value.trim();
-  if(!fecha||!usd||!tpar||!tbcv||!conc){
+  if(!fecha||!usd||!tpar||!tbcv||!tipo){
     document.getElementById("dv2-msg").style.color="var(--r)";
-    document.getElementById("dv2-msg").textContent="Complete: fecha, monto, tasas y concepto.";
+    document.getElementById("dv2-msg").textContent="Complete: fecha, monto, tasas y concepto/subconcepto.";
     return;
   }
   var monto_bs=usd*tpar;
@@ -2493,7 +2558,7 @@ window.dv2Registrar=function(){
   var idPrevio = (DV2_EDIT_IDX!==null) ? DV2_REGS[DV2_EDIT_IDX].id : "DIV_"+Date.now();
   var reg={
     id:idPrevio,fecha:fecha,mes:mes,mn:DV2_MN[mes],
-    tipo:"Compra Divisas",conc:conc,desc:desc||conc,benef:benef,
+    tipo:"Compra Divisas",conc:conc,desc:desc||conc,benef:"",
     cta:"",tp:"COMPRA DIVISAS",nu:"",
     bs:Math.round(monto_bs*100)/100,tasa:tpar,usd:usd,
     cat:tipo,cat_fc:tipo,src:"DIVISAS",
@@ -2511,7 +2576,7 @@ window.dv2Registrar=function(){
   document.getElementById("dv2-msg").style.color="var(--g)";
   document.getElementById("dv2-msg").textContent=esEdicion?"\u2713 Compra actualizada. El FC ha sido sincronizado.":"\u2713 Registrado. El FC ha sido actualizado.";
   setTimeout(function(){document.getElementById("dv2-msg").textContent="";},3000);
-  ["dv2-usd","dv2-tpar","dv2-tbcv","dv2-conc","dv2-desc","dv2-benef"].forEach(function(id){document.getElementById(id).value="";});
+  ["dv2-usd","dv2-tpar","dv2-tbcv","dv2-desc"].forEach(function(id){document.getElementById(id).value="";});
   dv2Calc();
 };
 
@@ -2523,10 +2588,11 @@ window.dv2Editar=function(i){
   document.getElementById("dv2-usd").value = d.usd;
   document.getElementById("dv2-tpar").value = d.tpar;
   document.getElementById("dv2-tbcv").value = d.tbcv;
+  // Ubicar el concepto (bloque) que contiene este subconcepto, y seleccionarlo primero
+  var idxBloque = _fcBloquesParaSelector().findIndex(function(b){ return b.cats.indexOf(d.cat_fc)>=0; });
+  if (idxBloque>=0){ document.getElementById("dv2-concepto").value = idxBloque; dv2PoblarSubconceptos(); }
   document.getElementById("dv2-tipo").value = d.cat_fc;
-  document.getElementById("dv2-conc").value = d.conc;
   document.getElementById("dv2-desc").value = d.desc;
-  document.getElementById("dv2-benef").value = d.benef;
   dv2Calc();
   document.getElementById("dv2-btn-registrar").textContent = "\u270f\ufe0f Guardar Cambios";
   document.getElementById("dv2-msg").style.color="var(--go)";
@@ -2590,7 +2656,7 @@ window.dv2Elim=function(i){
 window.dv2Exportar=function(){
   var csv="Fecha,Mes,Concepto de Pago,Descripcion,Beneficiario,Monto USD,Tasa Paralela,Tasa BCV,Monto Bs. (Paralela),Equiv. BCV USD,Costo Adq. USD,% Prima,Tipo FC\n";
   DV2_REGS.forEach(function(d){
-    csv+='"'+d.fecha+'","'+DV2_MN[d.mes]+'","'+d.conc+'","'+d.desc+'","'+(d.benef||"")+'",'+d.usd+","+d.tpar+","+d.tbcv+","+d.bs+","+d.equiv_bcv+","+d.costo_adq+","+d.prima_pct+'%,"'+DV2_CAT_LBL[d.cat_fc]+'"\n';
+    csv+='"'+d.fecha+'","'+DV2_MN[d.mes]+'","'+d.conc+'","'+d.desc+'","'+(d.benef||"")+'",'+d.usd+","+d.tpar+","+d.tbcv+","+d.bs+","+d.equiv_bcv+","+d.costo_adq+","+d.prima_pct+'%,"'+((typeof CAT_LBL!=='undefined'&&CAT_LBL[d.cat_fc])||DV2_CAT_LBL[d.cat_fc]||d.cat_fc)+'"\n';
   });
   var blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
   var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="SLF_Compras_Divisas.csv";a.click();URL.revokeObjectURL(url);
@@ -2857,13 +2923,17 @@ function procesarFilasCore(rows, nombreArchivo){
   if (!rows.length) return {ok:false, msg:'Archivo vacío.'};
   var mapa = _mapearColumnas(rows[0]);
   var colFecha = _buscarCol(mapa, ['FECHA']);
+  var colNuEgreso = _buscarCol(mapa, ['NU_EGRESO']);
   var colTipo = _buscarCol(mapa, ['TIPO_EGRESO']);
   var colConc = _buscarCol(mapa, ['DESC_CONCEPTO_PAGO','CONCEPTO_PAGO']);
   var colDesc = _buscarCol(mapa, ['DESCRIPCION']);
+  var colCta = _buscarCol(mapa, ['CTA_CONTABLE']);
   var colMontoBs = _buscarCol(mapa, ['MONTO']);
   var colTasa = _buscarCol(mapa, ['TASA']);
   var colMontoUsd = _buscarCol(mapa, ['MONTO_DOLARES','MONTO_USD','MONTO_DÓLARES']);
   var colBenef = _buscarCol(mapa, ['NM_BENEFICIARIO','BENEFICIARIO']);
+  var colTpDoc = _buscarCol(mapa, ['TP_DOCUMENTO']);
+  var colNuDoc = _buscarCol(mapa, ['NU_DOCUMENTO']);
   if (colFecha===-1 || colMontoBs===-1){
     return {ok:false, msg:'No se reconocen las columnas esperadas (FECHA, MONTO...). Verifica que sea el archivo de Extracción de Egresos del CORE.'};
   }
@@ -2882,10 +2952,14 @@ function procesarFilasCore(rows, nombreArchivo){
     var tasa = colTasa>=0 ? parseFloat(row[colTasa])||0 : 0;
     var usd = colMontoUsd>=0 ? parseFloat(row[colMontoUsd])||0 : (tasa>0 ? bs/tasa : 0);
     var benef = colBenef>=0 ? String(row[colBenef]||'') : '';
+    var nuEgreso = colNuEgreso>=0 ? String(row[colNuEgreso]||'') : '';
+    var cta = colCta>=0 ? String(row[colCta]||'') : '';
+    var tpDoc = colTpDoc>=0 ? String(row[colTpDoc]||'') : '';
+    var nuDoc = colNuDoc>=0 ? String(row[colNuDoc]||'') : '';
     var cat = _categorizar(conc+' '+desc+' '+tipo);
     nuevos.push({
       id: 'CORE_'+fi.mes+'_'+i, fecha: fi.fechaISO, mes: fi.mes, mn: MN[fi.mes]||('Mes '+fi.mes),
-      tipo: tipo, conc: conc, desc: desc, benef: benef, cta: '', tp:'', nu:String(i),
+      tipo: tipo, conc: conc, desc: desc, benef: benef, cta: cta, tp: tpDoc, nu: nuDoc, nuEgreso: nuEgreso,
       bs: Math.round(bs*100)/100, tasa: tasa, usd: Math.round(usd*100)/100, cat: cat, src: 'CORE', archivo: nombreArchivo
     });
   }
@@ -3164,8 +3238,13 @@ function renderAudit(totalRev){
   AUD_ITEMS.forEach(function(a,i){
     var cls="aud-row"+(a.estado==="APROBADO"?" aprobado":a.estado==="RECHAZADO"?" rechazado":a.tipo==="asiento"?" asiento":"");
     var es_reclass=a.cat_sug!==a.cat_actual;
+    var refReal = a.r.src==='MAYOR' ? a.r.nu : (a.r.nuEgreso||a.r.nu||'');
+    var refLbl = a.r.src==='MAYOR' ? 'N° Asiento' : 'N° Egreso';
     html+="<div class=\""+cls+"\">"+
-      "<div style=\"font-size:9px;font-family:monospace;color:var(--txt2)\">"+esc3(a.r.id)+"</div>"+
+      "<div style=\"font-size:9px;font-family:monospace;color:var(--txt2)\">"+esc3(a.r.id)+
+        (refReal?"<div style=\"font-size:10px;font-family:monospace;font-weight:800;color:var(--tp);margin-top:2px\">"+refLbl+": "+esc3(refReal)+"</div>":"")+
+        (a.r.tp||a.r.nu&&a.r.src!=='MAYOR'?"<div style=\"font-size:8px;color:var(--txt3)\">"+(a.r.tp?esc3(a.r.tp)+' ':'')+(a.r.src!=='MAYOR'&&a.r.nu?'Doc: '+esc3(a.r.nu):'')+"</div>":"")+
+      "</div>"+
       "<div style=\"font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\" title=\""+esc3(a.r.conc)+"\">"+esc3(a.r.conc)+"</div>"+
       "<div style=\"font-size:10px;color:var(--txt2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap\" title=\""+esc3(a.r.desc)+"\">"+esc3(a.r.desc)+"</div>"+
       "<div>"+
@@ -3177,12 +3256,59 @@ function renderAudit(totalRev){
       "<div class=\"aud-acts\">"+
         (a.estado==="PENDIENTE"?
           "<button class=\"ab-ok\" onclick=\"audAprobar("+i+")\">✓</button>"+
-          "<button class=\"ab-no\" onclick=\"audRechazar("+i+")\">&#10005;</button>"
+          "<button class=\"ab-no\" onclick=\"audRechazar("+i+")\">&#10005;</button>"+
+          "<button class=\"ab-no\" style=\"background:var(--tbg);color:var(--txt2)\" onclick=\"audToggleManual("+i+")\" title=\"Reclasificar manualmente a otro concepto/subconcepto\">✏️</button>"
           :(a.estado==="APROBADO"?"<span style=\"color:var(--g);font-size:10px;font-weight:700\">✓ Aprobado</span>":"<span style=\"color:var(--txt2);font-size:10px\">Rechazado</span>"))+
+      "</div>"+
+      "<div class=\"aud-manual-pop\" id=\"aud-manual-"+i+"\" style=\"display:none;grid-column:1/-1;padding:10px;background:var(--tbg);border-radius:8px;margin-top:6px;gap:8px;align-items:center\">"+
+        "<span style=\"font-size:10px;font-weight:700;color:var(--txt2)\">Reclasificar manualmente a:</span>"+
+        "<select id=\"aud-concepto-"+i+"\" onchange=\"audPoblarSubMan("+i+")\" style=\"font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--tbd)\"></select>"+
+        "<select id=\"aud-sub-"+i+"\" style=\"font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--tbd)\"></select>"+
+        "<button class=\"ab-ok\" onclick=\"audAplicarManual("+i+")\">Aplicar</button>"+
       "</div>"+
       "</div>";
   });
   document.getElementById("aud-list").innerHTML=html||"<div style=\"text-align:center;padding:24px;color:var(--txt2)\">Sin observaciones. Todos los registros est&#225;n correctamente clasificados. &#10003;</div>";
+}
+
+window.audToggleManual = function(i){
+  var pop = document.getElementById('aud-manual-'+i);
+  var abrir = pop.style.display==='none';
+  document.querySelectorAll('.aud-manual-pop').forEach(function(p){ p.style.display='none'; });
+  if (!abrir) return;
+  pop.style.display = 'flex';
+  var selC = document.getElementById('aud-concepto-'+i);
+  selC.innerHTML = '';
+  _fcBloquesParaSelector().forEach(function(b,bi){
+    var opt = document.createElement('option'); opt.value=bi; opt.textContent=b.lbl; selC.appendChild(opt);
+  });
+  audPoblarSubMan(i);
+};
+window.audPoblarSubMan = function(i){
+  var selC = document.getElementById('aud-concepto-'+i);
+  var selS = document.getElementById('aud-sub-'+i);
+  var bloque = _fcBloquesParaSelector()[parseInt(selC.value,10)||0];
+  selS.innerHTML = '';
+  bloque.cats.forEach(function(cat){
+    var opt = document.createElement('option'); opt.value=cat; opt.textContent=(CAT_LBL_CD[cat]||CAT_LBL[cat]||cat); selS.appendChild(opt);
+  });
+};
+window.audAplicarManual = function(i){
+  var nuevaCat = document.getElementById('aud-sub-'+i).value;
+  var item = AUD_ITEMS[i];
+  item.cat_sug = nuevaCat;
+  item.estado = 'APROBADO';
+  item.razon = (item.razon||'') + ' (reclasificación manual)';
+  _aplicarReclasificacionAuditoria(item);
+  renderAudit();
+};
+function _aplicarReclasificacionAuditoria(item){
+  if (item.cat_sug && item.cat_sug!==item.r.cat){
+    item.r.cat_original_pre_reclasif = item.r.cat_original_pre_reclasif || item.r.cat;
+    item.r.cat = item.cat_sug;
+    if (item.r.mes) recalcularResumenDesdeRegs(item.r.mes);
+  }
+  if (typeof renderFCTree==='function' && document.getElementById('fc-tree')) renderFCTree();
 }
 
 function fmt3(v){return(v||0).toLocaleString("es-VE",{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -3512,17 +3638,28 @@ function renderGmMovs(){
   var movs = gmMovsDe(pIdx, catIdx);
   var cerrado = GM_ESTADOS[GM_MES_ACTIVO]==='cerrado';
   var nCambios = gmContarCambios(pIdx, catIdx);
+  var filtro = (document.getElementById('gm-buscador') ? document.getElementById('gm-buscador').value : '').trim().toLowerCase();
 
-  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px">'
+  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;gap:10px">'
     + '<span style="font-size:10.5px;color:var(--tm)">📌 Movimientos reales — edita la descripción o elimina uno si no corresponde.</span>'
     + '<div style="display:flex;gap:8px">'
     + (nCambios>0 ? '<button class="gm-btn-reporte" onclick="gmVerCambios()">📋 Ver cambios ('+nCambios+')</button>' : '')
     + (cerrado?'':'<button class="gm-btn-add" onclick="gmAgregarMov()">➕ Incluir movimiento</button>')
     + '</div></div>';
 
+  html += '<div style="margin-bottom:10px"><input type="text" id="gm-buscador" placeholder="🔎 Buscar por fecha, N° asiento, tipo, descripción, beneficiario o monto..." '
+    + 'value="'+filtro.replace(/"/g,'&quot;')+'" oninput="gmFiltrar()" '
+    + 'style="width:100%;padding:8px 12px;border:1px solid var(--tbd);border-radius:8px;font-size:11.5px;font-family:inherit"></div>';
+
   html += '<table class="gm-mov"><thead><tr><th class="c">Quitar</th><th style="width:75px">Fecha</th><th style="width:95px">N° Asiento</th><th style="width:150px">Tipo</th><th>Descripción</th><th style="width:140px">Beneficiario</th><th class="r" style="width:95px">Monto Bs.</th><th class="r" style="width:85px">Monto USD</th></tr></thead><tbody>';
+  var totalCoincidencias = 0;
   movs.forEach(function(m, i){
     if (elim.has(i)) return;
+    if (filtro){
+      var haystack = [m.fecha,m.id,m.tipo,m.desc,m.conc,m.benef,m.usd,m.bs].join(' ').toLowerCase();
+      if (haystack.indexOf(filtro)===-1) return;
+    }
+    totalCoincidencias++;
     var descKey = key+'-'+(m.id||i);
     var descVal = GM_DESC_EDITADAS[descKey]!==undefined ? GM_DESC_EDITADAS[descKey] : (m.desc||'');
     var editada = GM_DESC_EDITADAS[descKey]!==undefined;
@@ -3538,10 +3675,15 @@ function renderGmMovs(){
       + '</tr>';
   });
   html += '</tbody></table>';
+  if (filtro) html += '<div style="font-size:10px;color:var(--ttx3);margin-top:6px">'+totalCoincidencias+' resultado(s) para "'+String(filtro).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'"</div>';
   document.getElementById('gm-body').innerHTML = html;
   document.getElementById('gm-total-sub').textContent = 'Total del subconcepto: '+gmFmt(gmTotalCat(pIdx,catIdx));
+  // Mantener el foco y el cursor en el buscador tras re-renderizar (para poder seguir escribiendo)
+  var inputBuscador = document.getElementById('gm-buscador');
+  if (inputBuscador && filtro){ inputBuscador.focus(); inputBuscador.setSelectionRange(filtro.length, filtro.length); }
 }
 
+window.gmFiltrar = function(){ renderGmMovs(); };
 window.gmToggleElim = function(i){
   var key = GM_MES_ACTIVO+'-'+GM_PARTIDA_ACTUAL+'-'+GM_CAT_ACTUAL;
   if(!GM_ELIMINADOS[key]) GM_ELIMINADOS[key] = new Set();
