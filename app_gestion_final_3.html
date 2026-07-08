@@ -1631,7 +1631,19 @@ window.tfdAbrirModal = function(idx){
   if (esHistorico){
     body += '<div class="tfd-mb-pendiente">📌 El detalle de esta cifra proviene del Flujo de Caja Histórico certificado ('+TFD_MESES[mIdx]+' 2026) — es el mismo dato que ya usan los accionistas, sin desglose transaccional adicional.</div>';
   } else {
+    var TFD_BLOQUES_CATS = {
+      '1. Gastos de Siniestros': ['siniestros','telemedicina'],
+      '2. Gastos de Comisiones': ['promocion_venta'],
+      '3. Gasto de Administración': ['nomina_personal','nomina_gerentes','difer_cambiario','gastos_adm','soporte_tecnico','beneficios_emp','impuestos'],
+      '4. Costos Tributarios': [],
+      '5. Costo Bancario': ['costo_bancario'],
+      '6. Presidencia': ['presidencia']
+    };
     var cats = TFD_CORE_MAP[d.nombre];
+    if (!cats){
+      var nombreBloque = Object.keys(TFD_BLOQUES_CATS).find(function(lbl){ return d.nombre.indexOf(lbl+' — ')===0; });
+      if (nombreBloque) cats = TFD_BLOQUES_CATS[nombreBloque];
+    }
     var regs = (cats && window.__TF_RAW) ? window.__TF_RAW.regs.filter(function(r){ return r.mes===mesNum && cats.indexOf(r.cat)>=0; }).sort(function(a,b){ return b.usd-a.usd; }) : [];
     if (regs.length){
       body += '<div class="tfd-mb-sec">Detalle real — extraído de la descripción del pago cargada (CORE/Mayor Analítico), '+TFD_MESES[mIdx]+' 2026</div>';
@@ -1821,10 +1833,21 @@ function fmtCta(s){
    de los registros (regs) reales — antes venía pre-calculado desde Python
    para Enero-Mayo; ahora se calcula en vivo en el navegador para Junio+.
    ══════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════
+   EXCLUSIÓN DE AMORTIZACIONES (no son salida real de caja) — mismo
+   criterio ya aplicado al modelo oficial certificado de Enero-Mayo
+   (ej. Póliza HCM Qualitas), extendido ahora a Junio en adelante para
+   mantener consistencia metodológica. El movimiento SIGUE siendo
+   visible en Mantenimiento para trazabilidad, pero no se suma al total.
+   ══════════════════════════════════════════════════════════════════ */
+window._esAmortizacionExcluida = function(reg){
+  var texto = ((reg.conc||'')+' '+(reg.desc||'')).toUpperCase();
+  return texto.indexOf('HCM')>=0 || texto.indexOf('QUALITAS')>=0;
+};
 function recalcularResumenDesdeRegs(mesNum){
   if (!window.TF_DATA) return;
   Object.keys(CAT_LBL).forEach(function(cat){
-    var suma = window.TF_DATA.regs.filter(function(r){ return r.mes===mesNum && r.cat===cat; })
+    var suma = window.TF_DATA.regs.filter(function(r){ return r.mes===mesNum && r.cat===cat && !_esAmortizacionExcluida(r); })
       .reduce(function(s,r){ return s+(r.usd||0); }, 0);
     if (!window.TF_DATA.resumen[cat]) window.TF_DATA.resumen[cat] = {lbl:CAT_LBL[cat], m:{}, tot:0};
     window.TF_DATA.resumen[cat].m[String(mesNum)] = suma;
@@ -3655,7 +3678,7 @@ function gmTotalCat(pIdx, catIdx){
   var elim = GM_ELIMINADOS[key] || new Set();
   var movs = gmMovsDe(pIdx, catIdx);
   var t = 0;
-  movs.forEach(function(m,i){ if(!elim.has(i)) t += (m.usd||0); });
+  movs.forEach(function(m,i){ if(!elim.has(i) && !(typeof _esAmortizacionExcluida==='function' && _esAmortizacionExcluida(m))) t += (m.usd||0); });
   return t;
 }
 
@@ -3767,11 +3790,12 @@ function renderGmMovs(){
     var descKey = key+'-'+(m.id||i);
     var descVal = GM_DESC_EDITADAS[descKey]!==undefined ? GM_DESC_EDITADAS[descKey] : (m.desc||'');
     var editada = GM_DESC_EDITADAS[descKey]!==undefined;
-    html += '<tr>'
+    var esExcluido = (typeof _esAmortizacionExcluida==='function' && _esAmortizacionExcluida(m));
+    html += '<tr'+(esExcluido?' style="opacity:.55;background:#FFF9E6"':'')+'>'
       + '<td class="c"><input type="checkbox" onchange="gmToggleElim('+i+')" '+(cerrado?'disabled':'')+'></td>'
       + '<td>'+(m.fecha||'—')+'</td>'
       + '<td style="font-family:monospace;font-size:9px;color:var(--td)">'+(m.id||'—')+'</td>'
-      + '<td style="font-size:10px">'+(m.tipo||'—')+'</td>'
+      + '<td style="font-size:10px">'+(m.tipo||'—')+(esExcluido?'<div style="font-size:8px;color:#B0700F;font-weight:800;margin-top:2px">🚫 Amortización — no cuenta en el total</div>':'')+'</td>'
       + '<td><input type="text" class="gm-desc-edit'+(editada?' editada':'')+'" value="'+String(descVal).replace(/"/g,'&quot;')+'" onchange="gmEditarDesc('+i+',this.value)" '+(cerrado?'disabled':'')+'></td>'
       + '<td style="font-size:10px">'+(m.benef||'—')+'</td>'
       + '<td class="r">Bs. '+Number(m.bs||0).toLocaleString('es-VE',{minimumFractionDigits:2})+'</td>'
