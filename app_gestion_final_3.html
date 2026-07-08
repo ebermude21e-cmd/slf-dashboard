@@ -1605,14 +1605,19 @@ window.tfdToggleGrp = function(id){
 
 /* Mapeo de líneas de árbol -> categoría real en window.__TF_RAW.regs, para trazabilidad */
 var TFD_CORE_MAP = {
-  'Siniestros Pagados (Seguros La Fe + Grupo Polar)': 'siniestros',
-  'Gastos Grupo Nueve Once': 'telemedicina',
-  'Gastos de Promoción y Venta': 'promocion_venta',
-  'Impuestos (IVA, ISLR, SUDEASEG, Patente, IGTF, Otras)': 'impuestos'
+  'Siniestros Pagados (Seguros La Fe + Grupo Polar)': ['siniestros','telemedicina'],
+  'Gastos Grupo Nueve Once': ['telemedicina'],
+  'Gastos de Promoción y Venta': ['promocion_venta'],
+  'Gastos de Administración (honorarios, servicios, varios)': ['gastos_adm','soporte_tecnico','impuestos','beneficios_emp','nomina_personal','nomina_gerentes','difer_cambiario'],
+  'Comisión Bancaria por Domiciliación en Cobranza': ['costo_bancario'],
+  'Gastos de Presidencia (incluye Condominios+Servicios+Diversos+Grupo Valles)': ['presidencia'],
+  'Impuestos (IVA, ISLR, SUDEASEG, Patente, IGTF, Otras)': ['impuestos']
 };
 window.tfdAbrirModal = function(idx){
   var d = TFD_DETALLES[idx];
   var mIdx = TFD_SELECCION[TFD_SELECCION.length-1];
+  var mesNum = mIdx+1; // TFD_MESES es 0-indexado; los regs usan mes 1-indexado
+  var esHistorico = mIdx<=4; // Enero-Mayo certificado
   TFD_MODAL_ACTUAL = {idx:idx, mIdx:mIdx};
   document.getElementById("tfd-modal-title").textContent = d.nombre;
   document.getElementById("tfd-modal-sub").textContent = TFD_MESES[mIdx]+" 2026";
@@ -1621,9 +1626,30 @@ window.tfdAbrirModal = function(idx){
   var body = '<div class="tfd-mb-big">'+tfdFmt(d.monto)+'</div>'
     + '<div class="tfd-mb-sec">Trazabilidad certificada</div>'
     + '<div class="tfd-mb-row"><span>Fuente</span><b>'+d.fuente+'</b></div>'
-    + '<div class="tfd-mb-row"><span>Fórmula / origen de la cifra</span><b>'+d.formula+'</b></div>'
-    + '<div class="tfd-mb-pendiente">📌 El detalle de esta cifra proviene del Flujo de Caja Histórico certificado ('+TFD_MESES[mIdx]+' 2026) — es el mismo dato que ya usan los accionistas, sin desglose transaccional adicional.</div>'
-    + '<div class="tfd-mb-sec" style="margin-top:14px">Nota interna <span style="font-weight:500;text-transform:none;color:var(--ttx3)">— uso exclusivo de Contabilidad/Presidencia, nunca visible al accionista</span></div>'
+    + '<div class="tfd-mb-row"><span>Fórmula / origen de la cifra</span><b>'+d.formula+'</b></div>';
+
+  if (esHistorico){
+    body += '<div class="tfd-mb-pendiente">📌 El detalle de esta cifra proviene del Flujo de Caja Histórico certificado ('+TFD_MESES[mIdx]+' 2026) — es el mismo dato que ya usan los accionistas, sin desglose transaccional adicional.</div>';
+  } else {
+    var cats = TFD_CORE_MAP[d.nombre];
+    var regs = (cats && window.__TF_RAW) ? window.__TF_RAW.regs.filter(function(r){ return r.mes===mesNum && cats.indexOf(r.cat)>=0; }).sort(function(a,b){ return b.usd-a.usd; }) : [];
+    if (regs.length){
+      body += '<div class="tfd-mb-sec">Detalle real — extraído de la descripción del pago cargada (CORE/Mayor Analítico), '+TFD_MESES[mIdx]+' 2026</div>';
+      body += '<table class="tfd-det-tbl"><thead><tr><th>Fecha</th><th>N° Egreso/Asiento</th><th>Concepto de pago</th><th>Descripción</th><th class="r">Monto USD</th></tr></thead><tbody>';
+      regs.slice(0,25).forEach(function(r){
+        var ref = r.src==='MAYOR' ? r.nu : (r.nuEgreso||r.nu||'—');
+        body += '<tr><td>'+(r.fecha||'—')+'</td><td style="font-family:monospace;font-size:9px">'+ref+'</td>'
+          + '<td>'+(r.conc||'—')+'</td><td style="color:var(--ttx2)">'+(r.desc||'—')+'</td>'
+          + '<td class="r">'+tfdFmt(r.usd)+'</td></tr>';
+      });
+      body += '</tbody></table>';
+      if (regs.length>25) body += '<p style="font-size:9px;color:var(--ttx3);margin-top:6px">... y '+(regs.length-25)+' movimiento(s) más de '+TFD_MESES[mIdx]+'.</p>';
+    } else {
+      body += '<div class="tfd-mb-pendiente">📌 Aún no hay movimientos cargados para esta partida en '+TFD_MESES[mIdx]+' — carga el CORE/Mayor Analítico de este mes para ver el detalle.</div>';
+    }
+  }
+
+  body += '<div class="tfd-mb-sec" style="margin-top:14px">Nota interna <span style="font-weight:500;text-transform:none;color:var(--ttx3)">— uso exclusivo de Contabilidad/Presidencia, nunca visible al accionista</span></div>'
     + '<div class="tfd-nota-box">'
     + (nota ? '<div class="tfd-nota-actual">🗒️ '+nota.texto+'<div class="tfd-nota-meta">Anotado '+nota.fecha+'</div></div>' : '')
     + '<textarea id="tfd-nota-in" placeholder="Ej: el accionista pidió ver el soporte de este gasto — pendiente enviar por correo...">'+(nota?nota.texto:'')+'</textarea>'
@@ -1725,7 +1751,7 @@ function tfdSincronizarMesesDinamicos(){
     var nombre = (typeof MESES_NOMBRE_COMPLETO!=='undefined' && MESES_NOMBRE_COMPLETO[mNum]) || ('Mes '+mNum);
     TFD_MESES[idx] = nombre;
     var mesPad = String(mNum).padStart(2,'0');
-    TFD_BCV[idx] = (typeof TA_BCV!=='undefined' && TA_BCV[mesPad]) || 0;
+    TFD_BCV[idx] = _tasaBcvDelMes(mNum);
 
     var sin = catVal('siniestros',mNum) + catVal('telemedicina',mNum);
     var com = catVal('promocion_venta',mNum);
@@ -2390,9 +2416,10 @@ window.tfActualizarDesdeAuditoria=function(){
       <div class="dv-fld"><label>Concepto (Flujo de Caja)</label>
         <select id="dv2-concepto" onchange="dv2PoblarSubconceptos()"></select></div>
       <div class="dv-fld"><label>Subconcepto</label>
-        <select id="dv2-tipo"></select></div>
-      <div class="dv-fld"><label>Descripci&#243;n</label>
-        <input type="text" id="dv2-desc" placeholder="Descripci&#243;n breve..."></div>
+        <select id="dv2-tipo" onchange="dv2PoblarConceptosPagoReales()"></select></div>
+      <div class="dv-fld"><label>Descripci&#243;n <span style="font-weight:400;color:var(--txt2);font-size:9px">(sugerencias de pagos ya cargados)</span></label>
+        <input type="text" id="dv2-desc" list="dv2-desc-sugerencias" placeholder="Descripci&#243;n breve o elige una sugerencia...">
+        <datalist id="dv2-desc-sugerencias"></datalist></div>
     </div>
 
     <!-- C&#193;LCULO EXPRESS CAMBIARIO EN TIEMPO REAL -->
@@ -2495,23 +2522,37 @@ window.dv2PoblarSubconceptos = function(){
     opt.value = cat; opt.textContent = (typeof CAT_LBL!=='undefined' && CAT_LBL[cat]) || cat;
     selS.appendChild(opt);
   });
+  if (typeof dv2PoblarConceptosPagoReales==='function') dv2PoblarConceptosPagoReales();
+};
+window.dv2PoblarConceptosPagoReales = function(){
+  var cat = document.getElementById('dv2-tipo').value;
+  var datalist = document.getElementById('dv2-desc-sugerencias');
+  if (!datalist) return;
+  datalist.innerHTML = '';
+  if (!window.__TF_RAW || !cat) return;
+  var vistos = {};
+  window.__TF_RAW.regs.filter(function(r){ return r.cat===cat && r.conc; }).forEach(function(r){
+    var texto = r.conc.trim();
+    if (vistos[texto]) return;
+    vistos[texto] = true;
+    var opt = document.createElement('option'); opt.value = texto; datalist.appendChild(opt);
+  });
 };
 window.dv2AutoTasaBcv = function(){
   var fechaVal = document.getElementById('dv2-fecha').value; // formato YYYY-MM-DD
   if (!fechaVal) return;
-  var mes = fechaVal.split('-')[1]; // '01'..'12'
-  var tasa = (typeof TA_BCV!=='undefined') ? TA_BCV[mes] : null;
+  var mesNum = parseInt(fechaVal.split('-')[1],10);
+  var tasa = _tasaBcvDelMes(mesNum);
   var campoTasa = document.getElementById('dv2-tbcv');
   if (tasa){
     campoTasa.value = tasa.toFixed(4);
-    campoTasa.style.background = ''; campoTasa.title = 'Autocompletada: tasa BCV promedio del mes (no hay tasa diaria cargada)';
+    campoTasa.style.background = ''; campoTasa.title = 'Autocompletada: tasa BCV promedio del mes ya cargada en el sistema';
   } else {
     campoTasa.value = '';
     campoTasa.title = 'No hay tasa BCV cargada para este mes — cárgala primero en Carga de Tasas BCV';
   }
   // Sincronizar tambien el select de "Mes a Imputar" con el mes de la fecha elegida
   var selMes = document.getElementById('dv2-mes');
-  var mesNum = parseInt(mes,10);
   if (selMes && selMes.querySelector('option[value="'+mesNum+'"]')) selMes.value = String(mesNum);
   dv2Calc();
 };
@@ -2694,7 +2735,10 @@ window.dv2Exportar=function(){
 .aud-s-lbl{font-size:9px;color:var(--txt2);font-weight:700;text-transform:uppercase}
 .aud-s-val{font-size:22px;font-weight:800;color:var(--ink2);margin-top:2px}
 .aud-actions{display:none;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
-.aud-row{padding:10px 14px;background:#fff;border-radius:8px;margin-bottom:6px;border:1px solid var(--border);display:grid;grid-template-columns:90px 1fr 1.5fr 120px 80px 110px;gap:8px;align-items:center;font-size:11px;transition:background .15s}
+.aud-row{padding:12px 16px;background:#fff;border-radius:10px;margin-bottom:8px;border:1px solid var(--border);display:grid;grid-template-columns:100px 1fr 1.2fr 200px 85px 1fr 130px;gap:12px;align-items:center;font-size:11px;transition:background .15s}
+.aud-row-header{display:grid;grid-template-columns:100px 1fr 1.2fr 200px 85px 1fr 130px;gap:12px;padding:8px 16px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--txt2);border-bottom:2px solid var(--border);margin-bottom:6px}
+.aud-clasif-actual{font-size:9px;color:var(--txt3);text-decoration:line-through;opacity:.8}
+.aud-clasif-recom{font-size:11px;font-weight:800;color:var(--g);display:flex;align-items:center;gap:4px;margin-top:2px}
 .aud-row:hover{background:var(--bg)}
 .aud-row.aprobado{border-color:var(--g);background:var(--gb)}
 .aud-row.rechazado{opacity:.55;background:#F9F9F9}
@@ -2754,9 +2798,11 @@ window.dv2Exportar=function(){
   </div>
   <div class="aud-actions" id="aud-actions">
     <button class="btn btn-primary" onclick="audAprobarTodo()" style="font-size:10px;padding:5px 14px">&#10003; Aprobar todo</button>
+    <button class="btn" onclick="audRechazarTodo()" style="font-size:10px;padding:5px 14px;border-color:var(--r);color:var(--r)">&#10005; Rechazar todo</button>
     <button class="btn" onclick="audExportarInforme()" style="font-size:10px;padding:5px 14px">&#128196; Exportar Informe a Contabilidad</button>
     <button class="btn" onclick="audAplicarAprobados()" style="font-size:10px;padding:5px 14px;border-color:var(--g);color:var(--g)">&#9889; Aplicar aprobados al FC</button>
   </div>
+  <div id="aud-list-header" style="display:none"></div>
   <div id="aud-list"></div>
 
   <!-- ══ MANTENIMIENTO DE TRANSACCIONES — MESES DINÁMICOS (JUNIO EN ADELANTE) ══ -->
@@ -2902,6 +2948,21 @@ function _categorizar(descCompleta){
   });
   return cat || 'gastos_adm'; // si ninguna regla aplica, cae en el bucket general (revisar en auditoría)
 }
+/* ══════════════════════════════════════════════════════════════════
+   TASA BCV REAL DEL MES — fuente única. Antes varias funciones leían
+   directo de TA_BCV (solo tiene Enero-Mayo certificado, nunca se
+   actualiza). La tasa que SÍ sube el usuario por archivo vive en
+   STATE.bcvRates[nombreMes].avg — hay que consultar ahí primero.
+   ══════════════════════════════════════════════════════════════════ */
+window._tasaBcvDelMes = function(mesNum){
+  var nombreMes = (typeof MESES_NOMBRE_COMPLETO!=='undefined' && MESES_NOMBRE_COMPLETO[mesNum]) || (typeof MN!=='undefined' && MN[mesNum]);
+  if (typeof STATE!=='undefined' && STATE.bcvRates && nombreMes && STATE.bcvRates[nombreMes] && STATE.bcvRates[nombreMes].avg){
+    return STATE.bcvRates[nombreMes].avg;
+  }
+  var mesPad = String(mesNum).padStart(2,'0');
+  if (typeof TA_BCV!=='undefined' && TA_BCV[mesPad]) return TA_BCV[mesPad];
+  return 0;
+};
 function _mesDesdeFecha(fechaVal){
   // Admite fecha como texto (YYYY-MM-DD, DD/MM/YYYY) o número de serie de Excel
   var d;
@@ -3026,7 +3087,7 @@ function procesarFilasMayor(rows, nombreArchivo){
     var descripcion = String(row[IDX_DESC]||'').trim();
     var cat = catPorCuenta || _categorizar(descripcion);
     var mesPad = String(mes).padStart(2,'0');
-    var tasaMes = (typeof TA_BCV!=='undefined' && TA_BCV[mesPad]) ? TA_BCV[mesPad] : 0;
+    var tasaMes = _tasaBcvDelMes(mes);
     var montoUsd = tasaMes>0 ? monto/tasaMes : 0;
     mesesVistos[mes] = true;
     nuevos.push({
@@ -3229,6 +3290,10 @@ function renderAudit(totalRev){
   document.getElementById("aud-banner").style.display=show?"":"none";
   document.getElementById("aud-summary").style.display=show?"grid":"none";
   document.getElementById("aud-actions").style.display=show?"flex":"none";
+  document.getElementById("aud-list-header").style.display=show?"grid":"none";
+  document.getElementById("aud-list-header").className="aud-row-header";
+  document.getElementById("aud-list-header").innerHTML =
+    "<div>Referencia</div><div>Concepto de pago</div><div>Descripción</div><div>Está en → Se recomienda mover a</div><div style=\"text-align:right\">Monto</div><div>Motivo de la observación</div><div>Acciones</div>";
   if(!show)return;
   document.getElementById("auds-tot").textContent=totalRev||AUD_ITEMS.length;
   document.getElementById("auds-obs").textContent=AUD_ITEMS.length;
@@ -3248,20 +3313,20 @@ function renderAudit(totalRev){
       "<div style=\"font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\" title=\""+esc3(a.r.conc)+"\">"+esc3(a.r.conc)+"</div>"+
       "<div style=\"font-size:10px;color:var(--txt2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap\" title=\""+esc3(a.r.desc)+"\">"+esc3(a.r.desc)+"</div>"+
       "<div>"+
-        "<div class=\"aud-desde\">"+CAT_LBL_CD[a.cat_actual]+"</div>"+
-        (es_reclass?"<div class=\"aud-hacia\">&rarr; "+CAT_LBL_CD[a.cat_sug]+"</div>":"<div style=\"font-size:9px;color:var(--go);font-weight:600\">&#9873; Revisar asiento</div>")+
+        "<div class=\"aud-clasif-actual\">Está en: "+CAT_LBL_CD[a.cat_actual]+"</div>"+
+        (es_reclass?"<div class=\"aud-clasif-recom\">&#8594; Mover a: "+CAT_LBL_CD[a.cat_sug]+"</div>":"<div style=\"font-size:9px;color:var(--go);font-weight:600;margin-top:2px\">&#9873; Solo revisar (no se sugiere mover)</div>")+
       "</div>"+
-      "<div class=\"aud-monto\">$"+fmt3(a.r.usd)+"</div>"+
+      "<div class=\"aud-monto\" style=\"text-align:right\">$"+fmt3(a.r.usd)+"</div>"+
       "<div class=\"aud-razon\">"+esc3(a.razon||"")+"</div>"+
       "<div class=\"aud-acts\">"+
         (a.estado==="PENDIENTE"?
-          "<button class=\"ab-ok\" onclick=\"audAprobar("+i+")\">✓</button>"+
-          "<button class=\"ab-no\" onclick=\"audRechazar("+i+")\">&#10005;</button>"+
-          "<button class=\"ab-no\" style=\"background:var(--tbg);color:var(--txt2)\" onclick=\"audToggleManual("+i+")\" title=\"Reclasificar manualmente a otro concepto/subconcepto\">✏️</button>"
+          "<button class=\"ab-ok\" onclick=\"audAprobar("+i+")\" title=\"Aprobar la reclasificación sugerida\">✓</button>"+
+          "<button class=\"ab-no\" onclick=\"audRechazar("+i+")\" title=\"Rechazar, dejar como está\">&#10005;</button>"+
+          "<button class=\"ab-no\" style=\"background:var(--tbg);color:var(--txt2)\" onclick=\"audToggleManual("+i+")\" title=\"Elegir manualmente a qué concepto/subconcepto moverlo\">✏️</button>"
           :(a.estado==="APROBADO"?"<span style=\"color:var(--g);font-size:10px;font-weight:700\">✓ Aprobado</span>":"<span style=\"color:var(--txt2);font-size:10px\">Rechazado</span>"))+
       "</div>"+
-      "<div class=\"aud-manual-pop\" id=\"aud-manual-"+i+"\" style=\"display:none;grid-column:1/-1;padding:10px;background:var(--tbg);border-radius:8px;margin-top:6px;gap:8px;align-items:center\">"+
-        "<span style=\"font-size:10px;font-weight:700;color:var(--txt2)\">Reclasificar manualmente a:</span>"+
+      "<div class=\"aud-manual-pop\" id=\"aud-manual-"+i+"\" style=\"display:none;grid-column:1/-1;padding:12px;background:var(--tbg);border-radius:8px;margin-top:6px;gap:10px;align-items:center\">"+
+        "<span style=\"font-size:10px;font-weight:700;color:var(--txt2)\">Está clasificado en <b>"+CAT_LBL_CD[a.cat_actual]+"</b> — elige a dónde moverlo:</span>"+
         "<select id=\"aud-concepto-"+i+"\" onchange=\"audPoblarSubMan("+i+")\" style=\"font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--tbd)\"></select>"+
         "<select id=\"aud-sub-"+i+"\" style=\"font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--tbd)\"></select>"+
         "<button class=\"ab-ok\" onclick=\"audAplicarManual("+i+")\">Aplicar</button>"+
@@ -3277,14 +3342,18 @@ window.audToggleManual = function(i){
   document.querySelectorAll('.aud-manual-pop').forEach(function(p){ p.style.display='none'; });
   if (!abrir) return;
   pop.style.display = 'flex';
+  var catActual = AUD_ITEMS[i].r.cat; // la categoría donde está HOY, para preseleccionar
   var selC = document.getElementById('aud-concepto-'+i);
   selC.innerHTML = '';
+  var idxBloqueActual = 0;
   _fcBloquesParaSelector().forEach(function(b,bi){
     var opt = document.createElement('option'); opt.value=bi; opt.textContent=b.lbl; selC.appendChild(opt);
+    if (b.cats.indexOf(catActual)>=0) idxBloqueActual = bi;
   });
-  audPoblarSubMan(i);
+  selC.value = idxBloqueActual;
+  audPoblarSubMan(i, catActual);
 };
-window.audPoblarSubMan = function(i){
+window.audPoblarSubMan = function(i, catActualPreseleccionar){
   var selC = document.getElementById('aud-concepto-'+i);
   var selS = document.getElementById('aud-sub-'+i);
   var bloque = _fcBloquesParaSelector()[parseInt(selC.value,10)||0];
@@ -3292,6 +3361,7 @@ window.audPoblarSubMan = function(i){
   bloque.cats.forEach(function(cat){
     var opt = document.createElement('option'); opt.value=cat; opt.textContent=(CAT_LBL_CD[cat]||CAT_LBL[cat]||cat); selS.appendChild(opt);
   });
+  if (catActualPreseleccionar && bloque.cats.indexOf(catActualPreseleccionar)>=0) selS.value = catActualPreseleccionar;
 };
 window.audAplicarManual = function(i){
   var nuevaCat = document.getElementById('aud-sub-'+i).value;
@@ -3317,6 +3387,11 @@ function esc3(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replac
 window.audAprobar=function(i){AUD_ITEMS[i].estado="APROBADO";renderAudit();};
 window.audRechazar=function(i){AUD_ITEMS[i].estado="RECHAZADO";renderAudit();};
 window.audAprobarTodo=function(){AUD_ITEMS.forEach(function(a){if(a.estado==="PENDIENTE")a.estado="APROBADO";});renderAudit();};
+window.audRechazarTodo=function(){
+  if(!confirm('¿Rechazar todas las observaciones pendientes? Las partidas quedarán tal como están, sin reclasificar.')) return;
+  AUD_ITEMS.forEach(function(a){if(a.estado==="PENDIENTE")a.estado="RECHAZADO";});
+  renderAudit();
+};
 
 window.audAplicarAprobados=function(){
   var apro=AUD_ITEMS.filter(function(a){return a.estado==="APROBADO"&&a.cat_sug!==a.cat_actual;});
