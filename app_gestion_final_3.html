@@ -2920,7 +2920,7 @@ var REGLAS={"kw":{"SINIESTRO":"siniestros","FUNERARIO":"siniestros","CEMENTERIO"
   "CESTA TICKET":"beneficios_emp","MANUTENCION":"beneficios_emp","TRANSPORTE PERSONAL":"beneficios_emp","GUARDERIA":"beneficios_emp","BONO":"nomina_personal",
   "UNIFORME":"gastos_adm","BORDADO":"gastos_adm","MOBILIARIO":"gastos_adm","MICROONDAS":"gastos_adm",
   "HCM":"gastos_adm","QUALITAS":"gastos_adm","UTILIDADES":"nomina_personal"},
-  "cta":{"3381010101":"nomina_personal","3381010102":"nomina_personal","3381010103":"nomina_personal","3381010104":"nomina_personal","3381010105":"nomina_personal","3381010108":"nomina_personal","3381010805":"nomina_personal","3381010804":"nomina_personal","3381010809":"nomina_personal","338102":"costo_bancario"},
+  "cta":{"3381010101":"nomina_personal","3381010102":"nomina_personal","3381010103":"nomina_personal","3381010104":"nomina_personal","3381010105":"nomina_personal","338102":"costo_bancario"},
   "revisar":["HCM","QUALITAS","UTILIDADES","UNIFORME","BORDADO","MOBILIARIO","MICROONDAS"],
   "asientos":{"202604000007":"E6/E8 - Asiento mecanico nomina (haber interno)","202605000186":"E7 - Reintegro San German en Sueldos","202604000010":"E9 - Reclasificacion IVA en Valores","202601010076":"E5 - Utilidades Enero (verificar politica)","202605000152":"E5 - Reverso Utilidades Mayo","202605000118":"E3 - Posible duplicado HCM Mayo","202605000038":"E3 - Posible duplicado HCM Mayo"}};
 var CAT_LBL_CD={"siniestros":"Siniestros Pagados","telemedicina":"Gastos Gpo. Nueve Once","promocion_venta":"Gastos de Promocion y Venta","nomina_personal":"Nomina Personal","nomina_gerentes":"Nomina Gerentes (Divisas)","difer_cambiario":"Diferencial Cambiario","gastos_adm":"Gastos de Administracion","impuestos":"Impuestos y Contribuciones","soporte_tecnico":"Soporte Tecnico","costo_bancario":"Costo Bancario","presidencia":"Gastos de Presidencia","devoluciones":"Devoluciones / Reintegros","beneficios_emp":"Beneficios Empleados"};
@@ -3339,7 +3339,7 @@ function renderAudit(totalRev){
           "<button class=\"ab-ok\" onclick=\"audAprobar("+i+")\" title=\"Aprobar la reclasificación sugerida\">✓</button>"+
           "<button class=\"ab-no\" onclick=\"audRechazar("+i+")\" title=\"Rechazar, dejar como está\">&#10005;</button>"+
           "<button class=\"ab-no\" style=\"background:var(--tbg);color:var(--txt2)\" onclick=\"audToggleManual("+i+")\" title=\"Elegir manualmente a qué concepto/subconcepto moverlo\">✏️</button>"
-          :(a.estado==="APROBADO"?"<span style=\"color:var(--g);font-size:10px;font-weight:700\">✓ Aprobado</span>":"<span style=\"color:var(--txt2);font-size:10px\">Rechazado</span>"))+
+          :(a.estado==="APROBADO"?"<span style=\"color:var(--g);font-size:10px;font-weight:700\">✓ Aprobado</span> <button class=\"ab-no\" style=\"background:var(--tbg);color:var(--txt2);padding:2px 7px;font-size:9px\" onclick=\"audReajustar("+i+")\" title=\"Deshacer y volver a decidir\">↺ Reajustar</button>":"<span style=\"color:var(--txt2);font-size:10px\">Rechazado</span> <button class=\"ab-no\" style=\"background:var(--tbg);color:var(--txt2);padding:2px 7px;font-size:9px\" onclick=\"audReajustar("+i+")\" title=\"Deshacer y volver a decidir\">↺ Reajustar</button>"))+
       "</div>"+
       "<div class=\"aud-manual-pop\" id=\"aud-manual-"+i+"\" style=\"display:none;grid-column:1/-1;padding:12px;background:var(--tbg);border-radius:8px;margin-top:6px;gap:10px;align-items:center\">"+
         "<span style=\"font-size:10px;font-weight:700;color:var(--txt2)\">Está clasificado en <b>"+CAT_LBL_CD[a.cat_actual]+"</b> — elige a dónde moverlo:</span>"+
@@ -3406,6 +3406,19 @@ window.audAprobarTodo=function(){AUD_ITEMS.forEach(function(a){if(a.estado==="PE
 window.audRechazarTodo=function(){
   if(!confirm('¿Rechazar todas las observaciones pendientes? Las partidas quedarán tal como están, sin reclasificar.')) return;
   AUD_ITEMS.forEach(function(a){if(a.estado==="PENDIENTE")a.estado="RECHAZADO";});
+  renderAudit();
+};
+window.audReajustar=function(i){
+  var a = AUD_ITEMS[i];
+  // Si la reclasificación ya se había aplicado de verdad al registro (cat_original_pre_reclasif
+  // guardado), hay que DESHACERLA primero — no basta con cambiar la etiqueta de estado.
+  if (a.r.cat_original_pre_reclasif && a.r.cat === a.cat_sug){
+    a.r.cat = a.r.cat_original_pre_reclasif;
+    delete a.r.cat_original_pre_reclasif;
+    if (a.r.mes) recalcularResumenDesdeRegs(a.r.mes);
+    if (typeof renderFCTree==='function' && document.getElementById('fc-tree')) renderFCTree();
+  }
+  a.estado = 'PENDIENTE';
   renderAudit();
 };
 
@@ -3742,7 +3755,7 @@ function renderGmMovs(){
     + 'value="'+filtro.replace(/"/g,'&quot;')+'" oninput="gmFiltrar()" '
     + 'style="width:100%;padding:8px 12px;border:1px solid var(--tbd);border-radius:8px;font-size:11.5px;font-family:inherit"></div>';
 
-  html += '<table class="gm-mov"><thead><tr><th class="c">Quitar</th><th style="width:75px">Fecha</th><th style="width:95px">N° Asiento</th><th style="width:150px">Tipo</th><th>Descripción</th><th style="width:140px">Beneficiario</th><th class="r" style="width:95px">Monto Bs.</th><th class="r" style="width:85px">Monto USD</th></tr></thead><tbody>';
+  html += '<table class="gm-mov"><thead><tr><th class="c">Quitar</th><th style="width:75px">Fecha</th><th style="width:95px">N° Asiento</th><th style="width:150px">Tipo</th><th>Descripción</th><th style="width:140px">Beneficiario</th><th class="r" style="width:95px">Monto Bs.</th><th class="r" style="width:85px">Monto USD</th><th style="width:60px">Reclasif.</th></tr></thead><tbody>';
   var totalCoincidencias = 0;
   movs.forEach(function(m, i){
     if (elim.has(i)) return;
@@ -3763,7 +3776,14 @@ function renderGmMovs(){
       + '<td style="font-size:10px">'+(m.benef||'—')+'</td>'
       + '<td class="r">Bs. '+Number(m.bs||0).toLocaleString('es-VE',{minimumFractionDigits:2})+'</td>'
       + '<td class="r">'+gmFmt(m.usd)+'</td>'
-      + '</tr>';
+      + '<td class="c">'+(cerrado?'—':'<button class="ab-no" style="background:var(--tbg);color:var(--txt2);padding:3px 8px" onclick="gmToggleReclasif('+i+')" title="Mover a otro concepto/subconcepto">✏️</button>')+'</td>'
+      + '</tr>'
+      + '<tr id="gm-reclasif-'+i+'" style="display:none"><td colspan="9" style="background:var(--tbg);padding:10px">'
+        + '<span style="font-size:10px;font-weight:700;color:var(--txt2);margin-right:8px">Mover este movimiento a:</span>'
+        + '<select id="gm-reclasif-concepto-'+i+'" onchange="gmPoblarReclasifSub('+i+')" style="font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--tbd);margin-right:6px"></select>'
+        + '<select id="gm-reclasif-sub-'+i+'" style="font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--tbd);margin-right:6px"></select>'
+        + '<button class="ab-ok" onclick="gmAplicarReclasif('+i+')">Aplicar</button>'
+      + '</td></tr>';
   });
   html += '</tbody></table>';
   if (filtro) html += '<div style="font-size:10px;color:var(--ttx3);margin-top:6px">'+totalCoincidencias+' resultado(s) para "'+String(filtro).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'"</div>';
@@ -3775,6 +3795,47 @@ function renderGmMovs(){
 }
 
 window.gmFiltrar = function(){ renderGmMovs(); };
+window.gmToggleReclasif = function(i){
+  var fila = document.getElementById('gm-reclasif-'+i);
+  var abrir = fila.style.display==='none';
+  document.querySelectorAll('[id^="gm-reclasif-"]').forEach(function(f){ if(f.tagName==='TR') f.style.display='none'; });
+  if (!abrir) return;
+  fila.style.display = '';
+  var movs = gmMovsDe(GM_PARTIDA_ACTUAL, GM_CAT_ACTUAL);
+  var catActual = movs[i].cat;
+  var selC = document.getElementById('gm-reclasif-concepto-'+i);
+  selC.innerHTML = '';
+  var idxBloqueActual = 0;
+  _fcBloquesParaSelector().forEach(function(b,bi){
+    var opt = document.createElement('option'); opt.value=bi; opt.textContent=b.lbl; selC.appendChild(opt);
+    if (b.cats.indexOf(catActual)>=0) idxBloqueActual = bi;
+  });
+  selC.value = idxBloqueActual;
+  gmPoblarReclasifSub(i, catActual);
+};
+window.gmPoblarReclasifSub = function(i, catActualPreseleccionar){
+  var selC = document.getElementById('gm-reclasif-concepto-'+i);
+  var selS = document.getElementById('gm-reclasif-sub-'+i);
+  var bloque = _fcBloquesParaSelector()[parseInt(selC.value,10)||0];
+  selS.innerHTML = '';
+  bloque.cats.forEach(function(cat){
+    var opt = document.createElement('option'); opt.value=cat; opt.textContent=(CAT_LBL[cat]||cat); selS.appendChild(opt);
+  });
+  if (catActualPreseleccionar && bloque.cats.indexOf(catActualPreseleccionar)>=0) selS.value = catActualPreseleccionar;
+};
+window.gmAplicarReclasif = function(i){
+  var movs = gmMovsDe(GM_PARTIDA_ACTUAL, GM_CAT_ACTUAL);
+  var reg = movs[i];
+  var nuevaCat = document.getElementById('gm-reclasif-sub-'+i).value;
+  if (!reg || nuevaCat===reg.cat) return;
+  var catAnterior = reg.cat;
+  reg.cat = nuevaCat;
+  gmRegistrarCambio('reclasificado', Object.assign({}, reg, {cat_anterior:catAnterior, cat_nueva:nuevaCat}));
+  if (reg.mes) recalcularResumenDesdeRegs(reg.mes);
+  if (typeof renderFCTree==='function' && document.getElementById('fc-tree')) renderFCTree();
+  gmToast('Movimiento reclasificado de '+(CAT_LBL[catAnterior]||catAnterior)+' a '+(CAT_LBL[nuevaCat]||nuevaCat));
+  renderGmMovs();
+};
 window.gmToggleElim = function(i){
   var key = GM_MES_ACTIVO+'-'+GM_PARTIDA_ACTUAL+'-'+GM_CAT_ACTUAL;
   if(!GM_ELIMINADOS[key]) GM_ELIMINADOS[key] = new Set();
