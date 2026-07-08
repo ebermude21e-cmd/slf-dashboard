@@ -1052,6 +1052,10 @@ table.tfd-fc-tabla tbody td{padding:9px 10px;border-bottom:1px solid #F0EDF8;tex
 .tfd-fc-var.down{background:var(--tgl);color:var(--tg)}
 tr.tfd-fc-row-total td{background:var(--tp2);color:#fff;font-weight:800;font-size:11.5px}
 tr.tfd-fc-row-total.gran td{background:linear-gradient(90deg,var(--tp2),var(--tp));font-size:12.5px}
+tr.tfd-fc-row-proyeccion td{background:#FFFBEB;border-top:1px dashed #E5C229;font-size:10.5px;color:#8A6D00}
+.tfd-btn-proy-add{background:none;border:1px dashed #E5C229;color:#8A6D00;border-radius:6px;padding:2px 8px;font-size:9px;font-weight:700;cursor:pointer;margin-left:8px}
+.tfd-btn-proy-add:hover{background:#FFF3D6}
+.tfd-proy-cell{cursor:pointer;font-weight:700;color:#8A6D00}
 tr.saldo-row td{padding:14px 10px}
 tr.saldo-row .tfd-fc-td-concepto.saldo{background:var(--s2,#F5F4F8);color:var(--ttx);font-weight:800;font-size:11.5px}
 td.tfd-fc-td-monto.saldo{cursor:pointer;text-align:center;vertical-align:middle;background:#fff;position:relative}
@@ -1178,6 +1182,25 @@ tr.tfd-en-revision{background:var(--tgol)!important;font-weight:700}
     <div style="padding:13px 18px;background:var(--tbg);display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--tbd)">
       <button class="tfd-btn tfd-btn-g" onclick="tfdCerrarReporte()">Cerrar</button>
       <button class="tfd-btn tfd-btn-p" onclick="tfdExportarExcel()">📊 Exportar a Excel</button>
+    </div>
+  </div>
+</div>
+
+<div class="tfd-modal-ov" id="tfd-proy-modal">
+  <div class="tfd-modal">
+    <div class="hdr"><div><h4>🔮 Agregar Partida de Proyección</h4><div class="sub" id="tfd-proy-mes"></div></div><span class="x" onclick="tfdCerrarFormProyeccion()">✕</span></div>
+    <div class="body" style="padding:18px">
+      <p style="font-size:11px;color:var(--ttx2);margin-bottom:12px">Se sumará como partida manual en <b id="tfd-proy-bloque-lbl"></b> — se muestra por separado de la cifra certificada, claramente marcada como proyección.</p>
+      <input type="hidden" id="tfd-proy-tipo">
+      <input type="hidden" id="tfd-proy-bloque">
+      <label style="font-size:10px;font-weight:700;color:var(--ttx2);display:block;margin-bottom:4px">Concepto</label>
+      <input type="text" id="tfd-proy-concepto" placeholder="Ej: Proyección de aumento salarial" style="width:100%;padding:8px 10px;border:1px solid var(--tbd);border-radius:7px;font-size:12px;margin-bottom:12px">
+      <label style="font-size:10px;font-weight:700;color:var(--ttx2);display:block;margin-bottom:4px">Monto (USD)</label>
+      <input type="number" id="tfd-proy-monto" placeholder="0.00" step="0.01" style="width:100%;padding:8px 10px;border:1px solid var(--tbd);border-radius:7px;font-size:12px">
+    </div>
+    <div style="padding:13px 18px;background:var(--tbg);display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--tbd)">
+      <button class="tfd-btn tfd-btn-g" onclick="tfdCerrarFormProyeccion()">Cancelar</button>
+      <button class="tfd-btn tfd-btn-p" onclick="tfdGuardarProyeccion()">💾 Guardar Proyección</button>
     </div>
   </div>
 </div>
@@ -1421,13 +1444,28 @@ function tfdRenderIngresos(){
   }
 
   var totalIngresos = TFD_MESES.map(function(_,i){ return TFD_PRIMA[i]-TFD_DEVOLUCIONES[i]; });
+  var totalConProyIng = TFD_MESES.map(function(_,i){ return totalIngresos[i] + tfdProyeccionesTotal(i,'ingreso'); });
+  var hayProyIngresos = sel.some(function(idx){ return tfdProyeccionesTotal(idx,'ingreso') > 0; });
 
   var html = '<div class="tfd-fc-card" style="overflow-x:auto"><table class="tfd-fc-tabla"><thead><tr>'+thead+'</tr></thead><tbody>';
   html += filaIng('Prima Cobrada', TFD_PRIMA, false,
       tfdSubRow('Primas Cobradas Cartera Individual', function(idx){return TFD_PRIMA_INDIVIDUAL[idx];}, FSRC, 'Celda directa, fila 11')
     + tfdSubRow('Prima Cobrada Grupo Polar (Alícuota)', function(idx){return TFD_PRIMA_POLAR[idx];}, FSRC, 'Celda directa, fila 12'), 'prima');
   html += filaIng('(–) Devoluciones de Prima', TFD_DEVOLUCIONES, false, null, null);
-  html += filaIng('Total Ingresos', totalIngresos, true, null, null);
+  html += filaIng('Total Ingresos (certificado)', totalIngresos, true, null, null);
+
+  // Fila de proyecciones manuales de ingreso — solo se muestra si existen, siempre distinguible
+  var filaProy = '<td class="tfd-fc-td-concepto">🔮 Proyecciones de Ingreso <button class="tfd-btn-proy-add" onclick="tfdAbrirFormProyeccion(\'ingreso\',null,null)" title="Agregar partida de proyección">+ Agregar</button></td>';
+  sel.forEach(function(idx, i){
+    var v = tfdProyeccionesTotal(idx,'ingreso');
+    filaProy += '<td class="tfd-fc-td-monto tfd-proy-cell" onclick="event.stopPropagation();tfdVerProyecciones('+idx+',\'ingreso\',null)">'+(v?tfdFmt(v):'—')+'</td>';
+    if (i < sel.length-1) filaProy += '<td class="tfd-fc-td-delta"></td>';
+  });
+  html += '<tr class="tfd-fc-row-proyeccion">'+filaProy+'</tr>';
+
+  if (hayProyIngresos){
+    html += filaIng('Total Ingresos + Proyecciones', totalConProyIng, true, null, null);
+  }
   html += '</tbody></table></div>';
   document.getElementById("tfd-ing").innerHTML = html;
 }
@@ -1466,6 +1504,71 @@ function tfdRenderKPIs(){
 }
 
 var TFD_DETALLES = [];
+
+/* ══════════════════════════════════════════════════════════════════
+   PARTIDAS MANUALES DE PROYECCIÓN — capa aditiva, nunca modifica las
+   cifras certificadas/calculadas. Se suman visualmente encima, en
+   filas propias claramente marcadas "🔮 Proyección", visibles para el
+   accionista. Aplica a cualquier mes, incluso los certificados.
+   ══════════════════════════════════════════════════════════════════ */
+var TFD_PROYECCIONES = []; // {id, mIdx(0-based), tipo:'gasto'|'ingreso', bloqueId(solo gasto, 'sin'|'com'|'adm'|'trib'|'ban'|'pres'), concepto, monto, fecha, autor}
+
+function tfdProyeccionesDe(mIdx, tipo, bloqueId){
+  return TFD_PROYECCIONES.filter(function(p){
+    return p.mIdx===mIdx && p.tipo===tipo && (tipo==='ingreso' || p.bloqueId===bloqueId);
+  });
+}
+function tfdProyeccionesTotal(mIdx, tipo, bloqueId){
+  return tfdProyeccionesDe(mIdx, tipo, bloqueId).reduce(function(s,p){ return s+(p.monto||0); }, 0);
+}
+function tfdProyeccionesTotalGasto(mIdx){
+  return TFD_PROYECCIONES.filter(function(p){ return p.mIdx===mIdx && p.tipo==='gasto'; }).reduce(function(s,p){ return s+(p.monto||0); }, 0);
+}
+window.tfdAbrirFormProyeccion = function(tipo, bloqueId, bloqueLbl){
+  var mIdx = TFD_SELECCION[TFD_SELECCION.length-1];
+  document.getElementById('tfd-proy-mes').textContent = TFD_MESES[mIdx]+' 2026';
+  document.getElementById('tfd-proy-tipo').value = tipo;
+  document.getElementById('tfd-proy-bloque').value = bloqueId||'';
+  document.getElementById('tfd-proy-bloque-lbl').textContent = tipo==='gasto' ? (bloqueLbl||'') : 'Ingresos';
+  document.getElementById('tfd-proy-concepto').value = '';
+  document.getElementById('tfd-proy-monto').value = '';
+  document.getElementById('tfd-proy-modal').classList.add('open');
+};
+window.tfdCerrarFormProyeccion = function(){ document.getElementById('tfd-proy-modal').classList.remove('open'); };
+window.tfdGuardarProyeccion = function(){
+  var concepto = document.getElementById('tfd-proy-concepto').value.trim();
+  var monto = parseFloat(document.getElementById('tfd-proy-monto').value);
+  if (!concepto || !monto){ alert('Completa el concepto y el monto.'); return; }
+  var mIdx = TFD_SELECCION[TFD_SELECCION.length-1];
+  var tipo = document.getElementById('tfd-proy-tipo').value;
+  var bloqueId = document.getElementById('tfd-proy-bloque').value;
+  TFD_PROYECCIONES.push({
+    id: 'PROY_'+Date.now(), mIdx: mIdx, tipo: tipo, bloqueId: bloqueId||null,
+    concepto: concepto, monto: (tipo==='gasto'? Math.abs(monto) : Math.abs(monto)),
+    fecha: new Date().toLocaleDateString('es-VE'), autor: 'Contabilidad/Presidencia'
+  });
+  tfdCerrarFormProyeccion();
+  tfdRenderIngresos(); tfdRenderFC();
+};
+window.tfdEliminarProyeccion = function(id){
+  if(!confirm('¿Eliminar esta partida de proyección?')) return;
+  TFD_PROYECCIONES = TFD_PROYECCIONES.filter(function(p){ return p.id!==id; });
+  tfdRenderIngresos(); tfdRenderFC();
+};
+window.tfdVerProyecciones = function(mIdx, tipo, bloqueId){
+  var items = tfdProyeccionesDe(mIdx, tipo, bloqueId);
+  if (!items.length) return;
+  document.getElementById("tfd-modal-title").textContent = "🔮 Proyecciones — "+(tipo==='ingreso'?'Ingresos':'Gastos');
+  document.getElementById("tfd-modal-sub").textContent = TFD_MESES[mIdx]+" 2026";
+  var body = '<div class="tfd-mb-big">'+tfdFmt(items.reduce(function(s,p){return s+p.monto;},0))+'</div>'
+    + '<div class="tfd-mb-sec">Partidas manuales de proyección</div>';
+  items.forEach(function(p){
+    body += '<div class="tfd-mb-row"><span>'+p.concepto+' <span style="color:var(--ttx3);font-size:9px">('+p.fecha+')</span></span>'
+      + '<b>'+tfdFmt(p.monto)+' <button class="tfd-mini-btn c" onclick="tfdEliminarProyeccion(\''+p.id+'\')">Eliminar</button></b></div>';
+  });
+  document.getElementById("tfd-modal-body").innerHTML = body;
+  document.getElementById("tfd-modal").classList.add("open");
+};
 function tfdRegistrar(d){ TFD_DETALLES.push(d); return TFD_DETALLES.length-1; }
 function tfdSubRow(nombre, montoFn, fuente, formula, nested){
   var sel = TFD_SELECCION;
@@ -1514,7 +1617,15 @@ function tfdRenderFC(){
     var filaDetalle = '<tr class="tfd-fc-row-detalle" id="tfd-sub-'+id+'"><td colspan="'+totalCols+'"><div class="tfd-fc-detalle-inner">'
       + '<div class="tfd-fc-detalle-hdr">Detalle — '+TFD_MESES[mIdx]+' <span>clic en el monto para ver trazabilidad</span></div>'
       + subrowsHtml + '</div></td></tr>';
-    return filaConcepto + filaDetalle;
+    // Fila de proyecciones manuales para este bloque — siempre visible con botón de agregar
+    var filaProy = '<td class="tfd-fc-td-concepto" style="padding-left:28px">🔮 Proyecciones <button class="tfd-btn-proy-add" onclick="event.stopPropagation();tfdAbrirFormProyeccion(\'gasto\',\''+id+'\',\''+nombre.replace(/'/g,"\\'")+'\')" title="Agregar partida de proyección">+ Agregar</button></td>';
+    sel.forEach(function(idx, i){
+      var v = tfdProyeccionesTotal(idx,'gasto',id);
+      filaProy += '<td class="tfd-fc-td-monto tfd-proy-cell" onclick="event.stopPropagation();tfdVerProyecciones('+idx+',\'gasto\',\''+id+'\')">'+(v?tfdFmt(v):'—')+'</td>';
+      if (i < sel.length-1) filaProy += '<td class="tfd-fc-td-delta"></td>';
+    });
+    var filaProyeccion = '<tr class="tfd-fc-row-proyeccion">'+filaProy+'</tr>';
+    return filaConcepto + filaDetalle + filaProyeccion;
   }
 
   var html = '<div class="tfd-fc-card" style="overflow-x:auto">'
@@ -1572,6 +1683,21 @@ function tfdRenderFC(){
     if (i < sel.length-1) filaGran += celdaVariacion(TFD_TOT.totalEgresosMasPresidencia[sel[i+1]], TFD_TOT.totalEgresosMasPresidencia[idx]);
   });
   html += '<tr class="tfd-fc-row-total gran">'+filaGran+'</tr>';
+
+  // Total Egresos + Proyecciones — solo se muestra si hay alguna proyeccion de gasto cargada
+  var hayProyGastos = sel.some(function(idx){ return tfdProyeccionesTotalGasto(idx) > 0; });
+  if (hayProyGastos){
+    var filaGranProy = '<td class="tfd-fc-td-concepto tot gran" style="background:#FFF3D6">🔮 Total Egresos + Presidencia + Proyecciones</td>';
+    sel.forEach(function(idx, i){
+      var vProy = TFD_TOT.totalEgresosMasPresidencia[idx] + tfdProyeccionesTotalGasto(idx);
+      filaGranProy += '<td class="tfd-fc-td-monto tot gran" style="background:#FFF3D6">'+tfdFmt(vProy)+'</td>';
+      if (i < sel.length-1){
+        var vProySig = TFD_TOT.totalEgresosMasPresidencia[sel[i+1]] + tfdProyeccionesTotalGasto(sel[i+1]);
+        filaGranProy += celdaVariacion(vProySig, vProy);
+      }
+    });
+    html += '<tr class="tfd-fc-row-total gran">'+filaGranProy+'</tr>';
+  }
 
   // ══ Saldo de Caja = Total Ingresos - (Total Egresos + Presidencia) — positivo=verde, negativo=rojo ══
   function saldoDe(idx){
