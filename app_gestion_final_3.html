@@ -303,6 +303,7 @@ table.diff td.new{background:#DCFCE7;color:var(--g);font-weight:700}
   <div class="sb-group">
     <button class="sb-main" onclick="toggleSbGroup('sb-gerencial')">🎓 Gerencial<span class="sb-arrow">▸</span></button>
     <div class="sb-sub" id="sb-gerencial">
+      <button class="sb-item" onclick="showTab('gerencial-tecnica',this)">📐 Gestión Técnica</button>
       <button class="sb-item" onclick="showTab('gerencial-mantenimiento',this)">🛠️ Mantenimiento y Análisis FC</button>
       <button class="sb-item" onclick="showTab('gerencial-cierre',this)">✅ Cierre y Aprobación</button>
       <button class="sb-item" onclick="showTab('gerencial-exportar',this)">📊 Exportar Reporte a Excel</button>
@@ -3759,6 +3760,43 @@ table.gm-mov tbody td.r{text-align:right;font-weight:700;color:var(--ink2);white
   </div>
 </div>
 
+<!-- ══ TAB: GERENCIAL · GESTIÓN TÉCNICA ══ -->
+<div class="pane" id="pane-gerencial-tecnica" style="padding:0;flex-direction:column;overflow:hidden">
+  <style>
+    #pane-gerencial-tecnica .gt-scroll{overflow:auto;padding:0 22px 28px}
+    .gt-mes-sel{display:flex;gap:8px;flex-wrap:wrap;padding:14px 22px 4px}
+    .gt-mes-btn{padding:7px 14px;border-radius:8px;border:1px solid var(--br);background:var(--s);color:var(--tm);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s}
+    .gt-mes-btn:hover{border-color:var(--p);color:var(--p)}
+    .gt-mes-btn.on{background:var(--ink2);color:#fff;border-color:var(--ink2)}
+    .gt-tbl{width:100%;border-collapse:collapse;font-size:11.5px;background:var(--s);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+    .gt-tbl th,.gt-tbl td{padding:9px 12px;text-align:right;white-space:nowrap}
+    .gt-tbl thead th{background:var(--ink2);color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;position:sticky;top:0;z-index:2}
+    .gt-tbl thead th:first-child{text-align:left}
+    .gt-tbl td.gt-concepto{text-align:left;color:var(--tm)}
+    .gt-tbl td.gt-col-total{background:var(--pb);font-weight:700}
+    .gt-tbl th.gt-col-total{background:#1c1240}
+    .gt-blk-row td{background:linear-gradient(90deg,var(--pb),transparent);color:var(--ink2);font-weight:800;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;text-align:left;border-top:2px solid var(--br)}
+    .gt-comp td.gt-concepto{padding-left:26px;color:var(--td);font-weight:500}
+    .gt-comp .gt-sign{display:inline-block;width:14px;color:var(--td);font-weight:700}
+    .gt-sub td{background:var(--s2);font-weight:800;color:var(--ink2);border-top:1px solid var(--br);border-bottom:1px solid var(--br)}
+    .gt-neg{color:#B02A2A}
+    .gt-res td{background:var(--ink2);color:#fff;font-weight:800;font-size:12.5px;border:none}
+    .gt-res td.gt-concepto{color:#fff}
+    .gt-res .gt-pos{color:#8AEFB8}
+    .gt-res .gt-neg{color:#FF9F9F}
+    .gt-note{font-size:9.5px;color:var(--td);padding:10px 22px 0;line-height:1.6}
+  </style>
+  <div class="gm-wrap">
+    <div class="gm-hdr">
+      <h1>📐 Gestión Técnica</h1>
+      <p>Resultado técnico por ramo calculado con el motor certificado del sistema, a partir del Balance de Comprobación cargado. Comisiones/gastos y siniestros se muestran en negativo, de modo que la suma de los tres bloques da el Resultado Técnico Bruto.</p>
+      <button class="btn btn-ghost" style="font-size:10.5px;margin-top:8px" onclick="irA('cuentas','sb-config')">⚙️ Configurar cuentas por ramo</button>
+    </div>
+    <div class="gt-mes-sel" id="gt-mes-sel"></div>
+    <div class="gt-scroll" id="gt-body"></div>
+  </div>
+</div>
+
 <!-- ══ TAB: GERENCIAL · EXPORTAR REPORTE A EXCEL ══ -->
 <div class="pane" id="pane-gerencial-exportar" style="padding:0;flex-direction:column;overflow:hidden">
   <div class="gm-wrap">
@@ -4627,9 +4665,139 @@ function showTab(name, btn){
   if(name==='tesoreria-flujo') renderTesoreriaFlujo();
   if(name==='tesoreria-divisas') renderTesoreriaDivisas();
   if(name==='tesoreria-carga') renderTesoreriaCarga();
+  if(name==='gerencial-tecnica') renderGestionTecnica();
   if(name==='gerencial-mantenimiento') renderGerencialMantenimiento();
   if(name==='gerencial-cierre') renderGerencialCierre();
   if(name==='gerencial-exportar') renderGerencialExportar();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  GESTIÓN TÉCNICA — matriz de resultado técnico por ramo.
+//  Solo PRESENTA los valores ya calculados por el motor certificado
+//  (STATE.months[mes].ramos, campos a..o). No recalcula nada.
+//  Convención de signo: costos (Comisiones/Gastos y Siniestros) en
+//  negativo, para que  Prima Devengada + (−Com./Gastos) + (−Siniestros)
+//  = Resultado Técnico Bruto (o = e − i − n).
+// ═══════════════════════════════════════════════════════════════════
+var GT_MES_SEL = null;
+
+// Estructura de la matriz: 3 bloques con desglose completo certificado.
+// disp = multiplicador de presentación (+1 suma / −1 resta al subtotal del bloque).
+var GT_BLOQUES = [
+  { titulo:'1 · Primas Devengadas', subField:'e',  subDisp:+1,
+    filas:[
+      {field:'a',   disp:+1}, {field:'b',  disp:-1},
+      {field:'d',   disp:+1}, {field:'dVI',disp:+1},
+      {field:'c',   disp:-1}, {field:'cIV',disp:-1}
+    ]},
+  { titulo:'2 · Total Comisiones y Gastos', subField:'i', subDisp:-1,
+    filas:[ {field:'f',disp:-1}, {field:'g',disp:-1}, {field:'h',disp:-1} ]},
+  { titulo:'3 · Siniestros Incurridos', subField:'n', subDisp:-1,
+    filas:[ {field:'j',disp:-1}, {field:'k',disp:-1}, {field:'l',disp:-1},
+            {field:'ll',disp:+1}, {field:'m',disp:+1} ]}
+];
+
+function _gtMesesConBalance(){
+  return (STATE.months||[]).filter(function(m){
+    if(!m || !m.ramos) return false;
+    return Object.keys(m.ramos).some(function(r){
+      var f = m.ramos[r]; if(!f) return false;
+      return ['a','e','i','n','o','f','g','j'].some(function(k){ return Math.abs(f[k]||0) > 0; });
+    });
+  });
+}
+
+function _gtRamosConDatos(mes){
+  return getRamosIds().filter(function(r){
+    var f = mes.ramos[r]; if(!f) return false;
+    return ['a','e','i','n','o'].some(function(k){ return Math.abs(f[k]||0) > 0; });
+  });
+}
+
+function gtSelMes(month){ GT_MES_SEL = month; renderGestionTecnica(); }
+
+function renderGestionTecnica(){
+  var host = document.getElementById('gt-body');
+  var selWrap = document.getElementById('gt-mes-sel');
+  if(!host) return;
+  var meses = _gtMesesConBalance();
+  if(!meses.length){
+    if(selWrap) selWrap.innerHTML = '';
+    host.innerHTML = '<div class="alert info" style="margin-top:18px"><span class="alert-icon">ℹ️</span>'
+      +'Aún no hay ningún <strong>Balance de Comprobación</strong> cargado. Ve a '
+      +'<strong>Contabilidad / Procesos → Carga de Balance</strong>, sube un balance y el '
+      +'resultado técnico por ramo aparecerá aquí automáticamente.</div>';
+    return;
+  }
+  if(GT_MES_SEL===null || !meses.some(function(m){ return m.month===GT_MES_SEL; }))
+    GT_MES_SEL = meses[meses.length-1].month;
+  if(selWrap){
+    selWrap.innerHTML = meses.map(function(m){
+      var on = m.month===GT_MES_SEL;
+      var lbl = String(m.month).replace(/</g,'&lt;');
+      var arg = String(m.month).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      return '<button class="gt-mes-btn'+(on?' on':'')+'" onclick="gtSelMes(\''+arg+'\')">'+lbl+'</button>';
+    }).join('');
+  }
+  var mes = meses.filter(function(m){ return m.month===GT_MES_SEL; })[0] || meses[meses.length-1];
+  host.innerHTML = _gtRenderMatriz(mes);
+}
+
+function _gtRenderMatriz(mes){
+  var ramos = _gtRamosConDatos(mes);
+  if(!ramos.length){
+    return '<div class="alert warn" style="margin-top:18px"><span class="alert-icon">⚠️</span>'
+      +'El balance de <strong>'+mes.month+'</strong> no tiene montos por ramo. Verifica el mapeo de cuentas en '
+      +'<strong>Configuración → Cuentas Contables</strong>.</div>';
+  }
+  function val(r,f){ return (mes.ramos[r] && mes.ramos[r][f]) || 0; }
+  function totF(f){ var s=0; ramos.forEach(function(r){ s += val(r,f); }); return s; }
+  function celda(v, cls){
+    var neg = v < -0.0001;
+    return '<td class="'+(cls||'')+(neg?' gt-neg':'')+'">'+fmtN(v)+'</td>';
+  }
+
+  var cols = ramos.length + 2; // concepto + ramos + total
+  var html = '<table class="gt-tbl"><thead><tr>'
+    + '<th>Concepto</th>'
+    + ramos.map(function(r){ return '<th style="border-bottom:3px solid '+ramoColor(r)+'">'+ramoLabel(r)+'</th>'; }).join('')
+    + '<th class="gt-col-total">TOTAL</th>'
+    + '</tr></thead><tbody>';
+
+  GT_BLOQUES.forEach(function(blk){
+    // Encabezado de bloque
+    html += '<tr class="gt-blk-row"><td colspan="'+cols+'">'+blk.titulo+'</td></tr>';
+    // Componentes
+    blk.filas.forEach(function(fl){
+      var signo = fl.disp<0 ? '−' : '+';
+      html += '<tr class="gt-comp"><td class="gt-concepto"><span class="gt-sign">'+signo+'</span>'
+        + (ETIQUETA_CAMPO[fl.field]||fl.field) + '</td>';
+      ramos.forEach(function(r){ html += celda(fl.disp * val(r,fl.field)); });
+      html += celda(fl.disp * totF(fl.field), 'gt-col-total');
+      html += '</tr>';
+    });
+    // Subtotal del bloque
+    html += '<tr class="gt-sub"><td class="gt-concepto">'+(ETIQUETA_CAMPO[blk.subField]||blk.subField)+'</td>';
+    ramos.forEach(function(r){ html += celda(blk.subDisp * val(r,blk.subField)); });
+    html += celda(blk.subDisp * totF(blk.subField), 'gt-col-total');
+    html += '</tr>';
+  });
+
+  // Resultado Técnico Bruto (o = e − i − n)
+  html += '<tr class="gt-res"><td class="gt-concepto">'+(ETIQUETA_CAMPO['o']||'Resultado Técnico Bruto')+'</td>';
+  ramos.forEach(function(r){
+    var o = val(r,'o'); html += '<td class="'+(o>=0?'gt-pos':'gt-neg')+'">'+fmtN(o)+'</td>';
+  });
+  var oTot = totF('o');
+  html += '<td class="gt-col-total '+(oTot>=0?'gt-pos':'gt-neg')+'">'+fmtN(oTot)+'</td>';
+  html += '</tr>';
+
+  html += '</tbody></table>';
+
+  html += '<div class="gt-note">Cifras en Bs. · Fuente: Balance de Comprobación de <strong>'+mes.month+'</strong>, '
+    + 'motor de cálculo certificado. Ecuación: <strong>Prima Devengada + (−Total Comisiones y Gastos) + (−Siniestros Incurridos) = Resultado Técnico Bruto</strong>. '
+    + 'El Gasto Adm. Prorrateado aplica la regla certificada 98%/2% según la composición de prima cobrada por ramo.</div>';
+  return html;
 }
 
 // Expande/colapsa un grupo del menú lateral. Si se abre uno, cierra los demás
