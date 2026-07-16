@@ -687,27 +687,57 @@ table.mcc-tbl tbody tr.certificada{background:rgba(13,122,78,.04)}
         </p>
       </div>
 
-      <!-- ══ RESPALDO Y RESTAURACIÓN ══ -->
+      <!-- ══ ADMINISTRACIÓN DE DATOS ══ -->
       <div class="api-config" style="margin-top:18px;border-top:1px solid var(--br);padding-top:16px">
-        <label style="font-size:11px;font-weight:700;color:var(--ink2)">💾 Respaldo y Restauración de Datos</label>
+        <label style="font-size:11px;font-weight:700;color:var(--ink2)">💾 Administración de Datos</label>
         <p style="font-size:9px;color:var(--td);margin-top:4px;margin-bottom:12px">
-          Exporta todos los datos del sistema (balances, tasas BCV/USDT, sobregiros y ajustes) a un archivo JSON.
-          Usa ese archivo para restaurar en cualquier otra computadora o navegador sin tocar la consola.
+          Respalda, restaura o reinicia los datos del sistema. Los meses <strong>certificados Enero–Mayo 2026</strong>
+          están embebidos en el sistema y <strong>nunca</strong> se ven afectados por estas acciones.
         </p>
+
+        <!-- Respaldo -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div style="background:var(--gb);border:1px solid #A8D5B8;border-radius:10px;padding:14px 16px">
-            <div style="font-size:9px;font-weight:700;color:#0D7A4E;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">⬇ Exportar datos</div>
-            <p style="font-size:9px;color:#0D7A4E;margin-bottom:10px">Descarga un archivo <strong>.json</strong> con todos los datos actuales de este navegador.</p>
+            <div style="font-size:9px;font-weight:700;color:#0D7A4E;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">⬇ Exportar respaldo JSON</div>
+            <p style="font-size:9px;color:#0D7A4E;margin-bottom:10px">Descarga un <strong>.json</strong> con todos los datos y la configuración, incluido el detalle de egresos Junio+.</p>
             <button class="btn btn-success" style="width:100%;font-size:10px" onclick="exportarDatos()">⬇ Descargar respaldo</button>
             <div id="export-status" style="margin-top:6px;font-size:9px;color:var(--td)"></div>
           </div>
           <div style="background:var(--pb);border:1px solid var(--br);border-radius:10px;padding:14px 16px">
-            <div style="font-size:9px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">⬆ Restaurar datos</div>
-            <p style="font-size:9px;color:var(--td);margin-bottom:10px">Carga un archivo <strong>.json</strong> exportado previamente. <strong>Reemplaza</strong> los datos actuales.</p>
+            <div style="font-size:9px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">⬆ Importar respaldo</div>
+            <p style="font-size:9px;color:var(--td);margin-bottom:10px">Carga un <strong>.json</strong> exportado previamente. <strong>Reemplaza</strong> los datos actuales.</p>
             <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importarDatos(event)">
             <button class="btn btn-primary" style="width:100%;font-size:10px" onclick="document.getElementById('import-file-input').click()">⬆ Cargar respaldo</button>
             <div id="import-status" style="margin-top:6px;font-size:9px;color:var(--td)"></div>
           </div>
+        </div>
+
+        <!-- Zona de peligro -->
+        <div style="margin-top:14px;background:#FFF5F5;border:1px solid #F3C0C0;border-radius:10px;padding:14px 16px">
+          <div style="font-size:9px;font-weight:700;color:#B02A2A;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">⚠️ Zona de peligro — acciones destructivas</div>
+          <p style="font-size:9px;color:#8A3A3A;margin-bottom:12px">
+            Estas acciones borran datos de forma <strong>irreversible</strong> en este navegador. Descarga un respaldo antes de usarlas.
+          </p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <button class="btn btn-ghost" style="font-size:10px;border-color:#E0A0A0;color:#B02A2A" onclick="borrarSoloMovimientos()">
+              🗑️ Borrar solo movimientos
+            </button>
+            <button class="btn btn-ghost" style="font-size:10px;border-color:#E0A0A0;color:#B02A2A" onclick="borrarTodosLosDatos()">
+              🧹 Borrar todos los datos
+            </button>
+            <button class="btn btn-ghost" style="font-size:10px" onclick="reiniciarApp()">
+              🔄 Reiniciar aplicación
+            </button>
+            <button class="btn btn-ghost" style="font-size:10px;border-color:#9BC0A0;color:#0D7A4E" onclick="hacerNuevoAmbiente()">
+              🌱 Hacer nuevo ambiente
+            </button>
+          </div>
+          <p style="font-size:8.5px;color:#8A3A3A;margin-top:10px;line-height:1.5">
+            <strong>Borrar solo movimientos:</strong> elimina balances Junio+, egresos, sobregiros, saldos crudos y ajustes; conserva la configuración (API, cuentas, KPIs, ramos, tasas BCV).<br>
+            <strong>Borrar todos los datos:</strong> elimina datos <em>y</em> configuración (deja el sistema como recién instalado).<br>
+            <strong>Reiniciar:</strong> recarga la app sin borrar nada.<br>
+            <strong>Nuevo ambiente:</strong> descarga un respaldo automático y luego deja el sistema limpio para empezar de cero.
+          </p>
         </div>
       </div>
 
@@ -3199,6 +3229,7 @@ function procesarFilasCore(rows, nombreArchivo){
   window.__TF_RAW.regs = window.__TF_RAW.regs.concat(nuevos);
   window.TF_DATA = window.__TF_RAW;
   Object.keys(mesesVistos).forEach(function(m){ recalcularResumenDesdeRegs(parseInt(m,10)); });
+  if(typeof _persistRegsDinamicos==='function') _persistRegsDinamicos();
   auditar(nuevos, nuevos.length);
   return {ok:true, filas:nuevos.length, meses:Object.keys(mesesVistos).map(Number)};
 }
@@ -3273,6 +3304,7 @@ function procesarFilasMayor(rows, nombreArchivo){
   window.__TF_RAW.regs = window.__TF_RAW.regs.concat(nuevos);
   window.TF_DATA = window.__TF_RAW;
   Object.keys(mesesVistos).forEach(function(m){ recalcularResumenDesdeRegs(parseInt(m,10)); });
+  if(typeof _persistRegsDinamicos==='function') _persistRegsDinamicos();
   auditar(nuevos, nuevos.length);
   var desgloseCategoria;
   if (catPorCuenta){
@@ -3322,6 +3354,7 @@ window.cdEliminarArchivo = function(archivoId){
     if (typeof AUD_ITEMS!=='undefined') AUD_ITEMS = AUD_ITEMS.filter(function(a){ return !a.r || a.r.archivo!==archivo.nombre; });
     // Recalcular el resumen de cada mes afectado (ahora sin los movimientos de este archivo)
     Object.keys(mesesAfectados).forEach(function(m){ recalcularResumenDesdeRegs(parseInt(m,10)); });
+    if(typeof _persistRegsDinamicos==='function') _persistRegsDinamicos();
   }
 
   ARCHIVOS_CARGADOS_CD = ARCHIVOS_CARGADOS_CD.filter(function(a){return a.id!==archivoId;});
@@ -4933,6 +4966,8 @@ function initApp(){
     }
   });
   try{ localStorage.setItem('slf_bcv_rates', JSON.stringify(STATE.bcvRates)); }catch(e){}
+  // Reinyectar egresos dinámicos Junio+ persistidos (sobreviven a recargas / vienen de un respaldo importado)
+  reinyectarRegsDinamicos();
   // Renderizar con datos locales primero
   renderAccountsTable();
   renderKpisTable();
@@ -4940,6 +4975,27 @@ function initApp(){
   renderBcvTable();
   // Sincronizar con API
   checkApiStatus();
+}
+
+// Reinyecta en __TF_RAW.regs los egresos dinámicos guardados en slf_regs_dinamicos,
+// sin duplicar los ya presentes y sin tocar los certificados Ene–May (mes de texto).
+function reinyectarRegsDinamicos(){
+  try{
+    var raw = localStorage.getItem('slf_regs_dinamicos');
+    if(!raw) return;
+    var regs = JSON.parse(raw);
+    if(!regs || !regs.length) return;
+    if(!window.__TF_RAW) return;
+    window.TF_DATA = window.__TF_RAW;
+    if(!window.__TF_RAW.regs) window.__TF_RAW.regs = [];
+    // Quitar cualquier dinámico ya presente para evitar duplicados
+    window.__TF_RAW.regs = window.__TF_RAW.regs.filter(function(r){ return !(typeof r.mes==='number' && r.mes>5); });
+    window.__TF_RAW.regs = window.__TF_RAW.regs.concat(regs);
+    var meses = {};
+    regs.forEach(function(r){ if(typeof r.mes==='number') meses[r.mes]=true; });
+    Object.keys(meses).forEach(function(m){ recalcularResumenDesdeRegs(parseInt(m,10)); });
+    if(typeof tfdSincronizarMesesDinamicos==='function') tfdSincronizarMesesDinamicos();
+  }catch(e){ if(window.console) console.warn('No se pudieron reinyectar egresos dinámicos:', e); }
 }
 
 function persistMonths(){
@@ -7783,22 +7839,44 @@ function renderCarteraComposicion(){
       +'<span style="font-size:10px">'+err.message+'. Verifica que estás en la red de Seguros La Fe.</span></div>';
   });
 }
+// ── Claves de localStorage del sistema ──────────────────────────────
+// DATOS = movimientos financieros cargados (se borran con "solo movimientos")
+var SLF_KEYS_DATOS  = ['slf_months','slf_sobregiros','slf_saldos_crudos','slf_ajustes','slf_regs_dinamicos'];
+// CONFIG = configuración del sistema (se conserva en "solo movimientos")
+var SLF_KEYS_CONFIG = ['slf_config','slf_accounts','slf_kpis','slf_custom_ramos','slf_custom_productos','slf_bcv_rates'];
+// TODAS = todo lo persistible (incluye preferencia de UI)
+var SLF_KEYS_TODAS  = SLF_KEYS_DATOS.concat(SLF_KEYS_CONFIG).concat(['slf_sidebar_oculto']);
+
+// Snapshot en vivo de los egresos dinámicos (Junio+, mes numérico >5).
+// Los certificados Ene–May del literal usan mes como texto ("Mayo") → nunca entran aquí.
+function _snapshotRegsDinamicos(){
+  try{
+    var regs = (window.__TF_RAW && window.__TF_RAW.regs) || [];
+    return regs.filter(function(r){ return typeof r.mes==='number' && r.mes>5; });
+  }catch(e){ return []; }
+}
+// Persiste los egresos dinámicos para que sobrevivan a recargas/respaldo.
+function _persistRegsDinamicos(){
+  try{ localStorage.setItem('slf_regs_dinamicos', JSON.stringify(_snapshotRegsDinamicos())); }catch(e){}
+}
+
 function exportarDatos(){
   try{
+    // Asegurar que el detalle dinámico Junio+ quede persistido antes de leerlo
+    _persistRegsDinamicos();
+    function g(k,def){ try{ var v=localStorage.getItem(k); return v!=null?JSON.parse(v):def; }catch(e){ return def; } }
+    var store = {};
+    SLF_KEYS_DATOS.concat(SLF_KEYS_CONFIG).forEach(function(k){ store[k] = g(k, null); });
     var datos = {
-      version:    '1.1.0',
-      exportado:  new Date().toISOString(),
-      equipo:     (STATE.user && STATE.user.name) || 'Admin',
-      months:     JSON.parse(localStorage.getItem('slf_months')     || '[]'),
-      bcv_rates:  JSON.parse(localStorage.getItem('slf_bcv_rates')  || '{}'),
-      sobregiros: JSON.parse(localStorage.getItem('slf_sobregiros') || '{}'),
-      ajustes:    JSON.parse(localStorage.getItem('slf_ajustes')    || '[]'),
-      kpis:       JSON.parse(localStorage.getItem('slf_kpis')       || '[]'),
-      accounts:   JSON.parse(localStorage.getItem('slf_accounts')   || '[]'),
-      customRamos:JSON.parse(localStorage.getItem('slf_custom_ramos')|| '[]')
+      version:   '2.0.0',
+      sistema:   'SLF-ControlGestionFinanciera',
+      exportado: new Date().toISOString(),
+      equipo:    (STATE.user && STATE.user.name) || 'Admin',
+      localStorage: store
     };
-    var nMeses = datos.months.length;
-    var nTasas = Object.keys(datos.bcv_rates).length;
+    var nMeses = (store.slf_months||[]).length;
+    var nTasas = Object.keys(store.slf_bcv_rates||{}).length;
+    var nReg   = (store.slf_regs_dinamicos||[]).length;
     var fecha  = new Date().toISOString().slice(0,10);
     var blob   = new Blob([JSON.stringify(datos,null,2)],{type:'application/json'});
     var a      = document.createElement('a');
@@ -7806,8 +7884,8 @@ function exportarDatos(){
     a.download = 'SLF_Respaldo_'+fecha+'.json';
     a.click();
     var st = document.getElementById('export-status');
-    if(st) st.innerHTML = '✅ Respaldo generado · '+nMeses+' mes(es) · '+nTasas+' tasa(s) · '+fecha;
-    showToast('Respaldo descargado — '+nMeses+' balance(s), '+nTasas+' mes(es) de tasas');
+    if(st) st.innerHTML = '✅ Respaldo generado · '+nMeses+' mes(es) · '+nTasas+' tasa(s) · '+nReg+' egreso(s) · '+fecha;
+    showToast('Respaldo descargado — '+nMeses+' balance(s), '+nTasas+' mes(es) de tasas, '+nReg+' egreso(s)');
   }catch(e){
     showToast('Error al exportar: '+e.message);
   }
@@ -7823,16 +7901,33 @@ function importarDatos(event){
   reader.onload = function(e){
     try{
       var datos = JSON.parse(e.target.result);
-      // Validar que el archivo tiene la estructura correcta
-      if(!datos.months && !datos.bcv_rates){
-        throw new Error('El archivo no es un respaldo válido del sistema SLF');
+      // Normalizar a un objeto de claves de localStorage, con retrocompatibilidad:
+      //  · Formato v2.x: { localStorage: { slf_...: valor } }
+      //  · Formato v1.x: claves planas (months, bcv_rates, sobregiros, ajustes, kpis, accounts, customRamos)
+      var store = datos.localStorage;
+      if(!store){
+        if(!datos.months && !datos.bcv_rates){
+          throw new Error('El archivo no es un respaldo válido del sistema SLF');
+        }
+        store = {
+          slf_months:       datos.months,
+          slf_bcv_rates:    datos.bcv_rates,
+          slf_sobregiros:   datos.sobregiros,
+          slf_ajustes:      datos.ajustes,
+          slf_kpis:         datos.kpis,
+          slf_accounts:     datos.accounts,
+          slf_custom_ramos: datos.customRamos
+        };
       }
-      // Confirmación antes de sobrescribir
+      var nMeses = (store.slf_months||[]).length;
+      var nTasas = Object.keys(store.slf_bcv_rates||{}).length;
+      var nReg   = (store.slf_regs_dinamicos||[]).length;
       var mesesActuales = JSON.parse(localStorage.getItem('slf_months')||'[]').length;
       var msg = '¿Restaurar los datos del respaldo?\n\n'
         +'El respaldo contiene:\n'
-        +'  · '+( datos.months||[]).length+' balance(s) cargado(s)\n'
-        +'  · '+Object.keys(datos.bcv_rates||{}).length+' mes(es) de tasas BCV/USDT\n'
+        +'  · '+nMeses+' balance(s) cargado(s)\n'
+        +'  · '+nTasas+' mes(es) de tasas BCV/USDT\n'
+        +'  · '+nReg+' egreso(s) dinámico(s) Junio+\n'
         +'  · Exportado: '+(datos.exportado||'fecha desconocida')+'\n'
         +'  · Por: '+(datos.equipo||'desconocido')+'\n\n'
         +(mesesActuales>0?'⚠️ Este navegador tiene '+mesesActuales+' balance(s) que serán REEMPLAZADOS.\n':'')
@@ -7842,17 +7937,13 @@ function importarDatos(event){
         event.target.value='';
         return;
       }
-      // Guardar en localStorage
-      if(datos.months)     localStorage.setItem('slf_months',      JSON.stringify(datos.months));
-      if(datos.bcv_rates)  localStorage.setItem('slf_bcv_rates',   JSON.stringify(datos.bcv_rates));
-      if(datos.sobregiros) localStorage.setItem('slf_sobregiros',  JSON.stringify(datos.sobregiros));
-      if(datos.ajustes)    localStorage.setItem('slf_ajustes',     JSON.stringify(datos.ajustes));
-      if(datos.kpis)       localStorage.setItem('slf_kpis',        JSON.stringify(datos.kpis));
-      if(datos.accounts)   localStorage.setItem('slf_accounts',    JSON.stringify(datos.accounts));
-      if(datos.customRamos)localStorage.setItem('slf_custom_ramos',JSON.stringify(datos.customRamos));
+      // Escribir en localStorage solo las claves reconocidas y presentes (no toca lo certificado)
+      SLF_KEYS_TODAS.forEach(function(k){
+        if(store[k]!=null){ try{ localStorage.setItem(k, JSON.stringify(store[k])); }catch(e){} }
+      });
       if(st) st.innerHTML = '✅ Datos restaurados correctamente — recargando...';
       showToast('✅ Datos restaurados — recargando sistema');
-      setTimeout(function(){ location.reload(); }, 1500);
+      setTimeout(function(){ location.reload(); }, 1300);
     }catch(ex){
       if(st) st.innerHTML = '❌ Error: '+ex.message;
       showToast('Error al importar: '+ex.message);
@@ -7860,6 +7951,64 @@ function importarDatos(event){
     event.target.value='';
   };
   reader.readAsText(file);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  ADMINISTRACIÓN DE DATOS — borrados / reinicio / nuevo ambiente
+//  Nota: los meses certificados Ene–May viven en el literal __TF_RAW y
+//  en los arreglos TFD_ (código), por lo que ningún borrado los afecta.
+// ═══════════════════════════════════════════════════════════════════
+function _borrarClaves(keys){
+  keys.forEach(function(k){ try{ localStorage.removeItem(k); }catch(e){} });
+}
+
+function borrarSoloMovimientos(){
+  var n  = JSON.parse(localStorage.getItem('slf_months')||'[]').length;
+  var nr = JSON.parse(localStorage.getItem('slf_regs_dinamicos')||'[]').length;
+  var msg = '🗑️ Borrar SOLO los movimientos financieros cargados (Junio en adelante).\n\n'
+    +'Se eliminarán:\n'
+    +'  · '+n+' mes(es) de balances cargados\n'
+    +'  · '+nr+' egreso(s)/transacción(es) dinámicas\n'
+    +'  · Sobregiros, saldos crudos y ajustes estratégicos\n\n'
+    +'Se CONSERVA la configuración (API, cuentas contables, KPIs, ramos/productos, tasas BCV).\n'
+    +'Los meses certificados Enero–Mayo NO se tocan.\n\n¿Continuar?';
+  if(!confirm(msg)) return;
+  _borrarClaves(SLF_KEYS_DATOS);
+  showToast('🗑️ Movimientos borrados — recargando sistema limpio...');
+  setTimeout(function(){ location.reload(); }, 900);
+}
+
+function borrarTodosLosDatos(){
+  var conf = prompt('🧹 BORRAR TODOS LOS DATOS del sistema (datos + configuración).\n\n'
+    +'Esto elimina balances, egresos, tasas, cuentas, KPIs, ramos/productos, ajustes y configuración.\n'
+    +'Los meses certificados Enero–Mayo (embebidos en el sistema) permanecen.\n\n'
+    +'Para confirmar, escribe:  BORRAR TODO');
+  if(conf===null) return;
+  if(conf.trim().toUpperCase()!=='BORRAR TODO'){ showToast('Cancelado — texto de confirmación incorrecto'); return; }
+  _borrarClaves(SLF_KEYS_TODAS);
+  showToast('🧹 Todos los datos borrados — recargando...');
+  setTimeout(function(){ location.reload(); }, 900);
+}
+
+function reiniciarApp(){
+  if(!confirm('🔄 Reiniciar la aplicación.\n\nSe recargará el sistema para refrescar la vista y el estado.\nNO se borra ningún dato.\n\n¿Continuar?')) return;
+  showToast('🔄 Reiniciando...');
+  setTimeout(function(){ location.reload(); }, 400);
+}
+
+function hacerNuevoAmbiente(){
+  var msg = '🌱 Crear un NUEVO AMBIENTE de trabajo.\n\n'
+    +'1) Se descargará automáticamente un respaldo JSON completo del estado actual.\n'
+    +'2) Luego se borrarán TODOS los datos y la configuración para empezar desde cero.\n\n'
+    +'Los meses certificados Enero–Mayo permanecen intactos.\n\n¿Continuar?';
+  if(!confirm(msg)) return;
+  try{ exportarDatos(); }catch(e){}
+  // Dar tiempo a que se dispare la descarga del respaldo antes de borrar y recargar
+  setTimeout(function(){
+    _borrarClaves(SLF_KEYS_TODAS);
+    showToast('🌱 Nuevo ambiente listo — recargando...');
+    setTimeout(function(){ location.reload(); }, 900);
+  }, 1400);
 }
 
 function addBcvRow(){
