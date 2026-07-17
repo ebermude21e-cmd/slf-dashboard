@@ -353,6 +353,18 @@ table.acum tr.grd td.pr{color:var(--g) !important}table.acum tr.grd td.nr{color:
 .ri-k.g .ks{color:#0E7A4E}.ri-k.w .ks{color:#B07A00}.ri-k.b .ks{color:#B02A1F}.ri-k.n .ks{color:var(--td)}
 .ri-det{background:#fff;border:1px solid var(--br);border-radius:10px;overflow:hidden;margin-top:12px}
 .ri-det-h{padding:11px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:9px;font-weight:800;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em}
+/* v3 · referencia período anterior + variación por indicador */
+.ri-prev{font-size:8.5px;color:var(--td);margin-top:6px;padding-top:6px;border-top:1px dashed var(--br)}
+.ri-prev b{color:var(--tm)}
+.ri-badge{display:inline-block;font-size:8.5px;font-weight:800;padding:2px 8px;border-radius:11px;margin-top:6px}
+.ri-badge.good{background:#E7F5EE;color:#0E7A4E}.ri-badge.bad{background:#FBECEA;color:#B02A1F}.ri-badge.flat{background:var(--pb);color:var(--td)}
+/* v3 · botones de totales técnicos ejecutivos */
+.ri-tt-h{font-size:8px;font-weight:800;color:var(--p);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 6px}
+.ri-tt{display:flex;gap:8px;flex-wrap:wrap}
+.ri-ttb{flex:1;min-width:110px;border:1px solid #D2C4EE;border-radius:9px;padding:9px 11px;background:var(--pb)}
+.ri-ttb .l{font-size:7.5px;font-weight:800;color:var(--p);text-transform:uppercase}
+.ri-ttb .v{font-size:14px;font-weight:800;color:var(--ink2);margin-top:2px}
+.ri-ttb .b{font-size:8px;color:var(--td)}
 
 </style>
 </head>
@@ -894,7 +906,7 @@ var RAMO_SEL='vida', CUR_PR=null, RAMO_DET=false;
 var RI_KPIS=[
   {id:'sin', n:'Siniestralidad', f:'Siniestros Incurridos / Prima Devengada', c:function(x,t){return x.e?x.n/x.e*100:0;}, d:'low', t1:35,t2:50},
   {id:'comb',n:'Índice Combinado', f:'(Comisiones + Siniestros) / Prima Devengada', c:function(x,t){return x.e?(x.i+x.n)/x.e*100:0;}, d:'low', t1:75,t2:100},
-  {id:'mrg', n:'Margen Técnico', f:'Resultado Técnico / Prima Devengada', c:function(x,t){return x.e?x.o/x.e*100:0;}, d:'high', t1:25,t2:10},
+  {id:'mrg', n:'Margen Técnico', f:'Resultado Técnico / Prima Cobrada', c:function(x,t){return x.a?x.o/x.a*100:0;}, d:'high', t1:25,t2:10},
   {id:'comp',n:'Composición de Cartera', f:'Prima Cobrada ramo / Prima total', c:function(x,t){return t?x.a/t*100:0;}, d:'neu'}
 ];
 function riSem(k,v){ if(k.d==='neu')return 'n'; if(k.d==='low')return v<=k.t1?'g':(v<=k.t2?'w':'b'); return v>=k.t1?'g':(v>=k.t2?'w':'b'); }
@@ -903,30 +915,53 @@ function pickRamoDash(r){ RAMO_SEL=r; var sc=document.querySelector('.body').scr
 function toggleRamoDet(){ RAMO_DET=!RAMO_DET; var sc=document.querySelector('.body').scrollTop; renderRamoInt(CUR_PR); document.querySelector('.body').scrollTop=sc; }
 function riBs(v,AC){ return 'Bs '+(v<0?'-':'')+N(Math.abs(v)); }
 function riUsd(v,AC){ return 'US$ '+(v<0?'-':'')+(AC?N(Math.abs(v)/AC):'—'); }
-function riWaterfall(e,i,n,o,AC){
-  var W=720,H=280,padT=42,padB=44,padL=8,padR=8,plotH=H-padT-padB;
-  var valMax=Math.max(e,o,1);
+// Cascada v3 (accionista): parte de la PRIMA COBRADA y llega al Resultado Técnico (cuadra al certificado).
+// Prima Cobrada → Ajuste a devengado (e−a) → −Comisiones y Gastos (i) → −Siniestros Pagados (j) → −Siniestros Pendientes (n−j) → Resultado Técnico (o)
+function riWaterfall(f,AC){
+  var a=f.a||0,e=f.e||0,i=f.i||0,j=f.j||0,n=f.n||0,o=f.o||0;
+  var ajuste=e-a, sinPend=n-j;
+  var W=760,H=290,padT=42,padB=46,padL=6,padR=6,plotH=H-padT-padB;
+  var valMax=Math.max(a,e,o,1);
   function y(v){return padT+plotH-(v/valMax)*plotH;}
   var steps=[
-    {lb:'Prima Devengada',top:e,base:0,val:e,col:'#4B2D8F',sign:''},
-    {lb:'Comisiones y Gastos',top:e,base:e-i,val:i,col:'#B07A00',sign:'−'},
-    {lb:'Siniestros Incurridos',top:e-i,base:e-i-n,val:n,col:'#B02A1F',sign:'−'},
-    {lb:'Resultado Técnico',top:o,base:0,val:o,col:o>=0?'#0E7A4E':'#B02A1F',sign:'='}
+    {lb:'Prima Cobrada',top:a,base:0,val:a,col:'#4B2D8F',sg:''},
+    {lb:'Ajuste a devengado',top:a,base:a+ajuste,val:Math.abs(ajuste),col:'#8A7EAA',sg:ajuste<0?'−':'+'},
+    {lb:'Comisiones y Gastos',top:e,base:e-i,val:i,col:'#B07A00',sg:'−'},
+    {lb:'Siniestros Pagados',top:e-i,base:e-i-j,val:j,col:'#B02A1F',sg:'−'},
+    {lb:'Siniestros Pendientes',top:e-i-j,base:o,val:sinPend,col:'#7A1010',sg:sinPend>=0?'−':'+'},
+    {lb:'Resultado Técnico',top:o,base:0,val:o,col:o>=0?'#0E7A4E':'#B02A1F',sg:'='}
   ];
-  var bw=104,gap=(W-padL-padR-bw*4)/3;
+  var bw=104,gap=(W-padL-padR-bw*steps.length)/(steps.length-1);
   function xL(idx){return padL+idx*(bw+gap);}
   var svg='';
-  for(var c=0;c<3;c++){ var lvl=c===0?e:(c===1?e-i:(e-i-n)); svg+='<line x1="'+(xL(c)+bw)+'" y1="'+y(lvl)+'" x2="'+xL(c+1)+'" y2="'+y(lvl)+'" stroke="#C9BEE6" stroke-width="1.5" stroke-dasharray="3 3"/>'; }
+  var levels=[a,e,e-i,e-i-j,o];
+  for(var ci=0;ci<5;ci++){svg+='<line x1="'+(xL(ci)+bw)+'" y1="'+y(levels[ci])+'" x2="'+xL(ci+1)+'" y2="'+y(levels[ci])+'" stroke="#C9BEE6" stroke-width="1.4" stroke-dasharray="3 3"/>';}
   steps.forEach(function(s,idx){
-    var x=xL(idx),top=y(Math.max(s.top,s.base)),bot=y(Math.min(s.top,s.base)),h=Math.max(bot-top,2);
-    var pctTxt=idx===0?'100%':(idx===3?(e?(o/e*100).toFixed(1)+'% margen':''):(e?(s.val/e*100).toFixed(1)+'% de prima':''));
-    svg+='<rect x="'+x+'" y="'+top+'" width="'+bw+'" height="'+h+'" rx="5" fill="'+s.col+'" opacity="'+(idx===1||idx===2?0.9:1)+'"/>'
-      +'<text x="'+(x+bw/2)+'" y="'+(top-9)+'" text-anchor="middle" font-size="11.5" font-weight="800" fill="#2D1860">'+(s.sign?s.sign+' ':'')+riUsd(s.val,AC)+'</text>'
-      +'<text x="'+(x+bw/2)+'" y="'+(top-22)+'" text-anchor="middle" font-size="8" fill="#948BAE">'+(s.sign?s.sign+' ':'')+riBs(s.val,AC)+'</text>'
-      +'<text x="'+(x+bw/2)+'" y="'+(H-padB+15)+'" text-anchor="middle" font-size="10" font-weight="700" fill="#54506A">'+s.lb+'</text>'
-      +'<text x="'+(x+bw/2)+'" y="'+(H-padB+28)+'" text-anchor="middle" font-size="8" fill="#948BAE">'+pctTxt+'</text>';
+    var top=y(Math.max(s.top,s.base)),bot=y(Math.min(s.top,s.base)),h=Math.max(bot-top,2),x=xL(idx);
+    svg+='<rect x="'+x+'" y="'+top+'" width="'+bw+'" height="'+h+'" rx="5" fill="'+s.col+'" opacity="'+(idx===0||idx===5?1:0.9)+'"/>'
+      +'<text x="'+(x+bw/2)+'" y="'+(top-9)+'" text-anchor="middle" font-size="11" font-weight="800" fill="#2D1860">'+(s.sg?s.sg+' ':'')+riUsd(s.val,AC)+'</text>'
+      +'<text x="'+(x+bw/2)+'" y="'+(top-21)+'" text-anchor="middle" font-size="7.5" fill="#948BAE">'+(s.sg?s.sg+' ':'')+riBs(s.val,AC)+'</text>'
+      +'<text x="'+(x+bw/2)+'" y="'+(H-padB+15)+'" text-anchor="middle" font-size="9" font-weight="700" fill="#54506A">'+s.lb+'</text>';
   });
   return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block;overflow:visible">'+svg+'</svg>';
+}
+// Configuración opcional de semáforo por KPI (la define el usuario en la app; por defecto NO hay calificación).
+var KPI_CFG=(function(){try{return JSON.parse(localStorage.getItem('slf_kpi_cfg')||'{}');}catch(e){return {};}})();
+function riSemCfg(cfg,v){ if(cfg.dir==='high') return v>=cfg.t1?'g':(v>=cfg.t2?'w':'b'); return v<=cfg.t1?'g':(v<=cfg.t2?'w':'b'); }
+// Referencia del período anterior (monto con la tasa BCV de ESE mes) + variación favorable/desfavorable en US$
+function riPrevln(pr,vPrev,AP){ if(pr.cur===pr.prev) return ''; return '<div class="ri-prev">Período anterior · <b>'+pr.prev+'</b>: '+riUsd(vPrev,AP)+' <span style="opacity:.75">('+riBs(vPrev)+')</span></div>'; }
+function riBadge(pr,curMag,prevMag,AC,AP,higherGood){
+  if(pr.cur===pr.prev) return '<div class="ri-badge flat">— sin mes previo</div>';
+  var cu=curMag/AC,pu=prevMag/AP,d=cu-pu,pct=pu?d/Math.abs(pu)*100:0;
+  var up=d>0.01,down=d<-0.01,fav=higherGood?up:down;
+  var cls=(!up&&!down)?'flat':(fav?'good':'bad'),arr=up?'▲':(down?'▼':'=');
+  return '<div class="ri-badge '+cls+'">'+arr+' '+(pct>=0?'+':'')+pct.toFixed(1)+'% vs '+pr.prev.slice(0,3)+'</div>';
+}
+function riTile2(lbl,vCur,vPrev,curMag,prevMag,pr,AC,AP,higherGood,neg,res){
+  var col=res?'#0E7A4E':(neg?'#B02A1F':'#4B2D8F');
+  return '<div class="ri-tile'+(res?' res':'')+'"><div class="mini" style="background:'+col+'"></div><div style="flex:1">'
+    +'<div class="tl">'+lbl+'</div><div class="tv"'+((vCur<0)?' style="color:#B02A1F"':'')+'>'+riUsd(vCur,AC)+'</div><div class="tb">'+riBs(vCur,AC)+'</div>'
+    +riPrevln(pr,vPrev,AP)+riBadge(pr,curMag,prevMag,AC,AP,higherGood)+'</div></div>';
 }
 function riTile(lbl,v,col,AC){
   return '<div class="ri-tile"><div class="mini" style="background:'+col+'"></div><div style="flex:1"><div class="tl">'+lbl+'</div>'
@@ -976,21 +1011,38 @@ function renderRamoInt(pr){
       +'<div class="ri-track"><div class="ri-fill" style="width:'+w+'%;background:'+RCLR[r]+'"></div></div>'
       +'<div class="ri-val"><div class="u">'+riUsd(o,AC)+'</div><div class="b">'+riBs(o,AC)+'</div></div></div>';
   }).join('');
-  var f=DATA[pr.cur][RAMO_SEL]||{}, e=f.e||0,i=f.i||0,n=f.n||0,o=f.o||0;
-  var wf=riWaterfall(e,i,n,o,AC);
-  var tiles=riTile('Prima Devengada',e,'#4B2D8F',AC)+riTile('Total Comisiones y Gastos',-i,'#B07A00',AC)+riTile('Siniestros Incurridos',-n,'#B02A1F',AC);
-  var margen=e?(o/e*100).toFixed(1):'—';
-  tiles+='<div class="ri-tile res"><div class="mini" style="background:#0E7A4E"></div><div style="flex:1"><div class="tl">Resultado Técnico Bruto</div><div class="tv">'+riUsd(o,AC)+'</div><div class="tb">'+riBs(o,AC)+'</div><div class="ri-mrg">Margen técnico '+margen+'%</div></div></div>';
-  var kps=RI_KPIS.map(function(k){var v=k.c(f,totA),c=riSem(k,v);return '<div class="ri-k '+c+'"><div class="kn">'+k.n+'</div><div class="kf">'+k.f+'</div><div class="kv">'+v.toFixed(1)+'%</div><div class="ks">'+riSemTxt(c)+'</div></div>';}).join('');
+  var AP=(BCV[pr.prev]||BCV[pr.cur]).avg;
+  var f=DATA[pr.cur][RAMO_SEL]||{}, fp=DATA[pr.prev][RAMO_SEL]||{};
+  var e=f.e||0,i=f.i||0,j=f.j||0,n=f.n||0,o=f.o||0,a=f.a||0;
+  var sinPendC=n-j, sinPendP=(fp.n||0)-(fp.j||0);
+  var wf=riWaterfall(f,AC);
+  // Indicadores del accionista (cada uno con referencia del período anterior + variación)
+  var tiles=riTile2('Prima Cobrada',       a,        fp.a||0,      a,        fp.a||0,      pr,AC,AP, true,  false,false)
+    +riTile2('Total Comisiones y Gastos',  -i,       -(fp.i||0),   i,        fp.i||0,      pr,AC,AP, false, true, false)
+    +riTile2('Siniestros Pagados',         -j,       -(fp.j||0),   j,        fp.j||0,      pr,AC,AP, false, true, false)
+    +riTile2('Siniestros Pendientes',      -sinPendC,-sinPendP,    sinPendC, sinPendP,     pr,AC,AP, false, true, false);
+  var margen=a?(o/a*100).toFixed(1):'—';
+  tiles+='<div class="ri-tile res"><div class="mini" style="background:#0E7A4E"></div><div style="flex:1"><div class="tl">Resultado Técnico Bruto</div><div class="tv">'+riUsd(o,AC)+'</div><div class="tb">'+riBs(o,AC)+' · '+margen+'% s/ Prima Cobrada</div>'+riPrevln(pr,fp.o||0,AP)+riBadge(pr,o,fp.o||0,AC,AP,true)+'</div></div>';
+  // Totales técnicos en botones ejecutivos (para que el accionista también los vea)
+  var ttb='<div class="ri-tt-h">Totales técnicos (botones ejecutivos)</div><div class="ri-tt">'
+    +'<div class="ri-ttb"><div class="l">Prima Devengada</div><div class="v">'+riUsd(e,AC)+'</div><div class="b">'+riBs(e,AC)+'</div></div>'
+    +'<div class="ri-ttb"><div class="l">Siniestros Incurridos</div><div class="v">'+riUsd(n,AC)+'</div><div class="b">'+riBs(n,AC)+'</div></div></div>';
+  // KPIs — solo valor + fórmula. Sin calificación automática; el semáforo es opcional (config del usuario).
+  var kps=RI_KPIS.map(function(k){
+    var v=k.c(f,totA), cfg=KPI_CFG[k.id]||{}, showSem=!!cfg.sem;
+    var c= showSem ? riSemCfg(cfg,v) : 'n';
+    var stxt= showSem ? riSemTxt(c) : '';
+    return '<div class="ri-k '+c+'"><div class="kn">'+k.n+'</div><div class="kf">'+k.f+'</div><div class="kv">'+v.toFixed(1)+'%</div>'+(stxt?'<div class="ks">'+stxt+'</div>':'')+'</div>';
+  }).join('');
   var det='<div class="ri-det"><div class="ri-det-h" onclick="toggleRamoDet()"><span>Ver detalle contable — '+RLBL[RAMO_SEL]+' ('+pr.cur+(pr.cur===pr.prev?'':' vs '+pr.prev)+')</span><span>'+(RAMO_DET?'▲':'▾')+'</span></div>'
     +(RAMO_DET?'<div class="lw" style="border-top:1px solid var(--br)"><table class="led">'+TH(pr)+'<tbody>'+ramoBodyRows(RAMO_SEL,pr)+'</tbody></table></div>':'')+'</div>';
   host.innerHTML='<div class="ri-wrap">'
     +'<div class="ri-cmp"><h3>Resultado Técnico por ramo · '+pr.cur+'</h3><div class="s">Toca un ramo para ver su cascada, indicadores y KPIs · US$ (referencia en Bs)</div>'+cmp+'</div>'
     +'<div class="ri-grid">'
-    +'<div class="ri-panel"><h3><span class="ri-dot" style="width:11px;height:11px;border-radius:3px;background:'+RCLR[RAMO_SEL]+'"></span>'+RLBL[RAMO_SEL]+' — cómo se llega al Resultado Técnico</h3><div class="s">Se parte de la Prima Devengada y se restan Comisiones y Siniestros</div>'+wf+'</div>'
-    +'<div class="ri-panel"><h3>Indicadores</h3><div class="s">US$ destacado · Bs de referencia</div>'+tiles+'</div>'
+    +'<div class="ri-panel"><h3><span class="ri-dot" style="width:11px;height:11px;border-radius:3px;background:'+RCLR[RAMO_SEL]+'"></span>'+RLBL[RAMO_SEL]+' — del cobro al Resultado Técnico</h3><div class="s">Se parte de la <b>Prima Cobrada</b>, se ajusta a devengado y se restan Comisiones y Siniestros (cuadra al certificado)</div>'+wf+'</div>'
+    +'<div class="ri-panel"><h3>Indicadores del ramo</h3><div class="s">Lo que ve primero el accionista · US$ destacado, Bs de referencia · comparado con el período anterior</div>'+tiles+ttb+'</div>'
     +'</div>'
-    +'<div class="ri-cmp"><h3>Indicadores clave (KPIs) — '+RLBL[RAMO_SEL]+'</h3><div class="s">Calculados de las mismas cifras de la cascada (cuadran)</div><div class="ri-kpis">'+kps+'</div></div>'
+    +'<div class="ri-cmp"><h3>Indicadores clave (KPIs) — '+RLBL[RAMO_SEL]+'</h3><div class="s">Solo el valor y su fórmula. Sin calificación automática: el semáforo (verde/ámbar/rojo) es opcional y lo defines tú con tus umbrales en Configuración de KPIs.</div><div class="ri-kpis">'+kps+'</div></div>'
     +det+'</div>';
 }
 
