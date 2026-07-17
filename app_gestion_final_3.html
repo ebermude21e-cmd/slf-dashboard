@@ -274,7 +274,6 @@ table.diff td.new{background:#DCFCE7;color:var(--g);font-weight:700}
     <div class="sb-sub open" id="sb-contab">
       <div class="sb-sublabel">Contabilidad</div>
       <button class="sb-item" onclick="showTab('dashboard',this)">📈 Dashboard Contable</button>
-      <button class="sb-item" onclick="showTab('gerencial-tecnica',this)">📐 Gestión Técnica</button>
       <button class="sb-item" onclick="showTab('kpis-view',this)">📊 KPIs</button>
       <div class="sb-sublabel">Procesos</div>
       <button class="sb-item" onclick="showTab('carga',this)">📂 Carga de Balance</button>
@@ -3782,7 +3781,6 @@ table.gm-mov tbody td.r{text-align:right;font-weight:700;color:var(--ink2);white
     <div class="gm-hdr">
       <h1>📐 Gestión Técnica</h1>
       <p>Resultado técnico por ramo calculado con el motor certificado del sistema, a partir del Balance de Comprobación cargado. Comisiones/gastos y siniestros se muestran en negativo, de modo que la suma de los tres bloques da el Resultado Técnico Bruto.</p>
-      <button class="btn btn-ghost" style="font-size:10.5px;margin-top:8px" onclick="irA('cuentas','sb-config')">⚙️ Configurar cuentas por ramo</button>
     </div>
     <div class="gt-mes-sel" id="gt-mes-sel"></div>
     <div class="gt-scroll" id="gt-body"></div>
@@ -4226,13 +4224,7 @@ window.gmExportarExcel = function(){
 
 <!-- ══ TAB: DASHBOARD ══ -->
 <div class="pane" id="pane-dashboard" style="padding:0;height:calc(100vh - 110px);flex-direction:column">
-  <div style="flex-shrink:0;background:var(--ink2);padding:8px 16px;display:flex;align-items:center;gap:10px">
-    <span style="font-size:9px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.07em">Vista del dashboard:</span>
-    <div class="sw" style="display:flex;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:5px;overflow:hidden">
-      <button id="btn-vista-ajustado" class="on" onclick="cambiarVistaDashboard('ajustado')" style="padding:4px 12px;border:none;background:rgba(255,255,255,.17);color:#fff;font-size:9px;font-weight:700;cursor:pointer">📊 Dashboard Ajustado (lo que ven accionistas)</button>
-      <button id="btn-vista-real" onclick="cambiarVistaDashboard('real')" style="padding:4px 12px;border:none;background:transparent;color:rgba(255,255,255,.6);font-size:9px;font-weight:700;cursor:pointer">🔒 Real (solo administración)</button>
-    </div>
-  </div>
+  <!-- Vista única: Dashboard del accionista. La vista "Real (solo administración)" vive ahora en Gerencial, no aquí. -->
   <iframe id="dashboard-frame"
     src="https://ebermude21e-cmd.github.io/slf-dashboard/"
     style="width:100%;flex:1;border:none;display:block"
@@ -4388,6 +4380,17 @@ window.gmExportarExcel = function(){
               <textarea id="kpi-desc" placeholder="Para qué sirve este indicador..." style="font-size:11.5px"></textarea>
             </div>
           </div>
+          <div class="form-row col1" style="margin-top:6px">
+            <div class="field">
+              <label style="font-size:11px">🚦 Semáforo (opcional)</label>
+              <select id="kpi-sentido" style="font-size:11.5px">
+                <option value="">Sin semáforo — mostrar solo el valor (recomendado)</option>
+                <option value="low">Activar · mejor cuando es MÁS BAJO (ej. Siniestralidad)</option>
+                <option value="high">Activar · mejor cuando es MÁS ALTO (ej. Margen)</option>
+              </select>
+              <div style="font-size:9.5px;color:var(--td);margin-top:4px">Si lo dejas en «Sin semáforo», el indicador se muestra sin calificación (ni Bien/Atención/Revisar). El semáforo solo aparece si defines aquí el sentido y los umbrales.</div>
+            </div>
+          </div>
           <div class="form-row">
             <div class="field">
               <label style="font-size:11px">🟢 Verde hasta (%)</label>
@@ -4396,6 +4399,14 @@ window.gmExportarExcel = function(){
             <div class="field">
               <label style="font-size:11px">🟡 Ámbar hasta (%)</label>
               <input type="number" id="kpi-ambar" placeholder="Ej: 40" min="0" max="500">
+            </div>
+          </div>
+          <div class="form-row col1" style="margin-top:6px">
+            <div class="field">
+              <label style="font-size:11px;display:flex;align-items:center;gap:8px;cursor:pointer">
+                <input type="checkbox" id="kpi-destacar" style="width:16px;height:16px">
+                <span>⭐ Destacar en el panel de ramo (aparece como KPI en «Movimiento por ramo» del dashboard)</span>
+              </label>
             </div>
           </div>
         </div>
@@ -5671,8 +5682,17 @@ function kpiEvaluar(kpi, ramoId){
 
 function kpiSemaforoColor(kpi, valor){
   if (valor===null) return 'n';
-  if (!kpi.semaforo_verde && !kpi.semaforo_ambar) return 'n';
+  // Sin sentido definido → sin semáforo (neutral). La calificación (Bien/Atención/Revisar)
+  // solo aparece si el usuario activó el semáforo y definió umbrales.
+  if (!kpi.sentido && !kpi.semaforo_verde && !kpi.semaforo_ambar) return 'n';
   var v = parseFloat(kpi.semaforo_verde), a = parseFloat(kpi.semaforo_ambar);
+  if (isNaN(v) && isNaN(a)) return 'n';
+  if (kpi.sentido === 'high'){
+    if (!isNaN(v) && valor>=v) return 'g';
+    if (!isNaN(a) && valor>=a) return 'a';
+    return 'r';
+  }
+  // por defecto: menor es mejor
   if (!isNaN(v) && valor<=v) return 'g';
   if (!isNaN(a) && valor<=a) return 'a';
   return 'r';
@@ -5839,6 +5859,8 @@ window.kpiAbrirModal = function(code){
   kpiActualizarPreview();
   document.getElementById('kpi-verde').value = k?(k.semaforo_verde||''):'';
   document.getElementById('kpi-ambar').value = k?(k.semaforo_ambar||''):'';
+  document.getElementById('kpi-sentido').value = k?(k.sentido||''):'';
+  document.getElementById('kpi-destacar').checked = !!(k&&k.destacar);
   document.getElementById('kpi-active').value = (k&&k.active===false)?'false':'true';
   document.getElementById('kw-avanzado-body').style.display = 'none';
   document.getElementById('kw-avanzado-icono').textContent = '▸';
@@ -5846,6 +5868,28 @@ window.kpiAbrirModal = function(code){
   kwMostrarPaso(k ? 3 : 1); // si es edición, ir directo al paso de comparación (ya tiene nombre y ramo)
   openModal('modal-kpi');
 };
+// Puente app → dashboard: traduce los KPIs que el usuario configuró con semáforo a los
+// 4 indicadores fijos del panel de ramo del dashboard (sin/comb/mrg/comp), por palabra clave.
+// Si el usuario no activa semáforo, el dashboard sigue mostrando el KPI sin calificación.
+function construirKpiCfgDashboard(){
+  var cfg={};
+  function idDe(nombre){
+    var s=(nombre||'').toLowerCase();
+    if(/siniestral/.test(s)) return 'sin';
+    if(/combinad/.test(s)) return 'comb';
+    if(/margen/.test(s)) return 'mrg';
+    if(/composici|cartera/.test(s)) return 'comp';
+    return null;
+  }
+  (STATE.kpis||[]).forEach(function(k){
+    var id=idDe(k.nombre); if(!id) return;
+    if(!k.sentido) return; // sin sentido = sin semáforo
+    var t1=parseFloat(k.semaforo_verde), t2=parseFloat(k.semaforo_ambar);
+    if(isNaN(t1)&&isNaN(t2)) return;
+    cfg[id]={sem:true, dir:k.sentido, t1:isNaN(t1)?t2:t1, t2:isNaN(t2)?t1:t2, destacar:!!k.destacar};
+  });
+  return cfg;
+}
 window.kpiGuardar = function(){
   var nombre = document.getElementById('kpi-nombre').value.trim();
   if(!nombre){ alert('Escribe el nombre del indicador.'); return; }
@@ -5860,6 +5904,8 @@ window.kpiGuardar = function(){
     descripcion: document.getElementById('kpi-desc').value.trim(),
     semaforo_verde: document.getElementById('kpi-verde').value,
     semaforo_ambar: document.getElementById('kpi-ambar').value,
+    sentido: document.getElementById('kpi-sentido').value,
+    destacar: document.getElementById('kpi-destacar').checked,
     active: document.getElementById('kpi-active').value !== 'false'
   };
   if (esParticipacion){ kpi.campo = num; }
@@ -5868,6 +5914,7 @@ window.kpiGuardar = function(){
   var idx = STATE.kpis.findIndex(function(k){return k.code===kpi.code;});
   if(idx>=0) STATE.kpis[idx]=kpi; else STATE.kpis.push(kpi);
   try{ localStorage.setItem('slf_kpis', JSON.stringify(STATE.kpis)); }catch(e){}
+  try{ localStorage.setItem('slf_kpi_cfg', JSON.stringify(construirKpiCfgDashboard())); }catch(e){}
   closeModal('modal-kpi');
   renderKpisTable();
   showToast('✅ Indicador guardado — ya calculado con el último balance');
@@ -5876,6 +5923,7 @@ window.kpiEliminar = function(code){
   if(!confirm('¿Eliminar este KPI?')) return;
   STATE.kpis = (STATE.kpis||[]).filter(function(k){return k.code!==code;});
   try{ localStorage.setItem('slf_kpis', JSON.stringify(STATE.kpis)); }catch(e){}
+  try{ localStorage.setItem('slf_kpi_cfg', JSON.stringify(construirKpiCfgDashboard())); }catch(e){}
   renderKpisTable();
   showToast('KPI eliminado');
 };
