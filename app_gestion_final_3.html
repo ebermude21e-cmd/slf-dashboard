@@ -471,83 +471,412 @@ table.diff td.new{background:#DCFCE7;color:var(--g);font-weight:700}
 </div>
 
 <!-- ══ TAB: CUENTAS ══ -->
-<div class="pane" id="pane-cuentas">
+<div class="pane" id="pane-cuentas" style="padding:0">
+  <iframe id="cuentas-frame" title="Configuración de Cuentas por Ramo" srcdoc="<!DOCTYPE html>
+<html lang=&quot;es&quot;>
+<head>
+<meta charset=&quot;UTF-8&quot;>
+<meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;>
+<title>Prototipo · Cuentas por Ramo · Bloques + Resultado Financiero · Seguros La Fe</title>
 <style>
-.mcc-hdr{margin-bottom:14px}
-.mcc-hdr h2{font-size:15px;font-weight:800;color:var(--ink2)}
-.mcc-hdr p{font-size:11px;color:var(--tm);margin-top:4px;max-width:680px;line-height:1.45}
-.mcc-tip{background:var(--pb);border-left:3px solid var(--p);border-radius:7px;padding:9px 13px;font-size:10.5px;color:var(--ink2);margin-bottom:14px}
-.mcc-ramo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:16px}
-.mcc-ramo-card{border-radius:11px;padding:14px;cursor:pointer;border:2px solid transparent;color:#fff;min-height:76px;display:flex;flex-direction:column;justify-content:space-between;transition:.15s}
-.mcc-ramo-card:hover{transform:translateY(-2px)}
-.mcc-ramo-card.on{border-color:#E5C229;box-shadow:0 0 0 3px rgba(229,194,41,.3)}
-.mcc-ramo-card .nom{font-size:12.5px;font-weight:800}
-.mcc-ramo-card .meta{font-size:9px;opacity:.85;margin-top:5px}
-.mcc-ramo-card.nuevo{background:var(--s);border:2px dashed var(--pl);color:var(--p);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11.5px;min-height:76px}
-.mcc-ramo-card.nuevo:hover{background:var(--pb)}
-.mcc-card{background:var(--s);border-radius:11px;box-shadow:0 2px 10px rgba(0,0,0,.06);padding:16px 18px;margin-bottom:14px}
-.mcc-card h3{font-size:12.5px;font-weight:800;color:var(--ink2);margin-bottom:3px;display:flex;justify-content:space-between;align-items:center}
-.mcc-card .sub{font-size:10px;color:var(--tm);margin-bottom:12px}
-table.mcc-tbl{width:100%;border-collapse:collapse;font-size:10.5px}
-table.mcc-tbl thead th{background:var(--pb);color:var(--p);padding:7px 9px;font-size:9px;font-weight:800;text-transform:uppercase;text-align:left}
-table.mcc-tbl thead th.c{text-align:center}
-table.mcc-tbl tbody td{padding:7px 9px;border-bottom:1px solid var(--br);vertical-align:middle}
-table.mcc-tbl tbody td.c{text-align:center}
-table.mcc-tbl tbody tr.certificada{background:rgba(13,122,78,.04)}
-.mcc-badge{padding:2px 8px;border-radius:7px;font-size:8.5px;font-weight:700}
-.mcc-badge.cert{background:var(--gb);color:var(--g)}
-.mcc-badge.custom{background:#E8F0FB;color:#1F497D}
-.mcc-mono{font-family:'Courier New',monospace;font-size:9.5px;color:var(--tm)}
-.mcc-btn-add{padding:7px 14px;border-radius:7px;background:var(--gb);color:var(--g);border:1.5px dashed var(--g);font-size:10.5px;font-weight:700;cursor:pointer}
-.mcc-btn-add:hover{background:var(--g);color:#fff}
-.mcc-btn-mini{background:none;border:none;cursor:pointer;font-size:12px}
-.mcc-prorrateo-bar{display:flex;height:30px;border-radius:7px;overflow:hidden;margin:9px 0}
-.mcc-prorrateo-bar .seg{display:flex;align-items:center;justify-content:center;color:#fff;font-size:9.5px;font-weight:800}
-.mcc-financiero-badge{background:#E8F0FB;color:#1F497D;font-size:8.5px;font-weight:800;padding:3px 9px;border-radius:7px;text-transform:uppercase}
-.mcc-step-label{font-size:11px;font-weight:800;color:var(--tm);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px;display:flex;align-items:center;gap:8px}
-.mcc-step-n{width:20px;height:20px;border-radius:50%;background:var(--p);color:#fff;font-size:10.5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.mcc-prod-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
-.mcc-prod-chip{padding:9px 16px;border-radius:20px;border:1.5px solid var(--br);background:var(--s);cursor:pointer;font-size:11.5px;font-weight:700;color:var(--tm)}
-.mcc-prod-chip.on{color:#fff;border-color:transparent}
-.mcc-prod-chip .n{font-size:9px;opacity:.85;margin-left:5px;font-weight:600}
-.mcc-prod-chip.nuevo{border-style:dashed;color:var(--p);border-color:var(--pl)}
-.mcc-prod-chip.nuevo:hover{background:var(--pb)}
-.mcc-inline-input{width:100%;border:1.5px solid transparent;background:transparent;padding:5px 7px;border-radius:6px;font-size:11px;font-family:inherit;color:var(--ink2)}
-.mcc-inline-input:hover{border-color:var(--br)}
-.mcc-inline-input:focus{outline:none;border-color:var(--p);background:var(--pb)}
+  :root{--bg:#F5F3FB;--card:#fff;--line:#ECE7F6;--ink:#2D1860;--ink2:#1A1040;--p:#4B2D8F;--pl:#9B78E0;
+    --pb:#F2EEFB;--br:#E4DCF5;--tm:#54506A;--td:#948BAE;--g:#0E7A4E;--gb:#DCEFD8;--r:#B02A1F;--am:#B07A00;
+    --vida:#4B2D8F;--fun:#0E7A4E;--ap:#B07A00;--rcv:#8B1A1A;--fin:#1F6FB2;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--tm)}
+  .pb{background:#EDE8FA;color:var(--ink);padding:8px 20px;font-size:11px;display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--br);flex-wrap:wrap}
+  .pb .tag{background:#E5C229;color:#3a2a00;font-size:9px;font-weight:800;padding:2px 8px;border-radius:5px;text-transform:uppercase}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px 22px 48px}
+  h1{font-size:21px;font-weight:800;color:var(--ink);margin:4px 0 3px}
+  p.desc{font-size:12px;color:var(--td);margin:0 0 6px;line-height:1.5;max-width:840px}
+  .ramo-lbl{font-size:10px;font-weight:800;color:var(--p);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px}
+  .ramos{display:flex;gap:8px;flex-wrap:wrap}
+  .rchip{padding:9px 18px;border-radius:22px;border:1.5px solid var(--br);background:#fff;cursor:pointer;font-size:12px;font-weight:700;color:var(--tm);display:flex;align-items:center;gap:8px}
+  .rchip .dot{width:10px;height:10px;border-radius:50%}
+  .rchip.on{color:#fff;border-color:transparent}
+  .rbadge{font-size:8px;font-weight:800;padding:2px 7px;border-radius:6px}
+  .b-cert{background:var(--gb);color:var(--g)} .rchip.on .rbadge{background:rgba(255,255,255,.25);color:#fff}
+
+  .sec-h{display:flex;align-items:center;gap:10px;margin:26px 0 4px}
+  .sec-h .bar{width:5px;height:22px;border-radius:3px}
+  .sec-h h2{font-size:16px;font-weight:800;color:var(--ink2);margin:0}
+  .sec-h.tec .bar{background:var(--p)} .sec-h.fin .bar{background:var(--fin)}
+  .sec-h .note{font-size:10px;color:var(--td);margin-left:6px}
+
+  .bloque{background:#fff;border:1px solid var(--line);border-radius:14px;margin-top:14px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+  .bloque.nuevo{border-color:#CFE0F3}
+  .bloque.finb{border-color:#CFE0F3}
+  .bhd{padding:12px 18px;background:linear-gradient(90deg,var(--pb),#fff);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .bloque.finb .bhd{background:linear-gradient(90deg,#E9F2FB,#fff)}
+  .bnum{width:26px;height:26px;border-radius:8px;background:var(--p);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .bloque.finb .bnum{background:var(--fin)}
+  .bttl{font-size:13px;font-weight:800;color:var(--ink2)}
+  .bttl-in{font-size:13px;font-weight:800;color:var(--ink2);border:1.5px solid var(--br);border-radius:8px;padding:5px 9px;background:#fff;min-width:220px}
+  .bttl-in:focus{outline:none;border-color:var(--p);background:var(--pb)}
+  .bres{font-size:10px;font-weight:800;color:var(--p);background:#EDE7FB;padding:3px 10px;border-radius:8px}
+  .bloque.finb .bres{color:var(--fin);background:#E3EEF9}
+  .bhd .right{margin-left:auto;display:flex;align-items:center;gap:8px}
+  .optog{font-size:10px;font-weight:800;border:1.5px solid var(--br);border-radius:8px;padding:5px 10px;cursor:pointer;background:#fff;color:var(--tm)}
+  .optog b{font-size:13px}
+  .optog.suma{border-color:#A8D5B8;color:var(--g);background:var(--gb)}
+  .optog.resta{border-color:#E6B7B1;color:var(--r);background:#FBE6E4}
+  .bform{font-size:10px;color:var(--td);padding:8px 18px 2px;font-style:italic}
+
+  table.blk{width:100%;border-collapse:collapse}
+  table.blk td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:middle}
+  table.blk tr:first-child td{border-top:none}
+  .c-sg{width:40px;text-align:center}
+  .sg{display:inline-flex;width:26px;height:26px;border-radius:7px;align-items:center;justify-content:center;font-size:15px;font-weight:800}
+  .sg.mas{background:var(--gb);color:var(--g)} .sg.menos{background:#FBE6E4;color:var(--r)}
+  .sg.tog{cursor:pointer;user-select:none}
+  .c-lbl{font-size:12.5px;color:var(--ink2);font-weight:600}
+  .c-lbl .sub{display:block;font-size:9px;color:var(--td);font-weight:400;margin-top:1px}
+  .c-cta{width:220px}
+  .cta{width:100%;border:1.5px solid var(--br);background:#fff;padding:8px 10px;border-radius:8px;font-family:'Courier New',monospace;font-size:12.5px;color:var(--ink2)}
+  .cta:focus{outline:none;border-color:var(--p);background:var(--pb)}
+  .cta.dup{border-color:var(--r);background:#FFF5F5}
+  .cta.auto{background:var(--bg);color:var(--td);border-style:dashed}
+  .c-st{width:86px}
+  .st{font-size:9px;font-weight:800;padding:4px 9px;border-radius:8px;text-align:center;white-space:nowrap;display:inline-block}
+  .st.ok{background:var(--gb);color:var(--g)} .st.vac{background:#F0ECFA;color:var(--td)} .st.dup{background:#FADBDB;color:var(--r)} .st.auto{background:#EAF3FF;color:#1F497D} .st.nue{background:#FFF3D6;color:#8A6D00}
+  .c-act{width:56px;text-align:right}
+  .mini{background:none;border:1px solid var(--br);border-radius:6px;cursor:pointer;font-size:11px;color:var(--p);width:24px;height:24px;padding:0}
+  .mini:hover{background:var(--pb)} .mini.del:hover{color:var(--r);border-color:#E0A0A0}
+  .nom{width:100%;border:1.5px solid var(--br);background:#fff;padding:7px 9px;border-radius:8px;font-size:12px;color:var(--ink2)}
+  .nom:focus{outline:none;border-color:var(--p);background:var(--pb)}
+  tr.extra td{background:#FBFAFF}
+  .addrow td{padding:8px 18px;border-top:1px dashed var(--br)}
+  .btn-add{background:var(--gb);color:var(--g);border:1.5px dashed var(--g);border-radius:8px;padding:7px 13px;font-size:10.5px;font-weight:800;cursor:pointer}
+  .btn-add:hover{background:var(--g);color:#fff}
+  .subt{display:flex;align-items:center;gap:10px;padding:11px 18px;background:#F6F3FC;border-top:2px solid var(--br)}
+  .bloque.finb .subt{background:#EDF4FB}
+  .subt .eq{font-size:16px;font-weight:800;color:var(--p)} .bloque.finb .subt .eq{color:var(--fin)}
+  .subt .rl{font-size:13px;font-weight:800;color:var(--ink2)}
+  .subt .hint{font-size:9px;color:var(--td);margin-left:auto;text-align:right}
+
+  .btn-bloque{margin-top:12px;background:#fff;border:1.5px dashed var(--pl);color:var(--p);border-radius:10px;padding:11px 16px;font-size:11.5px;font-weight:800;cursor:pointer;width:100%}
+  .btn-bloque:hover{background:var(--pb)}
+
+  .gran{color:#fff;border-radius:14px;margin-top:14px;padding:16px 20px}
+  .gran.tec{background:linear-gradient(135deg,#1A1040,#2D1860,#4B2D8F)}
+  .gran .gl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#C9B8F0;margin-bottom:10px}
+  .gran .gf{display:flex;flex-wrap:wrap;align-items:center;gap:7px 9px;font-size:12.5px}
+  .gterm{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:9px;padding:7px 11px;font-weight:700}
+  .gterm small{display:block;font-size:8px;opacity:.7;font-weight:400;text-transform:uppercase;letter-spacing:.04em}
+  .gop{font-size:17px;font-weight:800;color:#E5C229}
+  .gres{border-radius:9px;padding:7px 13px;font-weight:800;background:#0E7A4E;border:1px solid #0E7A4E}
+  /* Configurador de fórmula */
+  .fbuild{display:flex;flex-wrap:wrap;align-items:center;gap:7px 8px;font-size:12.5px;margin-bottom:8px}
+  .fterm{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:4px 6px 4px 4px}
+  .fname{font-weight:700;padding:0 4px;color:#fff}
+  .fop-tog{width:24px;height:24px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;cursor:pointer;user-select:none}
+  .fop-tog.suma{background:#DCEFD8;color:#0E7A4E} .fop-tog.resta{background:#FBE6E4;color:#B02A1F}
+  .fbtn{background:rgba(255,255,255,.14);border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:10px;width:22px;height:22px;padding:0}
+  .fbtn:hover{background:rgba(255,255,255,.28)} .fbtn:disabled{opacity:.3;cursor:default}
+  .fbtn.del:hover{background:#B02A1F}
+  .favail{display:flex;flex-wrap:wrap;align-items:center;gap:6px;border-top:1px solid rgba(255,255,255,.15);padding-top:10px;margin-top:4px}
+  .fal{font-size:10px;font-weight:700;color:#C9B8F0;text-transform:uppercase;letter-spacing:.04em;margin-right:4px}
+  .fchip{background:rgba(229,194,41,.92);color:#3a2a00;border:none;border-radius:14px;padding:5px 11px;font-size:10.5px;font-weight:800;cursor:pointer}
+  .fchip:hover{background:#E5C229}
+
+  /* Utilidad / pérdida final */
+  .util{background:linear-gradient(135deg,#0B3D2E,#0E7A4E,#12A566);color:#fff;border-radius:16px;margin-top:24px;padding:20px 24px}
+  .util .ul{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#BFEFD6;margin-bottom:12px}
+  .util .uf{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;font-size:14px}
+  .uterm{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:10px;padding:9px 14px;font-weight:800}
+  .uterm small{display:block;font-size:8.5px;opacity:.75;font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+  .uop{font-size:20px;font-weight:800;color:#FFE07A}
+  .ures{background:#fff;color:#0B3D2E;border-radius:10px;padding:9px 16px;font-weight:900;font-size:15px}
+
+  .alerta{margin-top:14px;padding:11px 15px;border-radius:10px;font-size:11.5px;display:none}
+  .alerta.err{display:block;background:#FFF5F5;border:1px solid #F3C0C0;color:var(--r)}
+  .tip{background:var(--pb);border-left:3px solid var(--p);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--ink);margin-top:14px;line-height:1.5}
+  .foot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-top:16px}
+  .resumen{font-size:11.5px;color:var(--tm)} .resumen b{color:var(--ink2)}
+  .btn-guardar{background:var(--g);color:#fff;border:none;border-radius:10px;padding:12px 22px;font-size:13px;font-weight:800;cursor:pointer}
+  .btn-guardar:hover{filter:brightness(1.08)}
 </style>
+</head>
+<body>
+<div class=&quot;wrap&quot;>
+  <h1>🧾 Cuentas Contables por Ramo — Bloques y Resultado</h1>
+  <p class=&quot;desc&quot;>Elige un ramo y arma su Estado de Ganancias y Pérdidas por bloques. Puedes <b>agregar conceptos</b> dentro de un bloque y <b>agregar bloques nuevos</b> (eligiendo si suman o restan al Resultado Técnico). El <b>Resultado Financiero</b> va aparte y, al final, <b>Resultado Técnico − Resultado Financiero = Utilidad o Pérdida</b>.</p>
 
-  <div class="mcc-hdr">
-    <h2>🗂️ Mantenimiento de Cuentas Contables</h2>
-    <p>Configura qué cuentas contables alimentan cada Ramo y Producto para el cálculo de la gestión técnica. Selecciona el ramo, el producto, y luego ve agregando los conceptos con su cuenta contable — el sistema hace el resto automáticamente.</p>
+  <div class=&quot;ramo-lbl&quot;>Ramo</div>
+  <div class=&quot;ramos&quot; id=&quot;ramos&quot;></div>
+
+  <div class=&quot;sec-h tec&quot;><span class=&quot;bar&quot;></span><h2>Resultado Técnico</h2><span class=&quot;note&quot;>Bloques que arman el resultado técnico del ramo</span></div>
+  <div id=&quot;bloques-tec&quot;></div>
+  <button class=&quot;btn-bloque&quot; onclick=&quot;addBloque()&quot;>➕ Agregar bloque nuevo al Resultado Técnico</button>
+  <div class=&quot;gran tec&quot; id=&quot;gran-tec&quot;></div>
+
+  <div class=&quot;sec-h fin&quot;><span class=&quot;bar&quot;></span><h2>Resultado Financiero</h2><span class=&quot;note&quot;>Separado del resultado técnico (inversiones, gastos financieros, etc.)</span></div>
+  <div id=&quot;bloque-fin&quot;></div>
+
+  <div class=&quot;util&quot; id=&quot;util&quot;></div>
+
+  <div class=&quot;alerta&quot; id=&quot;alerta&quot;></div>
+  <div class=&quot;tip&quot;>💡 El <b>Gasto Administrativo Prorrateado</b> es <b>Automático</b> (98% repartido por prima cobrada). Al <b>agregar un bloque nuevo</b> defines su nombre y si <b>suma (+)</b> o <b>resta (−)</b> al Resultado Técnico; el Gran Total se recalcula solo. Si repites una cuenta en dos conceptos, se marca en rojo (descuadre) y no deja guardar.</div>
+
+  <div class=&quot;foot&quot;>
+    <div class=&quot;resumen&quot; id=&quot;resumen&quot;></div>
+    <button class=&quot;btn-guardar&quot; onclick=&quot;guardar()&quot;>💾 Guardar cuentas del ramo</button>
   </div>
-  <div class="mcc-tip">ℹ️ <b>Regla automática (fija, no editable):</b> Enero toma el <b>Saldo Final</b> del balance; de Febrero en adelante toma el <b>Movimiento del mes</b>. El sistema ya lo aplica solo.</div>
+</div>
 
-  <div class="mcc-step-label"><span class="mcc-step-n">1</span> Selecciona el Ramo</div>
-  <div class="mcc-ramo-grid" id="mcc-ramo-grid"></div>
+<script>
+// ── Bloques fijos del Resultado Técnico ─────────────────────────────────────
+var BLOQUES_TEC = [
+  { id:'devengada', ttl:'Prima Devengada', res:'Prima Devengada', op:'base', fijo:true,
+    formula:'Prima Cobrada − Devolución de Prima − Constitución de Reserva + Liberación de Reserva',
+    filas:[
+      {k:'a',  sg:'+', lbl:'Prima Cobrada'},
+      {k:'b',  sg:'−', lbl:'Devolución de Prima'},
+      {k:'c',  sg:'−', lbl:'Constitución de Reserva', sub:'Reserva de prima año actual'},
+      {k:'cIV',sg:'−', lbl:'Constitución de Reserva Complementaria', sub:'Año actual', soloRCV:true},
+      {k:'d',  sg:'+', lbl:'Liberación de Reserva', sub:'Reserva de prima año anterior'},
+      {k:'dVI',sg:'+', lbl:'Liberación de Reserva Complementaria', sub:'Año anterior', soloRCV:true}
+    ]},
+  { id:'siniestros', ttl:'Siniestros Incurridos', res:'Siniestros Incurridos', op:'−', fijo:true,
+    formula:'Siniestros Pagados + Siniestros Pendientes de Pago − Liberación de Reserva de Siniestro Pendiente',
+    filas:[
+      {k:'j', sg:'+', lbl:'Siniestros Pagados'},
+      {k:'k', sg:'+', lbl:'Siniestros Pendientes de Pago', sub:'Reserva siniestro año actual'},
+      {k:'l', sg:'+', lbl:'IBNR', sub:'Ocurridos no reportados — año actual'},
+      {k:'ll',sg:'−', lbl:'Liberación de Reserva de Siniestro Pendiente', sub:'Año anterior'},
+      {k:'m', sg:'−', lbl:'Liberación de IBNR', sub:'Año anterior'}
+    ]},
+  { id:'comisiones', ttl:'Comisiones', res:'Total Comisiones', op:'−', fijo:true,
+    formula:'Suma de las comisiones del ramo',
+    filas:[ {k:'f', sg:'+', lbl:'Comisiones y Gastos de Adquisición'} ]},
+  { id:'gastos', ttl:'Gastos', res:'Total Gastos', op:'−', fijo:true,
+    formula:'Suma de los gastos del ramo (incluye el prorrateo administrativo)',
+    filas:[
+      {k:'g', sg:'+', lbl:'Gastos Directos de Administración'},
+      {k:'h', sg:'+', lbl:'Gasto Administrativo Prorrateado', sub:'98% repartido por prima cobrada', auto:true}
+    ]}
+];
 
-  <div class="mcc-step-label"><span class="mcc-step-n">2</span> Selecciona el Producto</div>
-  <div class="mcc-prod-row" id="mcc-producto-row"></div>
+// ── Bloque de Resultado Financiero (separado) ───────────────────────────────
+var BLOQUE_FIN = { id:'financiero', ttl:'Resultado Financiero', res:'Resultado Financiero',
+  formula:'Ingresos Financieros − Egresos Financieros',
+  filas:[
+    {k:'fin_ing', sg:'+', lbl:'Ingresos Financieros', sub:'Productos de inversión, etc.'},
+    {k:'fin_egr', sg:'−', lbl:'Egresos Financieros', sub:'Gastos financieros, fluctuación cambiaria, depreciación…'}
+  ]};
 
-  <div class="mcc-card" id="mcc-conceptos-card" style="display:none">
-    <h3><span id="mcc-conceptos-titulo">Conceptos y Cuentas</span><button class="btn btn-primary" style="font-size:10.5px;padding:6px 12px" onclick="openAccountModal(null,MCC_RAMO_ACTIVO,MCC_PRODUCTO_ACTIVO)">+ Nueva Cuenta</button></h3>
-    <p class="sub">Cada concepto certificado ya viene con su campo de fórmula fijo (no editable). Los conceptos que agregues tú también deben elegir un campo — el signo de la fórmula ya está definido por ese campo, no se configura aparte.</p>
-    <div id="mcc-conceptos-body"></div>
-  </div>
+// ── Ramos + cuentas certificadas de ejemplo ─────────────────────────────────
+var RAMOS = {
+  vida:{ label:'Vida', color:'var(--vida)', cuentas:{
+    a:'5 501 01 01', b:'3 301 02 01', c:'3 301 05 01 01', d:'5 501 05 01',
+    f:'3 301 03 01 01', g:'3 301 09 01', h:'3 381 01',
+    j:'3 301 01 01', k:'3 301 05 03 01', l:'3 301 05 04 01', ll:'5 501 05 03 01', m:'5 501 05 04 01',
+    fin_ing:'5 581 01', fin_egr:'3 381 02' }},
+  fun:{ label:'Funerario', color:'var(--fun)', cuentas:{ h:'3 381 01' }},
+  ap:{ label:'Acc. Personales', color:'var(--ap)', cuentas:{ h:'3 381 01' }},
+  rcv:{ label:'RC Vehículos', color:'var(--rcv)', cuentas:{
+    a:'5 521 01 03 01 01', b:'3 321 02 03 01', c:'3 321 05 01 03 01 01', cIV:'3 321 05 02 03 01 01',
+    dVI:'5 521 05 02 03 01 01', f:'3 321 09 01 03 01 01', h:'3 381 01', fin_egr:'3 381 02' }}
+};
 
-  <div class="mcc-card">
+// Estado (prototipo, en memoria): cuentas por ramo, conceptos extra y bloques nuevos (estructura compartida)
+var CUENTAS = {}; Object.keys(RAMOS).forEach(function(r){ CUENTAS[r]=Object.assign({}, RAMOS[r].cuentas); });
+var EXTRA = [];            // {uid, blk, nombre, signo}  (blk = id de bloque)  — estructura compartida entre ramos
+var NUEVOS = [];           // {id, ttl, op}  bloques nuevos del resultado técnico
+var UID=1, BID=1;
+var SEL='vida';
+// Fórmula CONFIGURABLE del Resultado Técnico (orden + signo de cada bloque)
+var FORMULA_TEC = [{blk:'devengada',op:'+'},{blk:'siniestros',op:'−'},{blk:'comisiones',op:'−'},{blk:'gastos',op:'−'}];
 
-    <h3>💼 Gestión Financiera <span class="mcc-financiero-badge">No afecta la gestión técnica</span></h3>
-    <p class="sub">Ingresos y egresos financieros que se registran aparte del cálculo por ramo — incluye el 2% de Gasto Administrativo prorrateado automáticamente.</p>
-    <div id="mcc-financiero-body"></div>
-    <button class="mcc-btn-add" style="margin-top:10px" onclick="openAccountModal(null,'financiero')">➕ Agregar concepto financiero</button>
-  </div>
+function esRCV(){ return SEL==='rcv'; }
+function filasVis(blk){ return (blk.filas||[]).filter(function(f){ return !f.soloRCV || esRCV(); }); }
 
-  <div class="mcc-card">
-    <h3>📐 Prorrateo del Gasto Administrativo — regla fija 98% / 2%</h3>
-    <p class="sub" id="mcc-prorrateo-sub">El 98% se prorratea entre los ramos según su % de Prima Cobrada; el 2% va directo a Gestión Financiera. Cálculo 100% automático, ya certificado.</p>
-    <div id="mcc-prorrateo-body"></div>
-  </div>
+function pintarRamos(){
+  document.getElementById('ramos').innerHTML = Object.keys(RAMOS).map(function(id){
+    var R=RAMOS[id], on=id===SEL;
+    return '<button class=&quot;rchip'+(on?' on':'')+'&quot; style=&quot;'+(on?'background:'+R.color:'')+'&quot; onclick=&quot;pick(\''+id+'\')&quot;>'
+      +'<span class=&quot;dot&quot; style=&quot;background:'+(on?'#fff':R.color)+'&quot;></span>'+R.label+'<span class=&quot;rbadge b-cert&quot;>Certificado</span></button>';
+  }).join('');
+}
+function pick(id){ SEL=id; render(); }
+
+// Renderiza un bloque (fijo, nuevo o financiero)
+function htmlBloque(blk, numero, tipo){
+  var esFin=tipo==='fin', esNuevo=tipo==='nuevo';
+  var rows='';
+  filasVis(blk).forEach(function(f){
+    var clsSg=f.sg==='+'?'mas':'menos';
+    if(f.auto){
+      rows+='<tr><td class=&quot;c-sg&quot;><span class=&quot;sg '+clsSg+'&quot;>'+f.sg+'</span></td>'
+        +'<td class=&quot;c-lbl&quot;>'+f.lbl+(f.sub?'<span class=&quot;sub&quot;>'+f.sub+'</span>':'')+'</td>'
+        +'<td class=&quot;c-cta&quot;><input class=&quot;cta auto&quot; value=&quot;'+(CUENTAS[SEL][f.k]||'3 381 01')+'&quot; disabled></td>'
+        +'<td class=&quot;c-st&quot;><span class=&quot;st auto&quot;>Automático</span></td><td class=&quot;c-act&quot;></td></tr>';
+    } else {
+      rows+='<tr><td class=&quot;c-sg&quot;><span class=&quot;sg '+clsSg+'&quot;>'+f.sg+'</span></td>'
+        +'<td class=&quot;c-lbl&quot;>'+f.lbl+(f.sub?'<span class=&quot;sub&quot;>'+f.sub+'</span>':'')+'</td>'
+        +'<td class=&quot;c-cta&quot;><input class=&quot;cta&quot; id=&quot;in-'+f.k+'&quot; value=&quot;'+(CUENTAS[SEL][f.k]||'')+'&quot; placeholder=&quot;Ej. 3 301 01 01&quot; oninput=&quot;onEdit(\''+f.k+'\')&quot;></td>'
+        +'<td class=&quot;c-st&quot;><span class=&quot;st vac&quot; id=&quot;st-'+f.k+'&quot;>Vacía</span></td><td class=&quot;c-act&quot;></td></tr>';
+    }
+  });
+  EXTRA.filter(function(e){return e.blk===blk.id;}).forEach(function(ex){
+    var clsSg=ex.signo==='+'?'mas':'menos';
+    rows+='<tr class=&quot;extra&quot;><td class=&quot;c-sg&quot;><span class=&quot;sg tog '+clsSg+'&quot; title=&quot;Cambiar signo&quot; onclick=&quot;togSigno('+ex.uid+')&quot;>'+ex.signo+'</span></td>'
+      +'<td class=&quot;c-lbl&quot;><input class=&quot;nom&quot; value=&quot;'+(ex.nombre||'').replace(/&quot;/g,'&amp;quot;')+'&quot; placeholder=&quot;Nombre del concepto nuevo&quot; oninput=&quot;onExtra('+ex.uid+',\'nombre\',this.value)&quot;></td>'
+      +'<td class=&quot;c-cta&quot;><input class=&quot;cta&quot; id=&quot;ex-'+ex.uid+'&quot; value=&quot;'+(CUENTAS[SEL]['x'+ex.uid]||'')+'&quot; placeholder=&quot;Ej. 3 301 07 00&quot; oninput=&quot;onExtra('+ex.uid+',\'cuenta\',this.value)&quot;></td>'
+      +'<td class=&quot;c-st&quot;><span class=&quot;st nue&quot; id=&quot;stx-'+ex.uid+'&quot;>Nuevo</span></td>'
+      +'<td class=&quot;c-act&quot;><button class=&quot;mini del&quot; title=&quot;Eliminar concepto&quot; onclick=&quot;delExtra('+ex.uid+')&quot;>🗑</button></td></tr>';
+  });
+
+  // Encabezado
+  var hd;
+  if(esNuevo){
+    hd='<div class=&quot;bhd&quot;><span class=&quot;bnum&quot;>'+numero+'</span>'
+      +'<input class=&quot;bttl-in&quot; value=&quot;'+(blk.ttl||'').replace(/&quot;/g,'&amp;quot;')+'&quot; placeholder=&quot;Nombre del bloque (ej. Reaseguro)&quot; oninput=&quot;setTtl(\''+blk.id+'\',this.value)&quot;>'
+      +'<div class=&quot;right&quot;><span class=&quot;bres&quot; style=&quot;background:#EAF3FF;color:#1F497D&quot;>Se configura en la fórmula ⬇</span>'
+      +'<button class=&quot;mini del&quot; title=&quot;Eliminar bloque&quot; onclick=&quot;delBloque(\''+blk.id+'\')&quot;>🗑</button>'
+      +'</div></div>';
+  } else {
+    hd='<div class=&quot;bhd&quot;><span class=&quot;bnum&quot;>'+numero+'</span><span class=&quot;bttl&quot;>Bloque '+numero+' · '+blk.ttl+'</span>'
+      +'<div class=&quot;right&quot;><span class=&quot;bres&quot;>= '+blk.res+'</span></div></div>';
+  }
+  var formula = blk.formula ? '<div class=&quot;bform&quot;>Fórmula: '+blk.formula+'</div>' : '';
+  var cls='bloque'+(esFin?' finb':'')+(esNuevo?' nuevo':'');
+  return '<div class=&quot;'+cls+'&quot;>'+hd+formula
+    +'<table class=&quot;blk&quot;>'+rows+'</table>'
+    +'<div class=&quot;addrow&quot;><button class=&quot;btn-add&quot; onclick=&quot;addExtra(\''+blk.id+'\')&quot;>➕ Agregar concepto</button></div>'
+    +'<div class=&quot;subt&quot;><span class=&quot;eq&quot;>=</span><span class=&quot;rl&quot;>'+(esNuevo?(blk.ttl||'Bloque nuevo'):blk.res)+'</span><span class=&quot;hint&quot;>Se calcula solo con las cuentas de este bloque</span></div>'
+    +'</div>';
+}
+
+function render(){
+  pintarRamos();
+  if(!CUENTAS[SEL]) CUENTAS[SEL]={};
+
+  // Resultado Técnico: bloques fijos + nuevos
+  var num=0, html='';
+  BLOQUES_TEC.forEach(function(b){ num++; html+=htmlBloque(b,num,'fijo'); });
+  NUEVOS.forEach(function(b){ num++; html+=htmlBloque(b,num,'nuevo'); });
+  document.getElementById('bloques-tec').innerHTML=html;
+
+  renderFormulaTec();
+
+  // Resultado Financiero
+  document.getElementById('bloque-fin').innerHTML=htmlBloque(BLOQUE_FIN,'💠','fin');
+
+  // Utilidad / Pérdida
+  document.getElementById('util').innerHTML=
+    '<div class=&quot;ul&quot;>🏆 Resultado de la Empresa — Utilidad o Pérdida</div>'
+    +'<div class=&quot;uf&quot;>'
+    +'<span class=&quot;uterm&quot;><small>Grande 1</small>Resultado Técnico</span>'
+    +'<span class=&quot;uop&quot;>−</span>'
+    +'<span class=&quot;uterm&quot;><small>Grande 2</small>Resultado Financiero</span>'
+    +'<span class=&quot;uop&quot;>=</span>'
+    +'<span class=&quot;ures&quot;>Utilidad / Pérdida de la Empresa</span>'
+    +'</div>';
+
+  chequear();
+}
+
+function onEdit(k){ CUENTAS[SEL][k]=document.getElementById('in-'+k).value.trim(); chequear(); }
+function addExtra(blkId){ EXTRA.push({uid:UID++, blk:blkId, nombre:'', signo:'+'}); render(); }
+function delExtra(uid){ EXTRA=EXTRA.filter(function(e){return e.uid!==uid;}); render(); }
+function togSigno(uid){ var e=EXTRA.filter(function(x){return x.uid===uid;})[0]; if(e){ e.signo=e.signo==='+'?'−':'+'; render(); } }
+function onExtra(uid,campo,val){
+  var e=EXTRA.filter(function(x){return x.uid===uid;})[0]; if(!e) return;
+  if(campo==='cuenta'){ CUENTAS[SEL]['x'+uid]=val.trim(); } else { e[campo]=val.trim(); }
+  chequear();
+}
+function addBloque(){ var id='blk'+(BID++); NUEVOS.push({id:id, ttl:''}); FORMULA_TEC.push({blk:id, op:'−'}); render(); }
+function delBloque(id){ NUEVOS=NUEVOS.filter(function(b){return b.id!==id;}); EXTRA=EXTRA.filter(function(e){return e.blk!==id;}); FORMULA_TEC=FORMULA_TEC.filter(function(t){return t.blk!==id;}); render(); }
+function setTtl(id,val){ var b=NUEVOS.filter(function(x){return x.id===id;})[0]; if(b) b.ttl=val; renderFormulaTec(); }
+function togOp(id){ var b=NUEVOS.filter(function(x){return x.id===id;})[0]; if(b){ b.op=b.op==='+'?'−':'+'; render(); } }
+
+function nombreBloque(id){
+  var f=BLOQUES_TEC.filter(function(b){return b.id===id;})[0]; if(f) return f.res;
+  var n=NUEVOS.filter(function(b){return b.id===id;})[0]; if(n) return n.ttl||'Bloque nuevo';
+  return id;
+}
+function renderFormulaTec(){
+  var inc=FORMULA_TEC.map(function(t){return t.blk;});
+  var terms=FORMULA_TEC.map(function(t,i){
+    return '<div class=&quot;fterm&quot;>'
+      +'<span class=&quot;fop-tog '+(t.op==='+'?'suma':'resta')+'&quot; title=&quot;Cambiar signo (+/−)&quot; onclick=&quot;togFormOp('+i+')&quot;>'+t.op+'</span>'
+      +'<span class=&quot;fname&quot;>'+nombreBloque(t.blk)+'</span>'
+      +'<button class=&quot;fbtn&quot; title=&quot;Mover a la izquierda&quot; onclick=&quot;moveForm('+i+',-1)&quot;'+(i===0?' disabled':'')+'>◀</button>'
+      +'<button class=&quot;fbtn&quot; title=&quot;Mover a la derecha&quot; onclick=&quot;moveForm('+i+',1)&quot;'+(i===FORMULA_TEC.length-1?' disabled':'')+'>▶</button>'
+      +'<button class=&quot;fbtn del&quot; title=&quot;Quitar de la fórmula&quot; onclick=&quot;removeFromForm('+i+')&quot;>✕</button>'
+      +'</div>';
+  }).join('');
+  var todos=BLOQUES_TEC.map(function(b){return {id:b.id,name:b.res};}).concat(NUEVOS.map(function(b){return {id:b.id,name:b.ttl||'Bloque nuevo'};}));
+  var disp=todos.filter(function(b){return inc.indexOf(b.id)===-1;});
+  var dispHtml = disp.length
+    ? '<div class=&quot;favail&quot;><span class=&quot;fal&quot;>Agregar a la fórmula:</span>'+disp.map(function(b){return '<button class=&quot;fchip&quot; onclick=&quot;addToForm(\''+b.id+'\')&quot;>＋ '+b.name+'</button>';}).join('')+'</div>'
+    : '<div class=&quot;favail&quot;><span class=&quot;fal&quot; style=&quot;opacity:.7&quot;>Todos los bloques están incluidos en la fórmula.</span></div>';
+  var vacio = FORMULA_TEC.length? '' : '<span style=&quot;opacity:.7;font-size:12px&quot;>La fórmula está vacía — agrega bloques abajo.</span>';
+  document.getElementById('gran-tec').innerHTML=
+    '<div class=&quot;gl&quot;>🏁 Configura la fórmula del Resultado Técnico Bruto — arrastra el signo, el orden o agrega bloques</div>'
+    +'<div class=&quot;fbuild&quot;>'+terms+vacio+'<span class=&quot;gop&quot;>=</span><span class=&quot;gres&quot;>Resultado Técnico Bruto</span></div>'
+    +dispHtml;
+}
+function togFormOp(i){ if(FORMULA_TEC[i]){ FORMULA_TEC[i].op=FORMULA_TEC[i].op==='+'?'−':'+'; renderFormulaTec(); } }
+function moveForm(i,dir){ var j=i+dir; if(j<0||j>=FORMULA_TEC.length) return; var t=FORMULA_TEC[i]; FORMULA_TEC[i]=FORMULA_TEC[j]; FORMULA_TEC[j]=t; renderFormulaTec(); }
+function removeFromForm(i){ FORMULA_TEC.splice(i,1); renderFormulaTec(); }
+function addToForm(id){ FORMULA_TEC.push({blk:id, op:'−'}); renderFormulaTec(); }
+
+function chequear(){
+  var items=[];
+  BLOQUES_TEC.concat([BLOQUE_FIN]).forEach(function(b){ filasVis(b).forEach(function(f){ if(!f.auto) items.push({tipo:'f',id:f.k,cuenta:(CUENTAS[SEL][f.k]||'')}); }); });
+  EXTRA.forEach(function(ex){ items.push({tipo:'x',id:ex.uid,cuenta:(CUENTAS[SEL]['x'+ex.uid]||'')}); });
+  var mapa={}, dup={}, cnt=0;
+  items.forEach(function(it){ var v=(it.cuenta||'').replace(/\s+/g,' ').trim(); if(!v) return; cnt++;
+    var key=it.tipo+':'+it.id; if(mapa[v]){ dup[key]=true; dup[mapa[v]]=true; } else mapa[v]=key; });
+  var nDup=0;
+  BLOQUES_TEC.concat([BLOQUE_FIN]).forEach(function(b){ filasVis(b).forEach(function(f){
+    if(f.auto) return; var inp=document.getElementById('in-'+f.k), st=document.getElementById('st-'+f.k); if(!inp||!st) return;
+    var v=(CUENTAS[SEL][f.k]||'').trim(); inp.classList.remove('dup');
+    if(dup['f:'+f.k]){ inp.classList.add('dup'); st.className='st dup'; st.textContent='Duplicada'; nDup++; }
+    else if(v){ st.className='st ok'; st.textContent='OK'; } else { st.className='st vac'; st.textContent='Vacía'; }
+  }); });
+  EXTRA.forEach(function(ex){ var inp=document.getElementById('ex-'+ex.uid), st=document.getElementById('stx-'+ex.uid); if(!inp||!st) return;
+    var v=(CUENTAS[SEL]['x'+ex.uid]||'').trim(); inp.classList.remove('dup');
+    if(dup['x:'+ex.uid]){ inp.classList.add('dup'); st.className='st dup'; st.textContent='Duplicada'; nDup++; }
+    else if(v &amp;&amp; ex.nombre){ st.className='st ok'; st.textContent='OK'; } else { st.className='st nue'; st.textContent='Nuevo'; }
+  });
+  var al=document.getElementById('alerta');
+  if(nDup>0){ al.className='alerta err'; al.innerHTML='⚠️ Hay <b>'+nDup+'</b> cuenta(s) repetida(s). Eso causaría un <b>descuadre</b>. Corrige antes de guardar.'; }
+  else { al.className='alerta'; al.textContent=''; }
+  document.getElementById('resumen').innerHTML='Ramo <b>'+RAMOS[SEL].label+'</b> · Cuentas cargadas: <b>'+cnt+'</b> · Bloques técnicos: <b>'+(BLOQUES_TEC.length+NUEVOS.length)+'</b> · '
+    +(nDup>0?'<span style=&quot;color:var(--r)&quot;>Descuadres: <b>'+nDup+'</b></span>':'Descuadres: <b>0</b> ✅');
+}
+
+var LS_KEY='slf_cuentas_bloques';
+function persist(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({cuentas:CUENTAS, extra:EXTRA, nuevos:NUEVOS, formula:FORMULA_TEC})); }catch(e){} }
+function loadState(){
+  try{
+    var raw=localStorage.getItem(LS_KEY); if(!raw) return;
+    var d=JSON.parse(raw);
+    if(d.cuentas){ Object.keys(RAMOS).forEach(function(r){ CUENTAS[r]=Object.assign({}, RAMOS[r].cuentas, d.cuentas[r]||{}); }); }
+    if(Array.isArray(d.extra))   EXTRA=d.extra;
+    if(Array.isArray(d.nuevos))  NUEVOS=d.nuevos;
+    if(Array.isArray(d.formula) &amp;&amp; d.formula.length) FORMULA_TEC=d.formula;
+    var mu=0; EXTRA.forEach(function(e){ if(e.uid>mu) mu=e.uid; }); UID=mu+1;
+    var mb=0; NUEVOS.forEach(function(b){ var n=parseInt(String(b.id||'').replace('blk',''),10); if(n>mb) mb=n; }); BID=mb+1;
+  }catch(e){}
+}
+function guardar(){
+  var al=document.getElementById('alerta');
+  if(al.classList.contains('err')){ alert('No se puede guardar: corrige los descuadres (cuentas repetidas) primero.'); return; }
+  persist();
+  var t=document.getElementById('cc-toast'); if(t){ t.style.opacity='1'; setTimeout(function(){ t.style.opacity='0'; }, 1900); }
+}
+
+loadState();
+render();
+</script>
+<div id=&quot;cc-toast&quot; style=&quot;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#0E7A4E;color:#fff;font-size:12px;font-weight:800;padding:10px 18px;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,.25);opacity:0;transition:opacity .4s;z-index:99;pointer-events:none&quot;>✅ Cuentas guardadas en el sistema</div>
+</body>
+</html>
+" style="width:100%;height:calc(100vh - 120px);border:none;display:block"></iframe>
 </div>
 
 <!-- ══ TAB: KPIs CONFIG ══ -->
@@ -5393,7 +5722,7 @@ var MCC_RAMO_ACTIVO = null;
 
 var MCC_PRODUCTO_ACTIVO = null;
 
-function renderAccountsTable(){
+function renderAccountsTable(){ if(!document.getElementById('mcc-ramo-grid')) return; // UI vieja reemplazada por el configurador por bloques (iframe)
   if (!MCC_RAMO_ACTIVO) MCC_RAMO_ACTIVO = getRamosIds()[0];
   mccRenderRamoCards();
   mccRenderProductos();
