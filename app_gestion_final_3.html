@@ -667,16 +667,10 @@ var BLOQUE_FIN = { id:'financiero', ttl:'Resultado Financiero', res:'Resultado F
 
 // ── Ramos + cuentas certificadas de ejemplo ─────────────────────────────────
 var RAMOS = {
-  vida:{ label:'Vida', color:'var(--vida)', cuentas:{
-    a:'5 501 01 01', b:'3 301 02 01', c:'3 301 05 01 01', d:'5 501 05 01',
-    f:'3 301 03 01 01', g:'3 301 09 01', h:'3 381 01',
-    j:'3 301 01 01', k:'3 301 05 03 01', l:'3 301 05 04 01', ll:'5 501 05 03 01', m:'5 501 05 04 01',
-    fin_ing:'5 581 01', fin_egr:'3 381 02' }},
-  fun:{ label:'Funerario', color:'var(--fun)', cuentas:{ h:'3 381 01' }},
-  ap:{ label:'Acc. Personales', color:'var(--ap)', cuentas:{ h:'3 381 01' }},
-  rcv:{ label:'RC Vehículos', color:'var(--rcv)', cuentas:{
-    a:'5 521 01 03 01 01', b:'3 321 02 03 01', c:'3 321 05 01 03 01 01', cIV:'3 321 05 02 03 01 01',
-    dVI:'5 521 05 02 03 01 01', f:'3 321 09 01 03 01 01', h:'3 381 01', fin_egr:'3 381 02' }}
+  vida:{ label:'Vida', color:'var(--vida)', cuentas:{ a:'5 501 01 01', b:'3 301 02 01', c:'3 301 05 01 01', d:'5 501 05 01', f:'3 301 03 01 01', g:'3 301 09 01', j:'3 301 01 01', k:'3 301 05 03 01', l:'3 301 05 04 01', ll:'5 501 05 03 01', m:'5 501 05 04 01', h:'3 381 01', fin_ing:'5 581 01; 5 581 03', fin_egr:'3 381 02; 3 381 04; 3 381 06; 3 381 07; 3 381 09' } },
+  fun:{ label:'Funerario', color:'var(--fun)', cuentas:{ a:'5 521 01 01 03 01; 5 521 01 01 03 02', b:'3 321 02 01 03 01', c:'3 321 05 01 01 03 01; 3 321 05 01 01 03 02', d:'5 521 05 01 01 03 01; 5 521 05 01 01 03 02', f:'3 321 09 01 01 03 01', g:'3 321 03 01 01 03 01', j:'3 321 01 01 03 01; 3 321 01 01 03 02', k:'3 321 05 03 01 03 01; 3 321 05 03 01 03 02', l:'3 321 05 04 01 03 01; 3 321 05 04 01 03 02', ll:'5 521 05 03 01 03 01; 5 521 05 03 01 03 02', m:'5 521 05 04 01 03 01; 5 521 05 04 01 03 02', h:'3 381 01', fin_ing:'5 581 01; 5 581 03', fin_egr:'3 381 02; 3 381 04; 3 381 06; 3 381 07; 3 381 09' } },
+  ap:{ label:'Acc. Personales', color:'var(--ap)', cuentas:{ a:'5 521 01 01 01 01; 5 521 01 01 01 02', b:'3 321 02 01 01 01', c:'3 321 05 01 01 01 01; 3 321 05 01 01 01 02', d:'5 521 05 01 01 01 01; 5 521 05 01 01 01 02', f:'3 321 09 01 01 01 01', g:'3 321 03 01 01 01 01', j:'3 321 01 01 01 01', h:'3 381 01', fin_ing:'5 581 01; 5 581 03', fin_egr:'3 381 02; 3 381 04; 3 381 06; 3 381 07; 3 381 09' } },
+  rcv:{ label:'RC Vehículos', color:'var(--rcv)', cuentas:{ a:'5 521 01 03 01 01', b:'3 321 02 03 01', c:'3 321 05 01 03 01 01', cIV:'3 321 05 02 03 01 01', d:'5 521 05 01 03 01 01', dVI:'5 521 05 02 03 01 01', f:'3 321 09 01 03 01 01', h:'3 381 01', fin_ing:'5 581 01; 5 581 03', fin_egr:'3 381 02; 3 381 04; 3 381 06; 3 381 07; 3 381 09' } },
 };
 
 // Estado (prototipo, en memoria): cuentas por ramo, conceptos extra y bloques nuevos (estructura compartida)
@@ -714,7 +708,7 @@ function htmlBloque(blk, numero, tipo){
     } else {
       rows+='<tr><td class=&quot;c-sg&quot;><span class=&quot;sg '+clsSg+'&quot;>'+f.sg+'</span></td>'
         +'<td class=&quot;c-lbl&quot;>'+f.lbl+(f.sub?'<span class=&quot;sub&quot;>'+f.sub+'</span>':'')+'</td>'
-        +'<td class=&quot;c-cta&quot;><input class=&quot;cta&quot; id=&quot;in-'+f.k+'&quot; value=&quot;'+(CUENTAS[SEL][f.k]||'')+'&quot; placeholder=&quot;Ej. 3 301 01 01&quot; oninput=&quot;onEdit(\''+f.k+'\')&quot;></td>'
+        +'<td class=&quot;c-cta&quot;><input class=&quot;cta&quot; id=&quot;in-'+f.k+'&quot; value=&quot;'+(CUENTAS[SEL][f.k]||'')+'&quot; placeholder=&quot;Ej. 3 301 01 01 (varias con ;)&quot; oninput=&quot;onEdit(\''+f.k+'\')&quot;></td>'
         +'<td class=&quot;c-st&quot;><span class=&quot;st vac&quot; id=&quot;st-'+f.k+'&quot;>Vacía</span></td><td class=&quot;c-act&quot;></td></tr>';
     }
   });
@@ -4941,6 +4935,31 @@ const BUILTIN_ACCOUNTS = [
   {code:'fin_ing03',ramo:'financiero',field:'ing03',sign:'+',label:'Fluctuación cambiaria ing',cuentas:['5 581 03'],       effective_from:'Enero', active:true},
 ];
 
+// ── Puente config-por-bloques → motor: el parser usa las cuentas configuradas
+// en la pantalla "Cuentas por bloques" (localStorage slf_cuentas_bloques) como
+// fuente; si un ramo/campo no está configurado, cae al catálogo certificado.
+// 'h' NO se sobreescribe (se prorratea aparte). financiero/general se procesan aparte.
+function cuentasEfectivas(){
+  var base = BUILTIN_ACCOUNTS.concat(STATE.accounts||[]);
+  var cfg=null; try{ cfg=JSON.parse(localStorage.getItem('slf_cuentas_bloques')||'null'); }catch(e){}
+  if(!cfg || !cfg.cuentas) return base;
+  var TEC=['vida','fun','ap','rcv'];
+  var FLD=['a','b','c','cIV','d','dVI','f','g','j','k','l','ll','m'];
+  var over={}, userAccts=[];
+  TEC.forEach(function(r){
+    var rc=cfg.cuentas[r]; if(!rc) return;
+    FLD.forEach(function(fld){
+      var raw=rc[fld]; if(raw===undefined||raw===null) return;
+      var codes=String(raw).split(/[;\n]+/).map(function(x){return x.replace(/\s+/g,' ').trim();}).filter(Boolean);
+      if(!codes.length) return;
+      over[r+'|'+fld]=true;
+      userAccts.push({ramo:r, field:fld, sign:'+', cuentas:codes, active:true});
+    });
+  });
+  var filtered=base.filter(function(a){ return !over[a.ramo+'|'+a.field]; });
+  return filtered.concat(userAccts);
+}
+
 // ─── INIT ─────────────────────────────────────────────────────────
 
 
@@ -7446,7 +7465,7 @@ function extractData(rows, ext, fileName, prevSaldoMap){
 
   // Apply catalog: sum accounts per ramo/field usando el valor con signo correcto
   var ramos={};
-  var allAccounts=BUILTIN_ACCOUNTS.concat(STATE.accounts||[]);
+  var allAccounts=cuentasEfectivas();
   allAccounts.forEach(function(acc){
     if(acc.active===false) return;
     if(acc.ramo==='financiero' || acc.ramo==='general') return; // se procesan aparte
@@ -8380,7 +8399,7 @@ function renderCarteraComposicion(){
 // DATOS = movimientos financieros cargados (se borran con "solo movimientos")
 var SLF_KEYS_DATOS  = ['slf_months','slf_sobregiros','slf_saldos_crudos','slf_ajustes','slf_regs_dinamicos'];
 // CONFIG = configuración del sistema (se conserva en "solo movimientos")
-var SLF_KEYS_CONFIG = ['slf_config','slf_accounts','slf_kpis','slf_custom_ramos','slf_custom_productos','slf_bcv_rates'];
+var SLF_KEYS_CONFIG = ['slf_config','slf_accounts','slf_kpis','slf_kpi_cfg','slf_cuentas_bloques','slf_custom_ramos','slf_custom_productos','slf_bcv_rates'];
 // TODAS = todo lo persistible (incluye preferencia de UI)
 var SLF_KEYS_TODAS  = SLF_KEYS_DATOS.concat(SLF_KEYS_CONFIG).concat(['slf_sidebar_oculto']);
 
