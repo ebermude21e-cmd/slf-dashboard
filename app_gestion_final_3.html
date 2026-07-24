@@ -4945,19 +4945,61 @@ function cuentasEfectivas(){
   if(!cfg || !cfg.cuentas) return base;
   var TEC=['vida','fun','ap','rcv'];
   var FLD=['a','b','c','cIV','d','dVI','f','g','j','k','l','ll','m'];
-  var over={}, userAccts=[];
+  var extras = Array.isArray(cfg.extra)? cfg.extra : []; // conceptos nuevos (Punto 1)
+  var userAccts=[], ramosConfig={};
   TEC.forEach(function(r){
     var rc=cfg.cuentas[r]; if(!rc) return;
+    ramosConfig[r]=true; // ramo técnico configurado → SOLO se usan sus cuentas configuradas
     FLD.forEach(function(fld){
       var raw=rc[fld]; if(raw===undefined||raw===null) return;
       var codes=String(raw).split(/[;\n]+/).map(function(x){return x.replace(/\s+/g,' ').trim();}).filter(Boolean);
-      if(!codes.length) return;
-      over[r+'|'+fld]=true;
+      if(!codes.length) return; // concepto sin cuenta → queda en 0 (NO se hereda del catálogo interno)
       userAccts.push({ramo:r, field:fld, sign:'+', cuentas:codes, active:true});
     });
+    // Conceptos nuevos (extras): cada uid tiene su cuenta por ramo en rc['x'+uid].
+    // Se emiten como campo sintético 'x'+uid para que el motor los sume; luego el
+    // cálculo por bloques (subtotalBloque) los agrega a su bloque con su signo.
+    extras.forEach(function(ex){
+      var raw=rc['x'+ex.uid]; if(raw===undefined||raw===null) return;
+      var codes=String(raw).split(/[;\n]+/).map(function(x){return x.replace(/\s+/g,' ').trim();}).filter(Boolean);
+      if(!codes.length) return;
+      userAccts.push({ramo:r, field:'x'+ex.uid, sign:'+', cuentas:codes, active:true});
+    });
   });
-  var filtered=base.filter(function(a){ return !over[a.ramo+'|'+a.field]; });
+  // CONFIG-ONLY: para cada ramo técnico configurado se descartan TODAS sus cuentas
+  // del catálogo interno; solo cuentan las que el usuario cargó en el módulo de
+  // configuración. Los ramos financiero/general y los ramos técnicos NO configurados
+  // se mantienen del catálogo interno. Así el balance NO trae cuentas no configuradas.
+  var filtered=base.filter(function(a){ return !ramosConfig[a.ramo]; });
   return filtered.concat(userAccts);
+}
+
+// ── Motor de bloques (Punto 1): subtotal de un bloque + resultado técnico por
+// fórmula configurable. Bloques fijos mapean a los campos certificados; los
+// conceptos nuevos (extras) se agregan a su bloque con su signo. Con la config
+// semilla (sin extras, fórmula por defecto) el resultado es idéntico al certificado.
+function subtotalBloque(f, blkId, cfgExtras){
+  var s=0;
+  if(blkId==='devengada')      s = (f.e||0);              // a-b-c-cIV+d+dVI
+  else if(blkId==='siniestros')s = (f.n||0);              // j+k+l-ll-m
+  else if(blkId==='comisiones')s = (f.f||0);
+  else if(blkId==='gastos')    s = (f.g||0)+(f.h||0);
+  (cfgExtras||[]).forEach(function(ex){
+    if(ex.blk!==blkId) return;
+    var v=f['x'+ex.uid]||0;
+    s += (ex.signo==='−'||ex.signo==='-') ? -v : v;
+  });
+  return s;
+}
+function resultadoTecnico(f, cfgExtras, cfgFormula){
+  // Sin fórmula configurada → certificado por defecto: e − i − n (= devengada − siniestros − comisiones − gastos)
+  if(!cfgFormula || !cfgFormula.length) return (f.e||0) - (f.i||0) - (f.n||0);
+  var o=0;
+  cfgFormula.forEach(function(t){
+    var sub=subtotalBloque(f, t.blk, cfgExtras);
+    o += (t.op==='−'||t.op==='-') ? -sub : sub;
+  });
+  return o;
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────
@@ -7480,6 +7522,11 @@ function extractData(rows, ext, fileName, prevSaldoMap){
     });
   });
 
+  // ── Config de bloques: FUENTE ÚNICA (Punto 4) ───────────────────────────
+  var cfgB=null; try{ cfgB=JSON.parse(localStorage.getItem('slf_cuentas_bloques')||'null'); }catch(e){}
+  var cfgExtras  = (cfgB && Array.isArray(cfgB.extra))  ? cfgB.extra   : [];
+  var cfgFormula = (cfgB && Array.isArray(cfgB.formula) && cfgB.formula.length) ? cfgB.formula : null;
+
   // ── Calcular campos derivados por ramo: e, n (i y o requieren h prorrateado) ──
   // e = a - b - c - cIV + d + dVI   (Primas Devengadas)
   // n = j + k + l - ll - m          (Siniestros Incurridos)
@@ -7497,12 +7544,24 @@ function extractData(rows, ext, fileName, prevSaldoMap){
     if(ramos[r]) total_a += ramos[r].a||0;
   });
 
-  // ── Prorrateo de Gasto de Administración (cuenta 3 381 01) ─────────────
-  // El 98% se prorratea entre los 4 ramos según composición de prima cobrada (a).
-  // El 2% restante va a financieros como gasto de administración (eg_adm_2pct).
-  // Validado al centavo: el Saldo General resultante es IDÉNTICO al cálculo sin
-  // prorratear (solo redistribuye internamente entre resultado técnico y financiero).
-  var gastoAdmTotal = valorCuenta('3 381 01');
+  // ── Prorrateo de Gasto de Administración ────────────────────────────────
+  // Cuenta(s) de prorrateo CONFIGURABLE (Punto 3): se lee del campo 'h' de la
+  // config de bloques (cualquier ramo técnico configurado); fallback certificado
+  // '3 381 01'. El 98% se prorratea entre los 4 ramos según prima cobrada (a); el
+  // 2% restante va a financieros (eg_adm_2pct). Solo redistribuye internamente:
+  // el Saldo General es idéntico al cálculo sin prorratear (validado al centavo).
+  var prorrCtas=['3 381 01'];
+  if(cfgB && cfgB.cuentas){
+    var TECp=['vida','fun','ap','rcv'];
+    for(var pi=0; pi<TECp.length; pi++){
+      var hraw = cfgB.cuentas[TECp[pi]] && cfgB.cuentas[TECp[pi]].h;
+      if(hraw){
+        var hc=String(hraw).split(/[;\n]+/).map(function(x){return x.replace(/\s+/g,' ').trim();}).filter(Boolean);
+        if(hc.length){ prorrCtas=hc; break; }
+      }
+    }
+  }
+  var gastoAdmTotal=0; prorrCtas.forEach(function(c){ gastoAdmTotal += valorCuenta(c); });
   var gastoAdm98 = gastoAdmTotal * 0.98;
   var gastoAdm2  = gastoAdmTotal * 0.02;
 
@@ -7513,7 +7572,9 @@ function extractData(rows, ext, fileName, prevSaldoMap){
     ramos[r].h_pct = pct*100;
     var fF=ramos[r].f||0, g=ramos[r].g||0, h=ramos[r].h||0;
     ramos[r].i = fF+g+h;
-    ramos[r].o = ramos[r].e - ramos[r].i - ramos[r].n;
+    // Resultado técnico por fórmula de bloques (Punto 1): incluye conceptos y
+    // bloques nuevos. Con config semilla == e − i − n (certificado).
+    ramos[r].o = resultadoTecnico(ramos[r], cfgExtras, cfgFormula);
   });
 
   // Compute totals across ramos
@@ -7528,22 +7589,55 @@ function extractData(rows, ext, fileName, prevSaldoMap){
     totals.o += ramos[r].o||0;
   });
 
-  // ── Calcular financieros (eg/ing) usando el catálogo 'financiero' ───────
-  var FIN_FIELDS=['eg02','eg04','eg06','eg07','eg09','ing01','ing03'];
-  var fin={eg02:0,eg04:0,eg06:0,eg07:0,eg09:0,ing01:0,ing03:0};
-  allAccounts.forEach(function(acc){
-    if(acc.active===false || acc.ramo!=='financiero') return;
-    if(FIN_FIELDS.indexOf(acc.field)===-1) return;
-    var ctas=Array.isArray(acc.cuentas)?acc.cuentas:[acc.cuentas];
-    ctas.forEach(function(c){
-      var key=String(c||'').replace(/\s+/g,' ').trim();
-      if(!key) return;
-      fin[acc.field]+=valorCuenta(key);
+  // ── Calcular financieros (eg/ing) — CONFIG-DRIVEN (Punto 2) ─────────────
+  // Si la config de bloques define fin_ing/fin_egr, el financiero se arma SOLO
+  // con esas cuentas (dedup entre ramos: el financiero es de la empresa). Cada
+  // cuenta se clasifica en su campo granular para el desglose del dashboard; las
+  // no mapeadas caen en un bucket 'otros' pero SIEMPRE cuentan en el total.
+  // Fallback: si no hay fin_ing/fin_egr en config → catálogo certificado BUILTIN.
+  var FIN_CODE_FIELD={
+    '5 581 01':'ing01','5 581 03':'ing03',
+    '3 381 02':'eg02','3 381 04':'eg04','3 381 06':'eg06','3 381 07':'eg07','3 381 09':'eg09'
+  };
+  var fin={eg02:0,eg04:0,eg06:0,eg07:0,eg09:0,ing01:0,ing03:0,ing_otros:0,eg_otros:0};
+  var finIngCtas=[], finEgrCtas=[];
+  if(cfgB && cfgB.cuentas){
+    var TECf=['vida','fun','ap','rcv'], seenI={}, seenE={};
+    TECf.forEach(function(r){
+      var rc=cfgB.cuentas[r]; if(!rc) return;
+      [['fin_ing',finIngCtas,seenI],['fin_egr',finEgrCtas,seenE]].forEach(function(p){
+        var raw=rc[p[0]]; if(raw===undefined||raw===null) return;
+        String(raw).split(/[;\n]+/).map(function(x){return x.replace(/\s+/g,' ').trim();}).filter(Boolean).forEach(function(code){
+          if(p[2][code]) return; p[2][code]=true; p[1].push(code);
+        });
+      });
     });
-  });
+  }
+  // Fallback POR LADO (robustez): si un lado no tiene cuentas configuradas, ese
+  // lado cae al catálogo certificado BUILTIN de forma independiente. Así configurar
+  // solo ingresos (o solo egresos) NO colapsa el otro lado a 0.
+  var usedCfgIng=finIngCtas.length>0, usedCfgEgr=finEgrCtas.length>0;
+  if(usedCfgIng){
+    finIngCtas.forEach(function(code){ var v=valorCuenta(code); var fld=FIN_CODE_FIELD[code]; if(fld && fin[fld]!==undefined) fin[fld]+=v; else fin.ing_otros+=v; });
+  } else {
+    allAccounts.forEach(function(acc){
+      if(acc.active===false || acc.ramo!=='financiero') return;
+      if(['ing01','ing03'].indexOf(acc.field)===-1) return;
+      (Array.isArray(acc.cuentas)?acc.cuentas:[acc.cuentas]).forEach(function(c){ var key=String(c||'').replace(/\s+/g,' ').trim(); if(key) fin[acc.field]+=valorCuenta(key); });
+    });
+  }
+  if(usedCfgEgr){
+    finEgrCtas.forEach(function(code){ var v=valorCuenta(code); var fld=FIN_CODE_FIELD[code]; if(fld && fin[fld]!==undefined) fin[fld]+=v; else fin.eg_otros+=v; });
+  } else {
+    allAccounts.forEach(function(acc){
+      if(acc.active===false || acc.ramo!=='financiero') return;
+      if(['eg02','eg04','eg06','eg07','eg09'].indexOf(acc.field)===-1) return;
+      (Array.isArray(acc.cuentas)?acc.cuentas:[acc.cuentas]).forEach(function(c){ var key=String(c||'').replace(/\s+/g,' ').trim(); if(key) fin[acc.field]+=valorCuenta(key); });
+    });
+  }
   fin.eg_adm_2pct = gastoAdm2;
-  fin.total_eg  = fin.eg02+fin.eg04+fin.eg06+fin.eg07+fin.eg09+fin.eg_adm_2pct;
-  fin.total_ing = fin.ing01+fin.ing03;
+  fin.total_ing = fin.ing01+fin.ing03+fin.ing_otros;
+  fin.total_eg  = fin.eg02+fin.eg04+fin.eg06+fin.eg07+fin.eg09+fin.eg_otros+fin.eg_adm_2pct;
   fin.saldo_fin = fin.total_ing - fin.total_eg;
 
   // ── Saldo General = Resultado Técnico + Saldo Financiero ────────────────
